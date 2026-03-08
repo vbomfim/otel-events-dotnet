@@ -22,6 +22,9 @@
 12. [Non-Functional Requirements](#12-non-functional-requirements)
 13. [Success Metrics](#13-success-metrics)
 14. [Out of Scope & Explicit Non-Goals](#14-out-of-scope--explicit-non-goals)
+15. [Integration Packs](#15-integration-packs)
+16. [Security & Privacy Requirements](#16-security--privacy-requirements)
+17. [Container & Kubernetes Deployment Guide](#17-container--kubernetes-deployment-guide)
 
 ---
 
@@ -104,13 +107,15 @@ The minimum viable product that proves the concept and is usable in a real proje
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 1.1 | **Event schema parser** | Parse YAML schema files into an in-memory model (`EventDefinition`, `FieldDefinition`, etc.) |
+| 1.1 | **Event schema parser** | Parse YAML schema files into an in-memory model (`EventDefinition`, `FieldDefinition`, etc.) with safe loading: max file size 1 MB, max 500 events, max 50 fields per event |
 | 1.2 | **C# code generator** | MSBuild-integrated source generator that produces `[LoggerMessage]` partial methods + `Meter`/`Counter`/`Histogram` instances + typed extension methods from YAML schemas |
-| 1.3 | **JSON log exporter** | Custom OTEL `BaseExporter<LogRecord>` that formats `LogRecord`s as AI-optimized single-line JSONL (the ALL envelope) to stdout or file |
+| 1.3 | **JSON log exporter** | Custom OTEL `BaseExporter<LogRecord>` that formats `LogRecord`s as AI-optimized single-line JSONL (the ALL envelope) to stdout or file. Includes environment-aware defaults (see §16). |
 | 1.4 | **Causality processor** | Custom OTEL `BaseProcessor<LogRecord>` that adds `all.event_id` and `all.parent_event_id` attributes to `LogRecord`s for causal tree construction |
-| 1.5 | **Exception serialization** | Structured exception → `exception` object in JSON exporter with `stackTrace[]`, `inner`, depth cap at 5 |
+| 1.5 | **Exception serialization** | Structured exception → `exception` object in JSON exporter with configurable `ExceptionDetailLevel` (`Full`, `TypeAndMessage`, `TypeOnly`), depth cap at 5 |
 | 1.6 | **DI integration** | Extension methods on `OpenTelemetryBuilder` to register ALL components: `.AddAllJsonExporter()`, `.AddProcessor<AllCausalityProcessor>()`, `.AddMeter("MyApp.Events.*")` |
-| 1.7 | **Basic schema validation** | Validate YAML schemas at build time — duplicate IDs, missing fields, type mismatches |
+| 1.7 | **Basic schema validation** | Validate YAML schemas at build time — duplicate IDs, missing fields, type mismatches, PII sensitivity annotations |
+| 1.8 | **Basic severity-based filtering** | Configurable per-severity log filtering as an OTEL processor, allowing events below a threshold to be dropped before export (moved from Phase 3 per Platform Guardian review) |
+
 
 ### Phase 2 — Production Readiness
 
@@ -118,17 +123,34 @@ Features required for production use and team adoption.
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 2.1 | **Roslyn analyzers** | Detect `Console.Write*`, direct untyped `ILogger` usage, string interpolation in event messages |
-| 2.2 | **Configuration** | `appsettings.json` / env-var configuration for JSON exporter output target, severity filtering, metric batching |
+| 2.1 | **Roslyn analyzers** | Detect `Console.Write*`, direct untyped `ILogger` usage, string interpolation in event messages, PII sensitivity warnings (ALL009) |
+| 2.2 | **Configuration** | `appsettings.json` / env-var configuration for JSON exporter output target, severity filtering, metric batching, `EnvironmentProfile` |
 | 2.3 | **Schema versioning** | `all.v` field, compatibility validation between schema versions |
 | 2.4 | **Health/readiness events** | Built-in schema for application lifecycle events: startup, ready, degraded, shutdown |
 | 2.5 | **Testing utilities** | `ALL.Testing` package with in-memory `LogRecord` collector and assertion extensions |
+| 2.6 | **OtelEvents.AspNetCore integration pack** | Pre-built ASP.NET Core middleware that auto-emits schema-defined `http.request.received`, `http.request.completed`, `http.request.failed` events with causal scope per request |
+| 2.7 | **OtelEvents.HealthChecks integration pack** | Pre-built `IHealthCheckPublisher` that emits `health.check.executed` and `health.state.changed` events; complements 2.4 lifecycle events |
+| 2.8 | **Per-event-category rate limiting** | OTEL processor that rate-limits events by category (e.g., max 100 `db.query.executed` events per second), configurable per event name |
+| 2.9 | **Optional `IMeterFactory`-based Meter creation** | Alternative to static `Meter` instances for DI-friendly, disposable meter lifecycle (see ADR in Appendix B, DR-023) |
+
 
 ### Phase 3 — Ecosystem & Scale
 
 Advanced features for large-scale adoption.
 
 | # | Feature | Description |
+|---|---------|-------------|
+| 3.1 | **Schema registry CLI** | `dotnet all validate`, `dotnet all generate`, `dotnet all diff` commands |
+| 3.2 | **Multi-service schema sharing** | NuGet-packaged schemas for shared event contracts |
+| 3.3 | **Advanced event sampling** | Configurable sampling rates for high-volume events with head/tail sampling strategies (as an OTEL processor) |
+| 3.4 | **Schema documentation generator** | Auto-generate event catalog documentation from YAML |
+| 3.5 | **Performance dashboard template** | Grafana/OTEL Collector config templates from schema metrics |
+| 3.6 | **VS Code extension** | YAML schema IntelliSense, validation, event preview |
+| 3.7 | **OtelEvents.Grpc integration pack** | Pre-built gRPC server/client interceptors for `grpc.call.started`, `grpc.call.completed`, `grpc.call.failed` events (replaces deferred "gRPC service events" item) |
+| 3.8 | **OtelEvents.Azure.CosmosDb integration pack** | DiagnosticListener-based observer for `cosmosdb.query.executed`, `cosmosdb.point.read`, `cosmosdb.point.write` events with RU histograms |
+| 3.9 | **OtelEvents.Azure.Storage integration pack** | Azure SDK pipeline policy for `storage.blob.*` and `storage.queue.*` events |
+| 3.10 | **Schema file signing** | `dotnet all sign` command for schema integrity verification in multi-team environments |
+
 |---|---------|-------------|
 | 3.1 | **Schema registry CLI** | `dotnet all validate`, `dotnet all generate`, `dotnet all diff` commands |
 | 3.2 | **Multi-service schema sharing** | NuGet-packaged schemas for shared event contracts |
@@ -281,30 +303,49 @@ All4dotnet (meta-package — references all below)
 
 ### Package Dependencies
 
+All dependencies are managed via **Central Package Management** (`Directory.Packages.props`) with exact version pins. OTEL SDK dependencies use bounded ranges `[1.9, 2.0)` to allow patch updates while preventing breaking major version changes. CI matrix tests against both the minimum and latest OTEL SDK versions within the range.
+
+```xml
+<!-- Directory.Packages.props -->
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="OpenTelemetry" Version="[1.9.0, 2.0.0)" />
+    <PackageVersion Include="YamlDotNet" Version="16.1.3" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+  </ItemGroup>
+</Project>
+```
+
 ```
 All.Schema (build-time only — source generator + MSBuild task)
-├── YamlDotNet (>= 16.0)
-├── Microsoft.CodeAnalysis.CSharp (>= 4.8)
+├── YamlDotNet [16.1.3] (pinned; safe-loading mode configured — see §16)
+├── Microsoft.CodeAnalysis.CSharp [4.8.0]
 └── (no runtime dependency — generates code that uses standard BCL + OTEL types)
 
 All.Exporter.Json (runtime — custom OTEL exporter)
-├── OpenTelemetry (>= 1.9)
-├── System.Text.Json (>= 8.0)
+├── OpenTelemetry [1.9, 2.0)
+├── System.Text.Json [8.0.5]
 └── (thin package — only the exporter + JSON serialization)
 
 All.Causality (runtime — custom OTEL processor)
-├── OpenTelemetry (>= 1.9)
+├── OpenTelemetry [1.9, 2.0)
 └── (thin package — only the processor + UUID v7 generation)
 
 All.Analyzers (build-time only — Roslyn analyzers)
-└── Microsoft.CodeAnalysis.CSharp (>= 4.8)
+└── Microsoft.CodeAnalysis.CSharp [4.8.0]
     (analyzer-only package — no runtime dependency)
 
 All.Testing (test-time only)
-├── OpenTelemetry (>= 1.9)
-├── Microsoft.Extensions.Logging (>= 8.0)
+├── OpenTelemetry [1.9, 2.0)
+├── Microsoft.Extensions.Logging [8.0.1]
 └── (no external test framework dependency — works with any)
 ```
+
 
 ### Why This Split?
 
@@ -532,11 +573,68 @@ events:
         required: true
 ```
 
+### Field Sensitivity Classification
+
+Every field definition supports an optional `sensitivity` attribute that classifies the data sensitivity level. This is used by the JSON exporter to apply redaction policies and by analyzers to warn about unprotected PII.
+
+```yaml
+fields:
+  userId:
+    type: string
+    description: "Unique user identifier"
+    sensitivity: pii              # Marks this field as containing PII
+    index: true
+
+  apiKey:
+    type: string
+    description: "API key for external service"
+    sensitivity: credential       # Marks as credential — always redacted in non-Development
+
+  hostName:
+    type: string
+    description: "Internal hostname"
+    sensitivity: internal         # Internal infrastructure detail — redacted in Production
+
+  httpMethod:
+    type: string
+    description: "HTTP request method"
+    sensitivity: public           # Default — safe to emit in all environments
+```
+
+| Sensitivity Level | Description | Default Redaction Behavior |
+|-------------------|-------------|---------------------------|
+| `public` | Safe to emit in all environments. Default if not specified. | No redaction |
+| `internal` | Internal infrastructure details (hostnames, paths, process IDs). | Redacted in `Production` profile; visible in `Development`/`Staging` |
+| `pii` | Personally Identifiable Information (user IDs, emails, IP addresses, user agents). | Redacted in `Production`/`Staging` unless explicitly opted in; visible in `Development` |
+| `credential` | Secrets, tokens, API keys, connection strings. | **Always redacted** in all environments. Analyzer ALL009 warns if no redaction policy is applied. |
+
+Redaction replaces the value with `"[REDACTED:{sensitivity}]"` (e.g., `"[REDACTED:pii]"`). The field key is still present in the JSON envelope — only the value is replaced.
+
+### Field Value Length Limits
+
+Field definitions support an optional `maxLength` attribute to prevent unbounded attribute values:
+
+```yaml
+fields:
+  userAgent:
+    type: string
+    description: "User-Agent header value"
+    sensitivity: pii
+    maxLength: 512               # Truncate at 512 characters
+
+  httpPath:
+    type: string
+    description: "Request path"
+    maxLength: 256               # Truncate long paths
+```
+
+When a value exceeds `maxLength`, it is truncated with the suffix `"…[truncated]"`. A global default maximum is set via `AllJsonExporterOptions.MaxAttributeValueLength` (default: 4096 characters). Per-field `maxLength` overrides the global default.
+
 ### Field Types
 
 | YAML Type | C# Type | JSON Type | Notes |
 |-----------|---------|-----------|-------|
-| `string` | `string` | `string` | UTF-8, no max length by default |
+| `string` | `string` | `string` | UTF-8, max length governed by field `maxLength` attribute or global `MaxAttributeValueLength` (default: 4096) |
 | `int` | `int` | `number` | 32-bit signed integer |
 | `long` | `long` | `number` | 64-bit signed integer |
 | `double` | `double` | `number` | IEEE 754 double-precision |
@@ -566,6 +664,26 @@ events:
 | Reserved prefix | `ALL_SCHEMA_011` | Event names and field names must not start with `all.` |
 | Unique numeric IDs | `ALL_SCHEMA_012` | Each event `id` must be a unique integer (used as `[LoggerMessage]` EventId) |
 | Meter name valid | `ALL_SCHEMA_013` | Meter name must be a valid .NET identifier (dot-separated) |
+| Sensitivity validity | `ALL_SCHEMA_014` | `sensitivity` must be one of: `public`, `internal`, `pii`, `credential` |
+| Max length validity | `ALL_SCHEMA_015` | `maxLength` must be a positive integer when specified |
+| Schema file size limit | `ALL_SCHEMA_016` | Individual schema files must not exceed 1 MB |
+| Event count limit | `ALL_SCHEMA_017` | Merged schemas must not define more than 500 events total |
+| Field count limit | `ALL_SCHEMA_018` | Individual events must not define more than 50 fields |
+
+### Schema Parsing Resource Limits
+
+To prevent denial-of-service via malicious or excessively large schema files, the YAML parser enforces these resource limits:
+
+| Limit | Value | Rationale |
+|-------|-------|-----------|
+| Max file size | 1 MB | Prevents memory exhaustion from large files |
+| Max events per merged schema | 500 | Prevents excessive code generation |
+| Max fields per event | 50 | Prevents unbounded attribute cardinality |
+| Max YAML nesting depth | 20 | Prevents stack overflow in parser |
+| Safe YAML loading | Enabled | YamlDotNet configured with `LoadingMode.Safe` — disables YAML tags, aliases, and anchors that could cause expansion attacks |
+
+These limits are enforced at parse time (build time). Violations produce clear build errors with the corresponding `ALL_SCHEMA_*` error code.
+
 
 ---
 
@@ -934,10 +1052,11 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSO
   "tags": ["api", "http"],
 
   // ─── Metadata ────────────────────────────────────────────────
+  // ─── Metadata ────────────────────────────────────────────────
   "all.v": "1.0.0",                              // Schema version (from exporter config)
-  "all.seq": 42,                                  // Monotonic sequence number (per-process, assigned by exporter)
-  "all.host": "web-server-01",                    // Environment.MachineName (assigned by exporter)
-  "all.pid": 12345                                // Environment.ProcessId (assigned by exporter)
+  "all.seq": 42                                   // Monotonic sequence number (per-process, assigned by exporter)
+  // NOTE: "all.host" and "all.pid" are OMITTED by default (EmitHostInfo = false).
+  // When opted in: "all.host": "web-server-01", "all.pid": 12345
 }
 ```
 
@@ -995,15 +1114,20 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSO
 | **No null fields** | If a value is null/absent, the key is **omitted entirely** from the JSON object. No `"field": null`. |
 | **Single line** | Every event is exactly one JSON line terminated by `\n`. No pretty-printing, ever. |
 | **UTC timestamps** | All timestamps are ISO 8601 UTC with microsecond precision: `yyyy-MM-ddTHH:mm:ss.ffffffZ` |
-| **Reserved prefix** | All keys starting with `all.` are reserved for library metadata. User schemas must not use this prefix. |
+| **Reserved prefix** | All keys starting with `all.` are reserved for library metadata. User schemas must not use this prefix. At runtime, the exporter strips/renames any incoming `all.*` attributes not set by ALL components (see §16.4). |
 | **eventId format** | `evt_` prefix + UUID v7 (time-sortable): `evt_{uuid}` |
 | **Event name format** | Lowercase, dot-namespaced: `category.subcategory.action` (e.g., `http.request.completed`) |
 | **Severity string** | Exactly one of: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` — always uppercase |
 | **Severity number** | OTEL standard 1–24. Mapping: TRACE=1, DEBUG=5, INFO=9, WARN=13, ERROR=17, FATAL=21 |
 | **Exception depth** | Maximum 5 levels of `.inner` nesting. If exceeded, deepest level includes `"truncated": true` |
-| **Stack trace** | Array of frame objects: `{ "method": string, "file": string?, "line": int? }`. File and line may be omitted if debug symbols unavailable. |
+| **Exception detail level** | Controlled by `ExceptionDetailLevel`: `Full` (method names only — file paths always omitted unless `EnvironmentProfile = Development`), `TypeAndMessage` (Production default), `TypeOnly` (minimal) |
+| **Stack trace** | Array of frame objects: `{ "method": string }`. `file` and `line` fields included **only** when `EnvironmentProfile = Development`. In `Staging`/`Production`, file paths are always omitted to prevent information disclosure (OWASP-A04). |
 | **Encoding** | UTF-8 throughout |
 | **Monotonic sequence** | `all.seq` is a 64-bit integer, monotonically increasing per process lifetime, starting at 1 |
+| **Host/PID metadata** | `all.host` and `all.pid` are **opt-in** (`EmitHostInfo = false` by default). When omitted, these fields do not appear in the envelope. |
+| **Attribute value length** | Values exceeding `MaxAttributeValueLength` (default: 4096) are truncated with `"…[truncated]"` suffix |
+| **Message template safety** | Message templates must never interpolate user-controlled PII. The `[LoggerMessage]` source generator handles interpolation — schema authors define field references, not user input. |
+
 
 ### Severity Mapping Table
 
@@ -1042,11 +1166,36 @@ The `AllJsonExporter` maps `LogRecord` fields to envelope fields as follows:
 The `AllJsonExporter` can export **any** `LogRecord`, not just those from ALL-generated code. For non-ALL `LogRecord`s (e.g., from third-party libraries using `ILogger`):
 
 - `event` = `LogRecord.EventId.Name` if set, otherwise `"dotnet.ilogger"` (fallback)
-- `attr` = all state key-value pairs from the `LogRecord`
+- `attr` = all state key-value pairs from the `LogRecord`, subject to allowlist/denylist filtering (see below)
 - `eventId`/`parentEventId` = present only if `AllCausalityProcessor` is in the pipeline
 - All other envelope fields are populated normally
 
 This means the `AllJsonExporter` provides a **unified JSONL output** for ALL-generated events AND third-party `ILogger` calls, without requiring a separate bridge component.
+
+#### Attribute Filtering for Non-ALL LogRecords
+
+Non-ALL `LogRecord`s may contain sensitive data from third-party libraries (connection strings, tokens, PII). The exporter provides filtering controls:
+
+```csharp
+logging.AddAllJsonExporter(options =>
+{
+    // Allowlist: only emit these attributes from non-ALL LogRecords
+    options.AttributeAllowlist = ["RequestPath", "StatusCode", "ElapsedMs"];
+
+    // Denylist: never emit these attributes (takes precedence over allowlist)
+    options.AttributeDenylist = ["ConnectionString", "Password", "Token", "Secret"];
+
+    // Regex-based value redaction: replace matching values with [REDACTED]
+    options.RedactPatterns =
+    [
+        @"(?i)(password|pwd|secret|token|key|credential)\s*[=:]\s*\S+",
+        @"Server=.*;(User Id|Password)=.*",   // Connection string patterns
+        @"Bearer\s+[A-Za-z0-9\-._~+/]+=*",   // Bearer tokens
+    ];
+});
+```
+
+When neither allowlist nor denylist is configured, all attributes are emitted (backward-compatible default). When an allowlist is set, only listed attributes pass through. The denylist always takes precedence.
 
 ### AllJsonExporter Implementation
 
@@ -1059,20 +1208,153 @@ public sealed class AllJsonExporter : BaseExporter<LogRecord>
 {
     private readonly Stream _output;
     private readonly AllJsonExporterOptions _options;
+    private readonly StreamWriter _writer; // 32 KB buffer, flushed after each batch
     private long _seq; // monotonic sequence counter
+    private static readonly TimeSpan s_lockTimeout = TimeSpan.FromMilliseconds(100);
 
     public override ExportResult Export(in Batch<LogRecord> batch)
     {
-        foreach (var logRecord in batch)
+        bool lockTaken = false;
+        try
         {
-            var seq = Interlocked.Increment(ref _seq);
-            // Uses Utf8JsonWriter directly for zero-alloc serialization
-            WriteJsonLine(logRecord, seq);
+            Monitor.TryEnter(_output, s_lockTimeout, ref lockTaken);
+            if (!lockTaken)
+            {
+                Interlocked.Increment(ref _droppedBatches);
+                s_exportDroppedCounter.Add(1);
+                return ExportResult.Success; // Don't report failure for timeout — it's backpressure
+            }
+
+            foreach (var logRecord in batch)
+            {
+                // Strip/rename any incoming all.* attributes not set by ALL components
+                SanitizeReservedPrefix(logRecord);
+
+                var seq = Interlocked.Increment(ref _seq);
+                // Uses Utf8JsonWriter with ArrayPool<byte>.Shared buffer pooling
+                WriteJsonLine(logRecord, seq);
+            }
+
+            // Flush after each batch for crash-consistency.
+            _writer.Flush();
+            return ExportResult.Success;
         }
-        return ExportResult.Success;
+        catch (IOException ex)
+        {
+            s_exportErrorCounter.Add(1, new TagList { { "error_type", ex.GetType().Name } });
+            OpenTelemetrySdkEventSource.Log.ExporterErrorResult(nameof(AllJsonExporter), ex.Message);
+            return ExportResult.Failure;
+        }
+        finally
+        {
+            if (lockTaken) Monitor.Exit(_output);
+        }
     }
 }
 ```
+
+### AllJsonExporterOptions
+
+```csharp
+/// <summary>Configuration for the ALL JSON exporter.</summary>
+public sealed class AllJsonExporterOptions
+{
+    /// <summary>Output target: Stdout, Stderr, or File.</summary>
+    public AllJsonOutput Output { get; set; } = AllJsonOutput.Stdout;
+
+    /// <summary>Schema version stamped into every envelope as "all.v".</summary>
+    public string SchemaVersion { get; set; } = "1.0.0";
+
+    /// <summary>
+    /// Environment profile that adjusts multiple security-sensitive defaults at once.
+    /// Default: Production (most restrictive).
+    /// </summary>
+    public AllEnvironmentProfile EnvironmentProfile { get; set; } = AllEnvironmentProfile.Production;
+
+    /// <summary>
+    /// Controls exception detail in the JSON envelope.
+    /// Default depends on EnvironmentProfile:
+    ///   Development → Full, Staging → TypeAndMessage, Production → TypeAndMessage.
+    /// </summary>
+    public ExceptionDetailLevel? ExceptionDetailLevel { get; set; }
+
+    /// <summary>
+    /// Emit "all.host" and "all.pid" in the envelope.
+    /// Default: false. These fields may expose internal infrastructure details.
+    /// </summary>
+    public bool EmitHostInfo { get; set; } = false;
+
+    /// <summary>
+    /// Maximum length for any single attribute value (string fields).
+    /// Default: 4096 characters.
+    /// </summary>
+    public int MaxAttributeValueLength { get; set; } = 4096;
+
+    /// <summary>
+    /// Allowlist of attribute names to emit for non-ALL LogRecords.
+    /// When set, only listed attributes pass through. Null = all attributes (default).
+    /// </summary>
+    public ISet<string>? AttributeAllowlist { get; set; }
+
+    /// <summary>
+    /// Denylist of attribute names to never emit. Takes precedence over allowlist.
+    /// </summary>
+    public ISet<string> AttributeDenylist { get; set; } = new HashSet<string>();
+
+    /// <summary>
+    /// Regex patterns for value-level redaction. Matching values are replaced with "[REDACTED]".
+    /// </summary>
+    public IList<string> RedactPatterns { get; set; } = [];
+
+    /// <summary>
+    /// Lock timeout for stream writes. Default: 100ms.
+    /// </summary>
+    public TimeSpan LockTimeout { get; set; } = TimeSpan.FromMilliseconds(100);
+}
+
+/// <summary>Environment profiles adjust multiple security defaults simultaneously.</summary>
+public enum AllEnvironmentProfile
+{
+    /// <summary>Most permissive: full exception details, all sensitivity levels visible.</summary>
+    Development,
+    /// <summary>Moderate: TypeAndMessage exceptions, PII fields redacted.</summary>
+    Staging,
+    /// <summary>Most restrictive (default): TypeAndMessage exceptions, PII and internal redacted.</summary>
+    Production
+}
+
+/// <summary>Controls how much exception detail is included in the JSON envelope.</summary>
+public enum ExceptionDetailLevel
+{
+    /// <summary>Type, message, stack trace (method names only), inner exceptions.</summary>
+    Full,
+    /// <summary>Type and message only. Default for Production/Staging.</summary>
+    TypeAndMessage,
+    /// <summary>Exception type name only. Minimal disclosure.</summary>
+    TypeOnly
+}
+```
+
+### Export Path Decision Guide
+
+| Topology | When to Use | Configuration |
+|----------|-------------|---------------|
+| **Stdout-only** (recommended for containers) | Logs collected by sidecar/DaemonSet agent | `AllJsonExporter` only — no `AddOtlpExporter()` for logs |
+| **OTLP-only** | Direct OTEL Collector connection | `AddOtlpExporter()` only — no `AllJsonExporter` |
+| **Both** (use sparingly) | Need local stdout + direct OTLP | Both configured — accept 2× log export cost |
+| **Stdout + Collector `filelog`** (recommended) | Best of both worlds | `AllJsonExporter` → stdout → Collector `filelog` receiver → OTLP |
+
+See §17 for OTEL Collector configuration matching the ALL envelope format.
+
+### Stdout Write Buffer & Flush Strategy
+
+| Setting | Value | Rationale |
+|---------|-------|-----------|
+| `StreamWriter` buffer size | 32 KB | Balance between syscall frequency and memory |
+| Flush frequency | After each `Export(batch)` call | Crash-consistency: events visible after each OTEL SDK batch interval |
+| OTEL SDK batch interval | Configurable (default: 5 seconds) | Controls how often the SDK calls `Export()` |
+| Crash-consistency guarantee | Events flushed to OS buffer after each batch | Data loss window = one OTEL SDK batch interval (default 5s) |
+
 
 ---
 
@@ -1187,6 +1469,7 @@ All analyzers are delivered as a NuGet analyzer package. They activate automatic
 | **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an ALL event with the caught exception. |
 | **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use ALL-generated events instead. |
 | **ALL008** | Error | Reserved prefix usage | Code uses `all.` prefix in field names — this prefix is reserved for library metadata. |
+| **ALL009** | Warning | PII field without redaction policy | Schema field with `sensitivity: pii` or `sensitivity: credential` is used in code but no redaction policy is configured in `AllJsonExporterOptions`. Configure `EnvironmentProfile` or explicit `RedactPatterns`. |
 
 ### Analyzer Configuration
 
@@ -1563,7 +1846,7 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 
 | Feature | Target Phase | Notes |
 |---------|-------------|-------|
-| Event sampling processor | Phase 3 | `BaseProcessor<LogRecord>` with configurable per-event-category sampling rates |
+| Advanced event sampling | Phase 3 | `BaseProcessor<LogRecord>` with head/tail sampling strategies (basic severity filtering moved to Phase 1.8, rate limiting moved to Phase 2.8) |
 | Schema registry CLI | Phase 3 | `dotnet all validate`, `dotnet all diff` |
 | Multi-service shared schemas | Phase 3 | NuGet-packaged schema contracts |
 | VS Code extension | Phase 3+ | YAML IntelliSense, event preview |
@@ -1610,6 +1893,15 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 | DR-015 | Null handling | Omit field entirely (no `null` values in JSON) | Include `null`; use sentinel values |
 | DR-016 | Code gen approach | MSBuild task + incremental source gen | T4 templates; runtime reflection; manual |
 | DR-017 | DI registration | Extends `AddOpenTelemetry()` fluent API | Custom `AddAll()` method; separate DI registration |
+| DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `All.*`) | Same `All.*` prefix; `All.IntegrationPacks.*`; `All.Events.*` |
+| DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `All.Schema`); Ship as source package |
+| DR-020 | Integration pack meta-package inclusion | NOT included in `All4dotnet` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
+| DR-021 | Event ID range separation | Consumer: 1–9999, Integration packs: 10000+ | Shared range with collision detection; prefix-based disambiguation |
+| DR-022 | Integration pack `All.Causality` dependency | Optional (auto-detected at runtime) | Required; not supported |
+| DR-023 | Static Meter vs IMeterFactory | Static `Meter` instances as default (Phase 1); optional `IMeterFactory`-based mode in Phase 2 (2.9) | `IMeterFactory` only; both as equal options. Trade-off: Static Meters are never disposed — acceptable for long-lived services. `IMeterFactory` provides DI-friendly, disposable meters. |
+| DR-024 | PII field defaults | PII-capturing options (CaptureClientIp, CaptureUserAgent) default to `false` | Default `true` with opt-out; no PII capture at all |
+| DR-025 | Exception detail level | Environment-based defaults: Development=Full, Staging/Production=TypeAndMessage | Always full; always minimal; configurable without environment concept |
+| DR-026 | Host/PID metadata emission | Opt-in (`EmitHostInfo = false` by default) | Always emit; conditional on environment |
 
 ## Appendix C: File Structure
 
@@ -1744,10 +2036,11 @@ all4dotnet/
 
 ```yaml
 # Triggers: push to main, all PRs
+# Branch protection: requires CI pass, 1+ reviewer, no force-push to main
 steps:
   1. Checkout
   2. Setup .NET 8 + .NET 9
-  3. Restore (with Central Package Management)
+  3. Restore (with Central Package Management — exact version pins)
   4. Build (Release configuration)
   5. Run analyzers (treat warnings as errors)
   6. Run unit tests (All.*.Tests)
@@ -1755,20 +2048,53 @@ steps:
   8. Run benchmarks (comparison against baseline)
   9. AOT publish test (verify trimming + AOT compatibility)
   10. Generate coverage report (Coverlet → Codecov)
-  11. Package NuGet packages (--no-build)
-  12. Upload packages as artifacts
+  11. Security scanning:
+      a. SAST: CodeQL or Semgrep analysis
+      b. Dependency audit: `dotnet list package --vulnerable`
+      c. Secret scanning: Gitleaks pre-commit + CI check
+  12. SBOM generation: `dotnet sbom generate` (CycloneDX format)
+  13. CI matrix: test against minimum OTEL SDK version (1.9.0) AND latest stable
+  14. Package NuGet packages (--no-build)
+  15. Embed SBOM in NuGet packages
+  16. Upload packages as artifacts
 ```
 
 ### Release Workflow (`release.yml`)
 
 ```yaml
 # Triggers: GitHub Release created (tag v*)
+# Protected: only maintainers can create releases
 steps:
-  1. Full CI pipeline
+  1. Full CI pipeline (steps 1–16 above)
   2. Validate semver tag matches Directory.Build.props version
-  3. Push to NuGet.org
-  4. Create GitHub Release with changelog
+  3. NuGet package signing (code signing certificate via Azure Key Vault or local PFX)
+  4. Push to NuGet.org (signed packages)
+  5. Create GitHub Release with changelog and SBOM attachment
+  6. (Samples) Build sample Dockerfiles with cosign signing (see §17)
 ```
+
+### Branch Protection Rules
+
+| Rule | Setting |
+|------|---------|
+| Required status checks | CI workflow must pass |
+| Required reviewers | Minimum 1 reviewer |
+| Dismiss stale reviews | Enabled |
+| Require up-to-date branches | Enabled |
+| Force push | Disabled on `main` |
+| Delete branch on merge | Enabled |
+| Signed commits | Recommended (not required) |
+
+### Dependency Management
+
+| Practice | Implementation |
+|----------|---------------|
+| Central Package Management | `Directory.Packages.props` with exact version pins |
+| Automated updates | Dependabot configured for weekly NuGet updates |
+| Vulnerable dependency detection | `dotnet list package --vulnerable` in CI |
+| OTEL SDK version range | `[1.9.0, 2.0.0)` — allows patches, blocks breaking changes |
+| CI matrix testing | Min version (1.9.0) + latest stable version of OTEL SDK |
+
 
 ---
 
@@ -1814,7 +2140,572 @@ Step 4: Build and use generated events         (type-safe, schema-enforced)
 
 ---
 
-*This specification was authored on 2025-07-09 and updated on 2025-07-10 to reflect the architectural pivot from standalone library to OTEL extension model. It is the foundational reference document for the ALL project and should be maintained alongside the codebase as the single source of truth for project scope, design decisions, and standards.*
+*This specification was authored on 2025-07-09, updated on 2025-07-10 to reflect the architectural pivot from standalone library to OTEL extension model, and updated on 2025-07-11 to incorporate Security Guardian (14 findings) and Platform Guardian (17 findings) review amendments including §16 Security & Privacy Requirements, §17 Container & Kubernetes Deployment Guide, PII classification framework, environment profiles, OTEL Collector topology, and Kubernetes deployment manifests. It is the foundational reference document for the ALL project and should be maintained alongside the codebase as the single source of truth for project scope, design decisions, and standards.*
+---
+
+## 16. Security & Privacy Requirements
+
+This section addresses security findings from the Security Guardian review and establishes the threat model, PII classification framework, and defense-in-depth measures for all ALL components.
+
+### 16.1 Threat Model
+
+#### Trust Boundaries
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  TRUST BOUNDARY: Application Process                             │
+│                                                                  │
+│  ┌──────────────┐     ┌─────────────────┐     ┌──────────────┐  │
+│  │ Application   │────▶│ ALL Generated   │────▶│ OTEL SDK     │  │
+│  │ Code          │     │ Code            │     │ Pipeline     │  │
+│  │ (trusted)     │     │ (trusted)       │     │ (trusted)    │  │
+│  └──────────────┘     └─────────────────┘     └──────┬───────┘  │
+│                                                       │          │
+│  ┌──────────────┐     ┌─────────────────┐            │          │
+│  │ Third-party   │────▶│ ILogger bridge  │────────────┘          │
+│  │ Libraries     │     │ (OTEL SDK)      │                       │
+│  │ (semi-trusted)│     │                 │  ⚠ May emit PII      │
+│  └──────────────┘     └─────────────────┘                       │
+│                                                                  │
+│  ┌──────────────┐                                                │
+│  │ YAML Schema  │  ⚠ Parsed at build time — resource limits     │
+│  │ Files         │    enforced (§6 parsing limits)               │
+│  │ (untrusted    │                                                │
+│  │  input)       │                                                │
+│  └──────────────┘                                                │
+└──────────────────────────────────────────────────────────────────┘
+         │ stdout JSONL          │ OTLP (gRPC/HTTP)
+         ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐
+│ Log Collector    │    │ OTEL Collector  │
+│ (Fluent Bit,     │    │ (see §17)       │
+│  Vector, etc.)   │    │                 │
+│ (trusted infra)  │    │ (trusted infra) │
+└─────────────────┘    └─────────────────┘
+```
+
+#### Threat Vectors
+
+| Threat | Vector | Mitigation |
+|--------|--------|------------|
+| **PII leakage in logs** | User-Agent, Client IP, user IDs emitted to log storage | Sensitivity classification (§6), default `false` for PII capture, `EnvironmentProfile` redaction |
+| **Information disclosure via exceptions** | Stack traces expose file paths, internal class names, line numbers | `ExceptionDetailLevel` — `TypeAndMessage` in Production (no stack traces) |
+| **Information disclosure via metadata** | `all.host` and `all.pid` expose infrastructure details | Opt-in only (`EmitHostInfo = false` default) |
+| **Third-party library PII leakage** | Non-ALL `ILogger` calls may include connection strings, tokens, PII | `AttributeAllowlist`/`AttributeDenylist`, `RedactPatterns` regex filtering |
+| **Schema injection / DoS** | Malicious YAML files with excessive size, nesting, or YAML bombs | Safe YAML loading, resource limits (1 MB, 500 events, 50 fields, depth 20) |
+| **Reserved prefix hijacking** | Application code setting `all.*` attributes to spoof metadata | Runtime stripping of non-ALL `all.*` attributes in exporter |
+| **Credential exposure in field values** | Connection strings, API keys, bearer tokens in attribute values | `sensitivity: credential` classification, regex-based `RedactPatterns`, defense-in-depth value sanitization |
+| **Unbounded attribute values** | Extremely long string values causing memory pressure or log bloat | `MaxAttributeValueLength` (default: 4096), per-field `maxLength` |
+| **AsyncLocal trust in causality** | `AllCausalityContext` uses `AsyncLocal` — any code in the async flow can set `parentEventId` | Documented trust assumption: causal context is set by trusted code within the process. Cross-process causality requires trace context (OTEL propagation), not `AsyncLocal`. |
+
+### 16.2 PII Classification Framework
+
+The `sensitivity` field attribute (§6) provides a compile-time classification system. At runtime, the exporter applies redaction based on the `EnvironmentProfile`:
+
+| EnvironmentProfile | `public` | `internal` | `pii` | `credential` |
+|--------------------|----------|------------|-------|--------------|
+| `Development` | Visible | Visible | Visible | **REDACTED** |
+| `Staging` | Visible | Visible | **REDACTED** | **REDACTED** |
+| `Production` | Visible | **REDACTED** | **REDACTED** | **REDACTED** |
+
+**Override behavior:** Individual fields can be explicitly opted in or out of redaction:
+
+```csharp
+logging.AddAllJsonExporter(options =>
+{
+    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+
+    // Override: allow userId (pii) in Production for this specific service
+    // Requires documented legal basis (e.g., audit trail requirement)
+    options.SensitivityOverrides = new Dictionary<string, bool>
+    {
+        ["userId"] = true,   // Allow despite pii classification
+        ["hostName"] = false, // Redact despite internal classification
+    };
+});
+```
+
+### 16.3 Environment Profiles — Defaults Summary
+
+| Setting | Development | Staging | Production |
+|---------|-------------|---------|------------|
+| `ExceptionDetailLevel` | `Full` | `TypeAndMessage` | `TypeAndMessage` |
+| Stack trace file paths | Included | **Omitted** | **Omitted** |
+| `EmitHostInfo` | `true` (overridable) | `false` | `false` |
+| `pii` fields | Visible | **Redacted** | **Redacted** |
+| `internal` fields | Visible | Visible | **Redacted** |
+| `credential` fields | **Redacted** | **Redacted** | **Redacted** |
+| `RedactPatterns` | Applied | Applied | Applied |
+| `MaxAttributeValueLength` | 4096 | 4096 | 4096 |
+
+### 16.4 Reserved Prefix Runtime Enforcement
+
+At build time, the schema validator rejects field names starting with `all.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-ALL `LogRecord`s:
+
+1. During `Export()`, iterate over `LogRecord.Attributes`.
+2. Any attribute with key starting with `all.` that was NOT set by `AllCausalityProcessor` or `AllJsonExporter` itself is **stripped** (removed from the exported envelope).
+3. Increment `all.exporter.json.reserved_prefix_stripped` counter for each occurrence.
+4. This prevents application code or third-party libraries from spoofing ALL metadata fields.
+
+### 16.5 Defense-in-Depth Value Sanitization
+
+As a last line of defense, the exporter applies pattern-based value sanitization to ALL attribute values (not just non-ALL LogRecords). This catches connection strings, tokens, and API keys that might be accidentally included in schema-defined fields:
+
+**Default patterns (always active):**
+
+```regex
+# Connection strings
+Server=.*;(User Id|Password|Pwd)=.*
+Data Source=.*;(User ID|Password)=.*
+
+# Bearer tokens
+Bearer\s+[A-Za-z0-9\-._~+/]+=*
+
+# Common API key patterns
+(api[_-]?key|apikey|access[_-]?token|secret[_-]?key)\s*[=:]\s*\S{16,}
+```
+
+Values matching these patterns are replaced with `"[REDACTED:pattern]"`. This is applied AFTER sensitivity-based redaction and is non-configurable (always on as defense-in-depth).
+
+### 16.6 Regulatory Compliance Considerations
+
+ALL does not enforce specific regulatory requirements but provides the mechanisms for compliance:
+
+| Regulation | ALL Mechanism |
+|------------|---------------|
+| **GDPR** (EU) | `sensitivity: pii` classification → redaction in Production; `CaptureClientIp`/`CaptureUserAgent` default `false`; documented data retention is the responsibility of the log storage backend |
+| **CCPA** (California) | Same PII controls as GDPR apply |
+| **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; ALL does not provide encryption at rest (log storage responsibility) |
+| **SOC 2** | Audit trail via `all.event_id`, `all.seq`, `traceId`; `all.host`/`all.pid` opt-in for attribution; SBOM generation in CI |
+
+**Decision (OQ-PG-03):** ALL provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. ALL's defaults are privacy-preserving (PII redacted in Production).
+
+### 16.7 OWASP Reference Mapping
+
+| OWASP Category | ALL Mitigation |
+|----------------|----------------|
+| **A01:2021 — Broken Access Control** | `CaptureClientIp = false` by default; `sensitivity: pii` classification |
+| **A04:2021 — Insecure Design** | `ExceptionDetailLevel`; no file paths in Production; `EmitHostInfo = false`; `sensitivity` framework |
+| **A09:2021 — Security Logging and Monitoring Failures** | Structured, schema-defined events; `ExportResult.Failure` on I/O errors; self-telemetry metrics |
+
+---
+
+## 17. Container & Kubernetes Deployment Guide
+
+This section provides deployment guidance for ALL-instrumented .NET applications in containerized and Kubernetes environments. It addresses OTEL Collector topology, container specifications, resource sizing, TLS configuration, and operational recommendations.
+
+### 17.1 OTEL Collector Deployment Topology
+
+#### Recommended Architecture: DaemonSet `filelog` Receiver
+
+The recommended deployment pattern for ALL uses the OTEL Collector's `filelog` receiver to collect stdout JSONL output, avoiding dual export overhead:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Kubernetes Pod                                          │
+│                                                          │
+│  ┌─────────────────────┐  stdout  ┌──────────────────┐  │
+│  │ .NET Application     │─────────▶│ Container Runtime │  │
+│  │ (AllJsonExporter     │  JSONL   │ (writes to        │  │
+│  │  → stdout)           │          │  /var/log/pods/)   │  │
+│  └─────────────────────┘          └────────┬─────────┘  │
+│                                             │            │
+└─────────────────────────────────────────────│────────────┘
+                                              │
+                      ┌───────────────────────▼────────────────┐
+                      │  OTEL Collector DaemonSet               │
+                      │  (one per node)                         │
+                      │                                         │
+                      │  filelog receiver                        │
+                      │  → reads /var/log/pods/**/*.log          │
+                      │  → parses JSONL (ALL envelope format)   │
+                      │                                         │
+                      │  Exporters:                              │
+                      │  → OTLP (to central Collector/backend)  │
+                      │  → Loki (for log storage)               │
+                      │  → Elasticsearch (alternative)          │
+                      └───────────────────────────────────────┘
+```
+
+**Decision (OQ-PG-01):** The recommended OTEL Collector topology is a **DaemonSet** on each Kubernetes node for log collection (via `filelog` receiver reading container stdout). For OTLP metrics and traces, use a **Gateway** Collector deployment behind a load balancer.
+
+**Decision (OQ-PG-02):** The expected log collection agent for stdout JSONL is the **OTEL Collector** with the `filelog` receiver. Alternatives (Fluent Bit, Vector, Fluentd) are compatible but the Collector is preferred for its native OTEL support.
+
+#### OTEL Collector Configuration for ALL Envelope
+
+```yaml
+# otel-collector-config.yaml
+receivers:
+  filelog:
+    include:
+      - /var/log/pods/*/*/*.log
+    operators:
+      # Parse container runtime wrapper (CRI format)
+      - type: regex_parser
+        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      # Parse ALL JSON envelope
+      - type: json_parser
+        parse_from: attributes.log
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%dT%H:%M:%S.%fZ'
+      # Move ALL envelope fields to OTEL LogRecord attributes
+      - type: move
+        from: attributes.event
+        to: attributes["event.name"]
+      - type: move
+        from: attributes.severity
+        to: attributes["severity_text"]
+      - type: severity_parser
+        parse_from: attributes.severityNumber
+        mapping:
+          trace: 1
+          debug: 5
+          info: 9
+          warn: 13
+          error: 17
+          fatal: 21
+    include_file_name: false
+    include_file_path: true
+    storage: file_storage
+
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        tls:
+          cert_file: /etc/otel/certs/tls.crt
+          key_file: /etc/otel/certs/tls.key
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /etc/otel/certs/tls.crt
+          key_file: /etc/otel/certs/tls.key
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1000
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+exporters:
+  otlp:
+    endpoint: "otel-gateway.monitoring.svc.cluster.local:4317"
+    tls:
+      insecure: false
+      ca_file: /etc/otel/certs/ca.crt
+  loki:
+    endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [memory_limiter, batch]
+      exporters: [otlp, loki]
+```
+
+#### Deployment Patterns Summary
+
+| Pattern | Logs | Metrics | Traces | When to Use |
+|---------|------|---------|--------|-------------|
+| **DaemonSet (filelog)** | ✅ stdout → filelog | ❌ | ❌ | Log collection from all pods on a node |
+| **Gateway (OTLP)** | Optional | ✅ | ✅ | Central aggregation of metrics/traces via OTLP |
+| **Sidecar** | ✅ | ✅ | ✅ | Per-pod isolation (higher resource cost) |
+| **DaemonSet + Gateway** | ✅ (DaemonSet) | ✅ (Gateway) | ✅ (Gateway) | **Recommended** — best balance of resource efficiency and reliability |
+
+### 17.2 TLS Configuration for OTLP Endpoints
+
+When using `AddOtlpExporter()` for direct OTLP export (without filelog), configure TLS:
+
+```csharp
+// Program.cs — OTLP with TLS
+builder.Services.AddOpenTelemetry()
+    .WithLogging(logging =>
+    {
+        logging.AddOtlpExporter(otlp =>
+        {
+            otlp.Endpoint = new Uri("https://otel-collector.monitoring.svc.cluster.local:4317");
+            otlp.Protocol = OtlpExportProtocol.Grpc;
+            // TLS is configured via environment variables (preferred in K8s):
+            // OTEL_EXPORTER_OTLP_CERTIFICATE=/etc/otel/certs/ca.crt
+            // OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE=/etc/otel/certs/tls.crt
+            // OTEL_EXPORTER_OTLP_CLIENT_KEY=/etc/otel/certs/tls.key
+        });
+    });
+```
+
+**Environment variables for TLS (set via K8s Secret/ConfigMap):**
+
+| Variable | Description |
+|----------|-------------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector endpoint (e.g., `https://collector:4317`) |
+| `OTEL_EXPORTER_OTLP_CERTIFICATE` | Path to CA certificate for verifying Collector |
+| `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | Path to client certificate for mTLS |
+| `OTEL_EXPORTER_OTLP_CLIENT_KEY` | Path to client private key for mTLS |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` or `http/protobuf` |
+
+### 17.3 Sample Dockerfile
+
+```dockerfile
+# ─── Build Stage ─────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+COPY Directory.Build.props Directory.Packages.props ./
+COPY src/ src/
+RUN dotnet restore src/MyService/MyService.csproj
+RUN dotnet publish src/MyService/MyService.csproj \
+    -c Release \
+    -o /app \
+    --no-restore \
+    /p:PublishTrimmed=true \
+    /p:PublishSingleFile=true
+
+# Generate SBOM
+RUN dotnet tool install --global Microsoft.Sbom.DotNetTool
+RUN dotnet sbom generate -b /app -bc src/MyService -pn MyService -pv 1.0.0 -ps MyCompany
+
+# ─── Runtime Stage (distroless, non-root) ────────────────────────
+FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-noble-chiseled-extra AS runtime
+
+USER $APP_UID
+WORKDIR /app
+COPY --from=build /app .
+COPY --from=build /app/_manifest /app/_manifest
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+
+EXPOSE 8080
+ENTRYPOINT ["./MyService"]
+```
+
+**Key security properties:**
+- **Distroless base image** (`chiseled`) — minimal attack surface, no shell, no package manager
+- **Non-root user** — container runs as non-privileged user
+- **Single-file publish** — reduces writable file surface
+- **SBOM embedded** — software bill of materials for vulnerability tracking
+
+### 17.4 Kubernetes Deployment Manifest
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-service
+  namespace: production
+  labels:
+    app: my-service
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-service
+  template:
+    metadata:
+      labels:
+        app: my-service
+        version: v1.0.0
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: my-service
+          image: ghcr.io/myorg/my-service:v1.0.0
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: ALL__EnvironmentProfile
+              value: "Production"
+            - name: ALL__EmitHostInfo
+              value: "false"
+            - name: OTEL_SERVICE_NAME
+              value: "my-service"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=production,service.version=v1.0.0"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "https://otel-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+            - name: OTEL_EXPORTER_OTLP_CERTIFICATE
+              value: "/etc/otel/certs/ca.crt"
+          volumeMounts:
+            - name: otel-certs
+              mountPath: /etc/otel/certs
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+      volumes:
+        - name: otel-certs
+          secret:
+            secretName: otel-tls-certs
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-service-pdb
+  namespace: production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: my-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-service-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-service
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+```
+
+### 17.5 Resource Sizing Recommendations
+
+| Throughput (events/sec) | CPU Request | CPU Limit | Memory Request | Memory Limit | Notes |
+|------------------------|-------------|-----------|----------------|--------------|-------|
+| < 1,000 | 50m | 200m | 64 Mi | 256 Mi | Small service, low event volume |
+| 1,000–10,000 | 100m | 500m | 128 Mi | 512 Mi | Typical microservice |
+| 10,000–50,000 | 250m | 1000m | 256 Mi | 1 Gi | High-throughput service |
+| 50,000–100,000 | 500m | 2000m | 512 Mi | 2 Gi | Event-heavy service; monitor GC pressure |
+| > 100,000 | 1000m+ | 4000m+ | 1 Gi+ | 4 Gi+ | Benchmark-specific; consider event sampling (Phase 1.8/2.8) |
+
+**Notes:**
+- ALL overhead is ~500ns per event (log + metrics). At 100K events/s, ALL consumes ~50ms of CPU per second.
+- Memory overhead is dominated by OTEL SDK batching buffers, not ALL components.
+- Allocation rate at 100K events/s: ~24.4 MB/s (256 bytes/event). Monitor Gen2 GC collections — target < 3/min.
+- The `Utf8JsonWriter` uses `ArrayPool<byte>.Shared` for buffer pooling. Pool size scales with throughput.
+
+### 17.6 Network Policy
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: my-service-netpol
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: my-service
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app: otel-collector
+      ports:
+        - protocol: TCP
+          port: 4317
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+```
+
+### 17.7 Operational Decisions
+
+**Decision (OQ-PG-04):** ALL publishes **documentation and sample manifests only** — not a reference Helm chart. Helm charts are highly organization-specific (naming conventions, label standards, ingress controllers). The sample manifests in this section serve as a starting point.
+
+**Decision (OQ-PG-05):** The default Meter creation strategy is **static `Meter` instances** (Phase 1). Optional `IMeterFactory`-based mode is available in Phase 2 (feature 2.9) for teams that need DI-friendly, disposable meters. Static Meters are acceptable for long-lived service processes but are not ideal for test scenarios. See DR-023 in Appendix B.
+
+---
+
+## Open Questions
+
+### Resolved (Security & Platform Guardian Review)
+
+| ID | Question | Decision |
+|----|----------|----------|
+| OQ-PG-01 | Intended OTEL Collector deployment topology? | DaemonSet for logs (filelog receiver), Gateway for OTLP metrics/traces. See §17.1. |
+| OQ-PG-02 | Expected log collection agent for stdout JSONL? | OTEL Collector with `filelog` receiver (preferred). Fluent Bit, Vector compatible. See §17.1. |
+| OQ-PG-03 | Regulatory compliance requirements (GDPR, CCPA, HIPAA)? | ALL provides PII classification and redaction mechanisms; specific compliance configuration is deployer responsibility. See §16.6. |
+| OQ-PG-04 | Should library publish reference Helm chart or docs-only? | Docs and sample manifests only — Helm charts are organization-specific. See §17.7. |
+| OQ-PG-05 | Static Meter vs IMeterFactory default? | Static Meter as Phase 1 default; optional IMeterFactory mode in Phase 2 (2.9). See DR-023. |
+
+### Open (Integration Packs — unchanged)
+
+- [ ] **OQ-IP-01:** Should integration packs emit events at `DEBUG` or `INFO` severity by default?
+- [ ] **OQ-IP-02:** Should `OtelEvents.Azure.CosmosDb` use `DiagnosticListener` or `RequestHandler`?
+- [ ] **OQ-IP-03:** Should integration packs support `appsettings.json` configuration?
+- [ ] **OQ-IP-04:** Should `OtelEvents.AspNetCore` capture request/response bodies as opt-in fields?
+- [ ] **OQ-IP-05:** Should there be an `OtelEvents` meta-package?
+- [ ] **OQ-IP-06:** Package naming — confirm `OtelEvents.*` prefix.
+- [ ] **OQ-IP-07:** Should integration pack meters use static `Meter` or DI-injected `IMeterFactory`? (See resolved OQ-PG-05 — follow same decision as core.)
+
 
 ---
 
@@ -2197,8 +3088,8 @@ builder.Services.AddOtelEventsAspNetCore(options =>
 {
     options.EnableCausalScope = true;             // Default: true (if All.Causality is referenced)
     options.RecordRequestReceived = true;         // Default: true — emit http.request.received
-    options.CaptureUserAgent = true;              // Default: true
-    options.CaptureClientIp = true;               // Default: true
+    options.CaptureUserAgent = false;              // Default: true;             // Default: false — opt-in only (PII: GDPR/CCPA)
+    options.CaptureClientIp = false;               // Default: true;              // Default: false — opt-in only (PII: GDPR/CCPA)
     options.UseRouteTemplate = true;              // Default: true — use route template instead of raw path
     options.ExcludePaths = ["/health", "/ready", "/metrics", "/favicon.ico"];  // Default: empty
     options.MaxPathLength = 256;                  // Default: 256 — truncate long paths
@@ -2355,10 +3246,10 @@ public sealed class OtelEventsAspNetCoreOptions
     public bool RecordRequestReceived { get; set; } = true;
 
     /// <summary>Capture User-Agent header. Default: true.</summary>
-    public bool CaptureUserAgent { get; set; } = true;
+    public bool CaptureUserAgent { get; set; } = false;
 
     /// <summary>Capture client IP address. Default: true.</summary>
-    public bool CaptureClientIp { get; set; } = true;
+    public bool CaptureClientIp { get; set; } = false;
 
     /// <summary>
     /// Use route template (e.g., /api/orders/{id}) instead of raw path.
@@ -2727,6 +3618,8 @@ fields:
 
   cosmosQueryText:
     type: string
+    sensitivity: internal
+    maxLength: 2048
     description: "SQL query text (when query capture is enabled; parameterized only)"
 
 enums:
@@ -3633,6 +4526,9 @@ internal sealed class OtelEventsHealthCheckPublisher : IHealthCheckPublisher
     private readonly ILogger<OtelEventsHealthCheckEventSource> _logger;
     private readonly OtelEventsHealthCheckOptions _options;
     private readonly ConcurrentDictionary<string, HealthStatus> _previousStates = new();
+
+**Bounded state tracking:** The `_previousStates` dictionary has a maximum capacity of 1,000 entries. If a system registers more than 1,000 unique health check names (which would indicate a configuration issue), new entries are rejected and a warning is logged. Health check component names should be static and finite — dynamically generated names are not supported.
+
 
     public Task PublishAsync(HealthReport report, CancellationToken cancellationToken)
     {
