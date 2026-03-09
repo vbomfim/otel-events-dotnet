@@ -82,4 +82,7 @@ public static class ErrorCodes
 
     /// <summary>meterLifecycle must be one of: static, di.</summary>
     public const string InvalidMeterLifecycle = "ALL_SCHEMA_026";
+
+    /// <summary>Referenced package schema could not be resolved from NuGet package content.</summary>
+    public const string PackageSchemaNotFound = "ALL_SCHEMA_027";
 }

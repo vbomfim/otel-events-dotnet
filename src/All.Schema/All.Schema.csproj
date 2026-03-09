@@ -16,4 +16,9 @@
     <EmbeddedResource Include="Schemas\lifecycle.all.yaml" LogicalName="All.Schema.Schemas.lifecycle.all.yaml" />
   </ItemGroup>
 
+  <!-- Include MSBuild targets for NuGet schema packaging (auto-imported by consumers) -->
+  <ItemGroup>
+    <None Include="Build\All.Schema.targets" Pack="true" PackagePath="buildTransitive\" />
+  </ItemGroup>
+
 </Project>

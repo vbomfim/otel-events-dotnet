@@ -1,0 +1,61 @@
+<!--
+  All.Schema MSBuild Targets for NuGet Schema Packaging
+  
+  This targets file is included automatically when a project references the All.Schema package.
+  It provides two capabilities:
+  
+  1. PRODUCER: Automatically packages .all.yaml files as NuGet content files.
+     Schema files are placed in contentFiles/any/any/schemas/ within the NuGet package,
+     making them available to consuming projects.
+  
+  2. CONSUMER: Collects schema directories from referenced NuGet packages so that
+     SchemaPackageResolver can discover and resolve cross-package imports at build time.
+  
+  Usage:
+    Producer: Simply place .all.yaml files in your project directory.
+    Consumer: Use "package:PackageName/schema.all.yaml" in your schema imports.
+  
+  Properties:
+    EnableAllSchemaPackaging (default: true) — Set to false to disable auto-packaging.
+    AllSchemaContentDir (default: schemas) — Subdirectory name within NuGet content.
+-->
+<Project>
+
+  <!-- Default property values -->
+  <PropertyGroup>
+    <EnableAllSchemaPackaging Condition="'$(EnableAllSchemaPackaging)' == ''">true</EnableAllSchemaPackaging>
+    <AllSchemaContentDir Condition="'$(AllSchemaContentDir)' == ''">schemas</AllSchemaContentDir>
+  </PropertyGroup>
+
+  <!--
+    PRODUCER: Auto-detect .all.yaml files and include them as NuGet content.
+    Only applies to packable projects with EnableAllSchemaPackaging=true.
+  -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false' AND '$(EnableAllSchemaPackaging)' == 'true'">
+    <None Include="**/*.all.yaml"
+          Exclude="bin/**;obj/**"
+          Pack="true"
+          PackagePath="contentFiles/any/any/$(AllSchemaContentDir)/%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    CONSUMER: Collect schema directories from NuGet package content.
+    This target runs before Build and populates AllSchemaPackagePath items
+    that SchemaPackageResolver uses to discover package schemas.
+  -->
+  <Target Name="_CollectAllSchemaPackagePaths"
+          BeforeTargets="CoreCompile"
+          Condition="'$(EnableAllSchemaPackaging)' == 'true'">
+    <ItemGroup>
+      <!--
+        Find .all.yaml files from NuGet package content directories.
+        NuGet restores content files to: $(NuGetPackageRoot)/PackageId/Version/contentFiles/
+        The schema files will be in the 'schemas' subdirectory.
+      -->
+      <_AllSchemaPackageFiles Include="$(NuGetPackageRoot)/**/contentFiles/any/any/$(AllSchemaContentDir)/*.all.yaml" />
+      <AllSchemaPackagePath Include="@(_AllSchemaPackageFiles->'%(RootDir)%(Directory)')" />
+    </ItemGroup>
+  </Target>
+
+</Project>

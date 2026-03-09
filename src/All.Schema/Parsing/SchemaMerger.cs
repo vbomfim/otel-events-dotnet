@@ -1,21 +1,40 @@
 using All.Schema.Models;
+using All.Schema.Packaging;
 using All.Schema.Validation;
 
 namespace All.Schema.Parsing;
 
 /// <summary>
 /// Merges multiple <see cref="SchemaDocument"/> instances into a unified schema.
-/// Resolves imports and validates cross-document constraints.
+/// Resolves imports (local files and NuGet packages) and validates cross-document constraints.
 /// </summary>
 public sealed class SchemaMerger
 {
     private readonly SchemaParser _parser;
     private readonly SchemaValidator _validator;
+    private readonly SchemaPackageResolver? _packageResolver;
 
+    /// <summary>
+    /// Creates a merger for local-only schema resolution.
+    /// Package imports (<c>package:</c> prefix) will fail with an error.
+    /// </summary>
     public SchemaMerger(SchemaParser parser, SchemaValidator validator)
     {
         _parser = parser;
         _validator = validator;
+    }
+
+    /// <summary>
+    /// Creates a merger with cross-package schema resolution support.
+    /// </summary>
+    /// <param name="parser">The YAML schema parser.</param>
+    /// <param name="validator">The schema validator.</param>
+    /// <param name="packageResolver">Resolver for <c>package:</c> imports from NuGet packages.</param>
+    public SchemaMerger(SchemaParser parser, SchemaValidator validator, SchemaPackageResolver packageResolver)
+    {
+        _parser = parser;
+        _validator = validator;
+        _packageResolver = packageResolver;
     }
 
     /// <summary>
@@ -104,15 +123,21 @@ public sealed class SchemaMerger
         }
 
         var doc = result.Document!;
-        documents.Add(doc);
 
-        // Resolve imports relative to the current file's directory
+        // Resolve imports BEFORE adding this document — dependencies must come first
+        // so the validator can collect shared fields/enums before validating refs.
         var baseDir = Path.GetFullPath(Path.GetDirectoryName(fullPath) ?? ".");
         var baseDirNormalized = baseDir.EndsWith(Path.DirectorySeparatorChar)
             ? baseDir
             : baseDir + Path.DirectorySeparatorChar;
         foreach (var import in doc.Imports)
         {
+            if (SchemaPackageResolver.IsPackageImport(import))
+            {
+                ResolvePackageImport(import, documents, errors, visited);
+                continue;
+            }
+
             var importPath = Path.GetFullPath(Path.Combine(baseDir, import));
 
             // Path traversal guard: import must stay within the schema directory
@@ -128,6 +153,32 @@ public sealed class SchemaMerger
 
             ResolveAndParse(importPath, documents, errors, visited);
         }
+
+        // Add this document AFTER all imports are resolved — ensures dependency order
+        documents.Add(doc);
+    }
+
+    private void ResolvePackageImport(
+        string import,
+        List<SchemaDocument> documents,
+        List<SchemaError> errors,
+        HashSet<string> visited)
+    {
+        var resolvedPath = _packageResolver?.Resolve(import);
+
+        if (resolvedPath is null)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.PackageSchemaNotFound,
+                Message = $"Package import '{import}' could not be resolved. "
+                          + "Ensure the NuGet package is referenced and contains the schema file."
+            });
+            return;
+        }
+
+        // Delegate to the standard resolve-and-parse with circular import protection
+        ResolveAndParse(resolvedPath, documents, errors, visited);
     }
 }
 
