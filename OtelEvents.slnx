@@ -7,10 +7,14 @@
     <Project Path="src/All.Testing/All.Testing.csproj" />
     <Project Path="src/OtelEvents.AspNetCore/OtelEvents.AspNetCore.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/All.Cli/All.Cli.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/All.Analyzers.Tests/All.Analyzers.Tests.csproj" />
     <Project Path="tests/All.Causality.Tests/All.Causality.Tests.csproj" />
     <Project Path="tests/All.Exporter.Json.Tests/All.Exporter.Json.Tests.csproj" />
+    <Project Path="tests/All.Cli.Tests/All.Cli.Tests.csproj" />
     <Project Path="tests/All.Schema.Tests/All.Schema.Tests.csproj" />
     <Project Path="tests/All.Testing.Tests/All.Testing.Tests.csproj" />
     <Project Path="tests/OtelEvents.AspNetCore.Tests/OtelEvents.AspNetCore.Tests.csproj" />

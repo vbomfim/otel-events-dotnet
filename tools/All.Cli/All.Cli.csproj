@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>all</ToolCommandName>
+    <PackageId>All.Cli</PackageId>
+    <Description>CLI tool for validating, generating, and comparing ALL schema files</Description>
+    <NoWarn>CA1002;CA1307;CA1310;CA1515;CA1822;CA1859</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="All.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\All.Schema\All.Schema.csproj" />
+  </ItemGroup>
+
+</Project>
