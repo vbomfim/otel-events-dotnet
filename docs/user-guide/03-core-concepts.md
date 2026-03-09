@@ -1,12 +1,12 @@
 # Chapter 3 — Core Concepts
 
-This chapter explains the foundational ideas behind ALL. Understanding these concepts will help you write better schemas and get the most out of the library.
+This chapter explains the foundational ideas behind otel-events. Understanding these concepts will help you write better schemas and get the most out of the library.
 
 ---
 
 ## Events
 
-An ALL event is not just a log line. It is a **structured, named occurrence** with typed fields, associated metrics, and causal links.
+An otel-events event is not just a log line. It is a **structured, named occurrence** with typed fields, associated metrics, and causal links.
 
 > **Event** — A discrete, typed, schema-defined occurrence in a system, emitted as an OTEL `LogRecord` with associated metrics.
 
@@ -156,7 +156,7 @@ For the complete YAML grammar, see [Chapter 5 — Schema Reference](05-schema-re
 
 ## JSON Envelope
 
-Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON line with a predictable structure — the **ALL envelope**:
+Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON line with a predictable structure — the **otel-events envelope**:
 
 ```json
 {
@@ -224,7 +224,7 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
 
 ## Causality
 
-OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. ALL's `OtelEventsCausalityProcessor` adds **causal event trees** — linking child events to their parent.
+OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. otel-events' `OtelEventsCausalityProcessor` adds **causal event trees** — linking child events to their parent.
 
 ### Causal Tree Example
 

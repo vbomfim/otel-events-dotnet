@@ -22,7 +22,7 @@ cd MyOrderService
 
 ---
 
-## Step 2: Install ALL Packages
+## Step 2: Install otel-events Packages
 
 ```bash
 # Core: schema parser + code generator
@@ -184,7 +184,7 @@ You now have IntelliSense-enabled, type-safe event methods.
 
 ---
 
-## Step 5: Configure OTEL + ALL
+## Step 5: Configure OTEL + otel-events
 
 Update `Program.cs`:
 
@@ -202,10 +202,10 @@ builder.Services.AddOpenTelemetry()
         .AddService("order-service"))
     .WithLogging(logging =>
     {
-        // ALL: causal event linking
+        // otel-events: causal event linking
         logging.AddProcessor<OtelEventsCausalityProcessor>();
 
-        // ALL: AI-optimized JSON exporter
+        // otel-events: AI-optimized JSON exporter
         logging.AddOtelEventsJsonExporter(options =>
         {
             options.Output = OtelEventsJsonOutput.Stdout;
@@ -214,7 +214,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithMetrics(metrics =>
     {
-        // Pick up ALL-generated meters
+        // Pick up otel-events generated meters
         metrics.AddMeter("MyOrderService.Events.*");
     });
 

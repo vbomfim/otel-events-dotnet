@@ -1,6 +1,6 @@
 # Chapter 2 — otel-events vs Plain OTEL: Side-by-Side Comparison
 
-This chapter shows the same scenario implemented two ways: the "before" with plain OpenTelemetry .NET, and the "after" with ALL. The scenario is an e-commerce order placement endpoint.
+This chapter shows the same scenario implemented two ways: the "before" with plain OpenTelemetry .NET, and the "after" with otel-events. The scenario is an e-commerce order placement endpoint.
 
 ---
 
@@ -111,7 +111,7 @@ Verbose, includes the raw format string, no causal linking, no sequence number, 
 
 ---
 
-## After: ALL
+## After: otel-events
 
 ### Step 1 — Define the event in YAML
 
@@ -221,7 +221,7 @@ Single line. No nulls. UTC microsecond timestamps. Causal event ID. Service name
 
 ## Comparison Table
 
-| Aspect | Plain OTEL | With ALL |
+| Aspect | Plain OTEL | With otel-events |
 |--------|-----------|----------|
 | **Event definition** | Hand-written `[LoggerMessage]` per event | YAML schema → generated code |
 | **Metrics** | Manual `Meter` / `Counter` / `Histogram` setup | Auto-generated from schema `metrics:` block |
@@ -240,7 +240,7 @@ Single line. No nulls. UTC microsecond timestamps. Causal event ID. Service name
 
 ## What Changes in Your OTEL Setup?
 
-Nothing breaks. ALL extends your existing `AddOpenTelemetry()` call:
+Nothing breaks. otel-events extends your existing `AddOpenTelemetry()` call:
 
 ```csharp
 builder.Services.AddOpenTelemetry()
@@ -261,7 +261,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithMetrics(metrics =>
     {
-        // Pick up ALL-generated meters
+        // Pick up otel-events generated meters
         metrics.AddMeter("MyApp.Events.*");
         metrics.AddOtlpExporter();
     });

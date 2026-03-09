@@ -1,4 +1,4 @@
-# Chapter 8 — Testing with ALL
+# Chapter 8 — Testing with otel-events
 
 otel-events ships a dedicated testing package — `OtelEvents.Testing` — that plugs into the OTEL pipeline and captures log records for assertion. This chapter shows how to write unit tests for services that emit otel-events events.
 
@@ -210,7 +210,7 @@ Expected no errors, but found 2 error-level record(s):
 
 ## Example: Testing a Service That Emits Events
 
-This example demonstrates a full test for a service that uses ALL-generated events.
+This example demonstrates a full test for a service that uses otel-events generated events.
 
 ### The Service Under Test
 
@@ -233,7 +233,7 @@ public class OrderService
             Amount = amount,
         };
 
-        // ALL-generated event method
+        // otel-events generated event method
         _logger.OrderPlaced(
             orderId: order.Id,
             customerId: customerId,

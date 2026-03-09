@@ -6,7 +6,7 @@ otel-events components are configured through standard .NET mechanisms: `appsett
 
 ## appsettings.json Structure
 
-ALL uses two primary configuration sections under the `All` root key:
+otel-events uses two primary configuration sections under the `All` root key:
 
 ```json
 {

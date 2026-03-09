@@ -461,7 +461,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithMetrics(metrics =>
     {
-        // Pick up ALL integration pack meters
+        // Pick up otel-events integration pack meters
         metrics.AddMeter("OtelEvents.AspNetCore");
         metrics.AddMeter("OtelEvents.Grpc");
         metrics.AddMeter("OtelEvents.Azure.CosmosDb");

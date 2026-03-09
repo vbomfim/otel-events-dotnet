@@ -1,6 +1,6 @@
 # Chapter 12 — Migration Guide
 
-Step-by-step guide for migrating from plain `ILogger` usage to ALL-generated schema-defined events.
+Step-by-step guide for migrating from plain `ILogger` usage to otel-events generated schema-defined events.
 
 ---
 
@@ -8,8 +8,8 @@ Step-by-step guide for migrating from plain `ILogger` usage to ALL-generated sch
 
 otel-events is designed for **gradual, non-breaking adoption**. You don't need to rewrite your application in one go:
 
-1. ALL-generated events and hand-written `ILogger` calls **coexist** in the same pipeline
-2. The `OtelEventsJsonExporter` exports **all** `LogRecord`s — both ALL-generated and plain `ILogger` calls
+1. otel-events generated events and hand-written `ILogger` calls **coexist** in the same pipeline
+2. The `OtelEventsJsonExporter` exports **all** `LogRecord`s — both otel-events generated and plain `ILogger` calls
 3. Third-party library logs pass through unchanged
 4. You migrate one event category at a time
 
@@ -37,7 +37,7 @@ otel-events is designed for **gradual, non-breaking adoption**. You don't need t
 
 ## Step 1 — Install Packages
 
-Add ALL packages alongside your existing OTEL setup:
+Add otel-events packages alongside your existing OTEL setup:
 
 ```bash
 # Core: schema parser + code generator
@@ -93,7 +93,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithMetrics(metrics =>
     {
-        // NEW: Pick up ALL-generated meters
+        // NEW: Pick up otel-events generated meters
         metrics.AddMeter("MyCompany.MyService.Events.*");
 
         metrics.AddOtlpExporter();   // Keep existing metrics
@@ -242,7 +242,7 @@ public class OrderService
 }
 ```
 
-### After (ALL-generated)
+### After (otel-events generated)
 
 ```csharp
 using MyCompany.MyService.Events;
@@ -277,7 +277,7 @@ public class OrderService
 
 ## Step 6 — Non-otel-events Passthrough
 
-During migration, your codebase will have a mix of ALL-generated events and plain `ILogger` calls. This is expected and fully supported.
+During migration, your codebase will have a mix of otel-events generated events and plain `ILogger` calls. This is expected and fully supported.
 
 ### How non-otel-events LogRecords are handled
 
@@ -285,7 +285,7 @@ The `OtelEventsJsonExporter` exports **all** `LogRecord`s:
 
 | Source | `event` field | `attr` field |
 |--------|--------------|-------------|
-| ALL-generated | `"http.request.completed"` | Schema-defined typed fields |
+| otel-events generated | `"http.request.completed"` | Schema-defined typed fields |
 | Hand-written `[LoggerMessage]` | `EventId.Name` if set | State key-value pairs |
 | Direct `_logger.LogInformation(...)` | `"dotnet.ilogger"` (fallback) | State key-value pairs |
 | Third-party library (EF Core, ASP.NET) | `EventId.Name` if set | Library-specific attributes |
@@ -351,7 +351,7 @@ dotnet_diagnostic.ALL003.severity = error
 
 ```csharp
 // Temporary suppression — remove after migrating this event
-#pragma warning disable ALL002 // Will be replaced with ALL-generated event in sprint 14
+#pragma warning disable ALL002 // Will be replaced with otel-events generated event in sprint 14
 _logger.LogWarning("Legacy event: {Detail}", detail);
 #pragma warning restore ALL002
 ```

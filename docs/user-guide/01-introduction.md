@@ -34,11 +34,11 @@ Four developers, four styles, one event. Now multiply this by 200 events across 
 
 ## What is otel-events?
 
-**Another Logging Library (ALL)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it.
+**otel-events (Another Logging Library)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it.
 
 > otel-events is NOT a replacement for OpenTelemetry. It is an extension that adds schema-driven code generation, AI-optimized JSON export, and causal event linking to your existing OTEL pipeline.
 
-ALL extends the standard OpenTelemetry pipeline with exactly four components. Everything else is standard OTEL:
+otel-events extends the standard OpenTelemetry pipeline with exactly four components. Everything else is standard OTEL:
 
 | otel-events Component | OTEL Extension Point | What it does |
 |---------------|---------------------|-------------|
@@ -64,7 +64,7 @@ otel-events does not replace, wrap, or abstract OpenTelemetry. Projects already 
 - **Causal event linking** — Track cause-and-effect relationships between events via `eventId`/`parentEventId`
 - **Compile-time enforcement** — Roslyn analyzers catch `Console.Write`, untyped `ILogger` usage, and schema violations
 
-### What OTEL handles (ALL does NOT provide these)
+### What OTEL handles (otel-events does NOT provide these)
 
 | Responsibility | OTEL Component |
 |---------------|---------------|
@@ -79,7 +79,7 @@ otel-events does not replace, wrap, or abstract OpenTelemetry. Projects already 
 
 ## Packages
 
-ALL is split into focused packages — use only what you need:
+otel-events is split into focused packages — use only what you need:
 
 | Package | Description | When to use |
 |---------|-------------|-------------|
@@ -107,7 +107,7 @@ ALL is split into focused packages — use only what you need:
 | **OTEL-native** | Generated code creates `LogRecord`s and `Meter` recordings directly — no intermediate types |
 | **Schema-first** | Events defined in YAML → C# generated → compile-time enforced |
 | **Type-safe** | No `string.Format`, no anonymous objects — typed methods with IntelliSense |
-| **Incremental adoption** | Teams already on OTEL add ALL packages and get value immediately |
+| **Incremental adoption** | Teams already on OTEL add otel-events packages and get value immediately |
 | **Consistent** | Every JSON output line is the same AI-optimized envelope |
 | **AI-optimized** | Predictable structure, causal trees, structured exceptions |
 | **Zero-friction** | Works with `dotnet add package`, extends existing OTEL setup |

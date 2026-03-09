@@ -313,13 +313,13 @@ Analyzers activate automatically when the package is referenced.
 
 | Rule | Severity | Title | Description |
 |------|----------|-------|-------------|
-| **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use ALL-generated events instead. |
+| **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use otel-events generated events instead. |
 | **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.LogInformation`, `ILogger.LogError`, etc. without using an otel-events-generated extension method. |
 | **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events-generated method parameter. Pass raw values — otel-events handles message interpolation. |
 | **ALL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
 | **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
 | **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an otel-events event with the caught exception. |
-| **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use ALL-generated events instead. |
+| **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
 | **ALL008** | Error | Reserved prefix usage | Code uses `all.` prefix in field names — reserved for library metadata. |
 | **ALL009** | Warning | PII field without redaction | Schema field with `sensitivity: pii` or `sensitivity: credential` used but no redaction policy configured. |
 

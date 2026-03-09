@@ -1,6 +1,6 @@
 # Chapter 13 — FAQ
 
-Frequently asked questions about ALL.
+Frequently asked questions about otel-events.
 
 ---
 
@@ -25,16 +25,16 @@ No. otel-events generates code that uses OTEL types — `ILogger<T>`, `Meter`, `
 
 ### Can I use otel-events with Serilog?
 
-**Yes, indirectly.** ALL-generated code uses `ILogger<T>` (Microsoft.Extensions.Logging). Serilog integrates with this via `Serilog.Extensions.Logging`. The flow is:
+**Yes, indirectly.** otel-events generated code uses `ILogger<T>` (Microsoft.Extensions.Logging). Serilog integrates with this via `Serilog.Extensions.Logging`. The flow is:
 
 ```
-ALL-generated code → ILogger<T> → Serilog sink (via bridge)
+otel-events generated code → ILogger<T> → Serilog sink (via bridge)
                                  → OTEL LoggerProvider → OtelEventsJsonExporter
 ```
 
 However, `OtelEventsJsonExporter` and Serilog sinks produce different output formats. You can use both, but the JSONL output from `OtelEventsJsonExporter` is specifically optimized for AI investigation and won't go through Serilog.
 
-> **Recommendation:** If you're adopting ALL, use the OTEL pipeline directly (`AddOpenTelemetry().WithLogging(...)`) rather than routing through Serilog. This avoids an unnecessary abstraction layer.
+> **Recommendation:** If you're adopting otel-events, use the OTEL pipeline directly (`AddOpenTelemetry().WithLogging(...)`) rather than routing through Serilog. This avoids an unnecessary abstraction layer.
 
 ### Can I use otel-events with NLog or log4net?
 
@@ -205,7 +205,7 @@ The processor must be registered **before** the exporter in the pipeline.
 
 ### What's the performance overhead?
 
-ALL's overhead is minimal and well-characterized:
+otel-events' overhead is minimal and well-characterized:
 
 | Component | Target | Measurement |
 |-----------|--------|-------------|
@@ -264,7 +264,7 @@ Yes. otel-events binds to the `OtelEvents` configuration section:
 
 ```json
 {
-  "ALL": {
+  "OtelEvents": {
     "EnvironmentProfile": "Production",
     "EmitHostInfo": false,
     "MaxAttributeValueLength": 4096,
@@ -290,7 +290,7 @@ builder.Logging.AddFilter<OpenTelemetryLoggerProvider>(
     "MyCompany.MyService.Events.Db", LogLevel.Information);
     // ↑ Drops DEBUG-level DB events
 
-// Or use ALL-specific rate limiting:
+// Or use otel-events specific rate limiting:
 logging.AddAllRateLimiter(options =>
 {
     options.EventLimits = new Dictionary<string, int>
@@ -318,7 +318,7 @@ No special bridge or configuration needed — it works automatically.
 
 Yes. Existing hand-written `[LoggerMessage]` methods produce standard `LogRecord`s that flow through the OTEL pipeline. They'll appear in the JSONL output with the `EventId.Name` you specified.
 
-Over time, you can replace them with ALL-generated equivalents. See [Chapter 12 — Migration Guide](12-migration-guide.md) for the step-by-step process.
+Over time, you can replace them with otel-events generated equivalents. See [Chapter 12 — Migration Guide](12-migration-guide.md) for the step-by-step process.
 
 ### Do integration packs conflict with OTEL auto-instrumentation?
 
