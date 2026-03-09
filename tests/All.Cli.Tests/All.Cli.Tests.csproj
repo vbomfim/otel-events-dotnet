@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\All.Cli\All.Cli.csproj" />
+    <ProjectReference Include="..\..\tools\All.Cli\All.Cli.csproj" />
     <ProjectReference Include="..\..\src\All.Schema\All.Schema.csproj" />
   </ItemGroup>
 
