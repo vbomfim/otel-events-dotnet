@@ -12,4 +12,8 @@
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Schemas\lifecycle.all.yaml" LogicalName="All.Schema.Schemas.lifecycle.all.yaml" />
+  </ItemGroup>
+
 </Project>
