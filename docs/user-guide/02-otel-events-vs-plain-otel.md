@@ -189,7 +189,10 @@ public class OrderController : ControllerBase
     {
         var sw = Stopwatch.StartNew();
 
-        // Causal scope — all events inside share a parentEventId
+        // Causal scope — sets AsyncLocal parentEventId.
+        // All events emitted inside this scope (including from _orderService)
+        // automatically get parentEventId stamped by OtelEventsCausalityProcessor.
+        // The scope variable isn't referenced directly — it works via ambient context.
         using var scope = OtelEventsCausalScope.Begin(
             Uuid7.FormatEventId(Uuid7.CreateUuid7()));
 
