@@ -71,6 +71,17 @@ otel-events-dotnet/
 └── OtelEvents.slnx              # Solution file
 ```
 
+## Security & Privacy
+
+See [docs/security/](docs/security/) for standalone security documentation, including:
+
+- [Threat Model](docs/security/threat-model.md) — Trust boundaries, threat vectors, and mitigations
+- [PII Classification](docs/security/pii-classification.md) — Sensitivity levels and redaction matrix
+- [Environment Profiles](docs/security/environment-profiles.md) — Development, Staging, and Production defaults
+- [OWASP Mapping](docs/security/owasp-mapping.md) — OWASP Top 10 (2021) reference mapping
+
+For vulnerability reporting, see [SECURITY.md](SECURITY.md).
+
 ## Specification
 
 See [SPECIFICATION.md](SPECIFICATION.md) for the full project specification, including architecture, YAML schema format, JSON envelope format, and design decisions.
