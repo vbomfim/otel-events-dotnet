@@ -146,10 +146,12 @@ events:
         type: counter
         unit: "orders"
         description: "Total orders placed"
+        labels: [customerId]         # ← filterable dimensions in Grafana/Prometheus
       order.placed.amount:
         type: histogram
         unit: "USD"
         description: "Order amount distribution"
+        labels: [customerId]         # ← same field used as metric tag
     tags:
       - commerce
       - orders
