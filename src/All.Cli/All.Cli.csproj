@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>all</ToolCommandName>
+    <PackageId>All.Cli</PackageId>
+    <Description>CLI tool for ALL Schema — validate, generate, and document event schemas.</Description>
+    <NoWarn>CA1303</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="All.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\All.Schema\All.Schema.csproj" />
+  </ItemGroup>
+
+</Project>
