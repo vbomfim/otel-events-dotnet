@@ -1,0 +1,174 @@
+schema:
+  name: "OtelEvents.Azure.CosmosDb"
+  version: "1.0.0"
+  namespace: "OtelEvents.Azure.CosmosDb.Events"
+  meterName: "OtelEvents.Azure.CosmosDb"
+  description: "Schema-defined events for Azure CosmosDB operations"
+
+fields:
+  cosmosDatabase:
+    type: string
+    description: "CosmosDB database name"
+    index: true
+
+  cosmosContainer:
+    type: string
+    description: "CosmosDB container name"
+    index: true
+
+  cosmosPartitionKey:
+    type: string
+    description: "Partition key value used in the operation"
+    index: true
+
+  cosmosRequestCharge:
+    type: double
+    description: "Request Units (RU) consumed by the operation"
+    unit: "RU"
+
+  cosmosItemCount:
+    type: int
+    description: "Number of items returned or affected"
+
+  cosmosStatusCode:
+    type: int
+    description: "CosmosDB HTTP status code (200, 201, 404, 429, etc.)"
+    index: true
+
+  cosmosSubStatusCode:
+    type: int
+    description: "CosmosDB sub-status code for detailed error diagnosis"
+
+  cosmosOperationType:
+    type: enum
+    description: "Type of CosmosDB operation"
+    values: [Query, PointRead, PointWrite, Delete, Patch, Batch]
+
+  cosmosRegion:
+    type: string
+    description: "CosmosDB region that served the request"
+
+  durationMs:
+    type: double
+    description: "Operation duration in milliseconds"
+    unit: "ms"
+
+  errorType:
+    type: string
+    description: "Exception type name for failed operations"
+    index: true
+
+  cosmosQueryText:
+    type: string
+    sensitivity: internal
+    maxLength: 2048
+    description: "SQL query text (when query capture is enabled; parameterized only)"
+
+events:
+  cosmosdb.query.executed:
+    id: 10201
+    severity: DEBUG
+    description: "A CosmosDB SQL query was executed successfully."
+    message: "CosmosDB query on {cosmosDatabase}/{cosmosContainer} returned {cosmosItemCount} items in {durationMs}ms ({cosmosRequestCharge} RU)"
+    fields:
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      cosmosContainer: { ref: cosmosContainer, required: true }
+      cosmosPartitionKey: { ref: cosmosPartitionKey, required: false }
+      cosmosRequestCharge: { ref: cosmosRequestCharge, required: true }
+      cosmosItemCount: { ref: cosmosItemCount, required: true }
+      durationMs: { ref: durationMs, required: true }
+      cosmosStatusCode: { ref: cosmosStatusCode, required: true }
+      cosmosRegion: { ref: cosmosRegion, required: false }
+      cosmosQueryText: { ref: cosmosQueryText, required: false }
+    metrics:
+      otel.cosmosdb.query.duration:
+        type: histogram
+        unit: "ms"
+        description: "CosmosDB query duration"
+        buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+      otel.cosmosdb.query.ru:
+        type: histogram
+        unit: "RU"
+        description: "CosmosDB query RU consumption"
+        buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000]
+      otel.cosmosdb.query.item.count:
+        type: histogram
+        unit: "items"
+        description: "CosmosDB query result item count"
+        buckets: [1, 10, 50, 100, 500, 1000]
+    tags: [cosmosdb, query]
+
+  cosmosdb.query.failed:
+    id: 10202
+    severity: ERROR
+    description: "A CosmosDB SQL query failed."
+    message: "CosmosDB query on {cosmosDatabase}/{cosmosContainer} failed with {cosmosStatusCode} after {durationMs}ms ({cosmosRequestCharge} RU)"
+    exception: true
+    fields:
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      cosmosContainer: { ref: cosmosContainer, required: true }
+      cosmosPartitionKey: { ref: cosmosPartitionKey, required: false }
+      cosmosRequestCharge: { ref: cosmosRequestCharge, required: false }
+      durationMs: { ref: durationMs, required: true }
+      cosmosStatusCode: { ref: cosmosStatusCode, required: true }
+      cosmosSubStatusCode: { ref: cosmosSubStatusCode, required: false }
+      errorType: { ref: errorType, required: true }
+    metrics:
+      otel.cosmosdb.error.count:
+        type: counter
+        unit: "errors"
+        description: "Total CosmosDB operation errors"
+        labels: [cosmosDatabase, cosmosContainer, cosmosStatusCode]
+    tags: [cosmosdb, query, error]
+
+  cosmosdb.point.read:
+    id: 10203
+    severity: DEBUG
+    description: "A CosmosDB point read (ReadItemAsync) was executed."
+    message: "CosmosDB point read on {cosmosDatabase}/{cosmosContainer} [{cosmosPartitionKey}] in {durationMs}ms ({cosmosRequestCharge} RU)"
+    fields:
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      cosmosContainer: { ref: cosmosContainer, required: true }
+      cosmosPartitionKey: { ref: cosmosPartitionKey, required: true }
+      cosmosRequestCharge: { ref: cosmosRequestCharge, required: true }
+      durationMs: { ref: durationMs, required: true }
+      cosmosStatusCode: { ref: cosmosStatusCode, required: true }
+      cosmosRegion: { ref: cosmosRegion, required: false }
+    metrics:
+      otel.cosmosdb.point.duration:
+        type: histogram
+        unit: "ms"
+        description: "CosmosDB point operation duration"
+        buckets: [1, 2, 5, 10, 25, 50, 100, 250, 500]
+      otel.cosmosdb.point.ru:
+        type: histogram
+        unit: "RU"
+        description: "CosmosDB point operation RU consumption"
+        buckets: [1, 2, 5, 10, 25, 50, 100]
+    tags: [cosmosdb, point]
+
+  cosmosdb.point.write:
+    id: 10204
+    severity: DEBUG
+    description: "A CosmosDB point write (CreateItemAsync, UpsertItemAsync, ReplaceItemAsync) was executed."
+    message: "CosmosDB point write on {cosmosDatabase}/{cosmosContainer} [{cosmosPartitionKey}] in {durationMs}ms ({cosmosRequestCharge} RU)"
+    fields:
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      cosmosContainer: { ref: cosmosContainer, required: true }
+      cosmosPartitionKey: { ref: cosmosPartitionKey, required: true }
+      cosmosRequestCharge: { ref: cosmosRequestCharge, required: true }
+      durationMs: { ref: durationMs, required: true }
+      cosmosStatusCode: { ref: cosmosStatusCode, required: true }
+      cosmosRegion: { ref: cosmosRegion, required: false }
+    metrics:
+      otel.cosmosdb.point.duration:
+        type: histogram
+        unit: "ms"
+        description: "CosmosDB point operation duration"
+        buckets: [1, 2, 5, 10, 25, 50, 100, 250, 500]
+      otel.cosmosdb.point.ru:
+        type: histogram
+        unit: "RU"
+        description: "CosmosDB point operation RU consumption"
+        buckets: [1, 2, 5, 10, 25, 50, 100]
+    tags: [cosmosdb, point]
