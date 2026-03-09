@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 
@@ -47,6 +48,58 @@ public static class AllSeverityFilterExtensions
 
         var options = new AllSeverityFilterOptions();
         configure?.Invoke(options);
+
+        return builder.AddProcessor(
+            new AllSeverityFilterProcessor(options, innerProcessor));
+    }
+
+    /// <summary>
+    /// Adds an <see cref="AllSeverityFilterProcessor"/> to the logging pipeline,
+    /// binding filter options from the <c>All:Filter</c> section of the provided
+    /// <see cref="IConfiguration"/>.
+    /// </summary>
+    /// <param name="builder">The <see cref="LoggerProviderBuilder"/> to configure.</param>
+    /// <param name="configuration">
+    /// The configuration root (e.g., from <c>appsettings.json</c> or environment variables).
+    /// Options are read from the <c>All:Filter</c> section.
+    /// </param>
+    /// <param name="innerProcessor">
+    /// The downstream processor to forward passing records to.
+    /// </param>
+    /// <returns>The <paramref name="builder"/> for chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="builder"/>, <paramref name="configuration"/>,
+    /// or <paramref name="innerProcessor"/> is null.
+    /// </exception>
+    /// <remarks>
+    /// Environment variable overrides use the standard .NET double-underscore convention:
+    /// <c>ALL__Filter__MinSeverity=Warning</c> maps to <c>All:Filter:MinSeverity</c>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // In appsettings.json:
+    /// // {
+    /// //   "All": {
+    /// //     "Filter": {
+    /// //       "MinSeverity": "Warning"
+    /// //     }
+    /// //   }
+    /// // }
+    ///
+    /// builder.AddAllSeverityFilter(configuration, exportProcessor);
+    /// </code>
+    /// </example>
+    public static LoggerProviderBuilder AddAllSeverityFilter(
+        this LoggerProviderBuilder builder,
+        IConfiguration configuration,
+        BaseProcessor<LogRecord> innerProcessor)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(innerProcessor);
+
+        var options = new AllSeverityFilterOptions();
+        configuration.GetSection("All:Filter").Bind(options);
 
         return builder.AddProcessor(
             new AllSeverityFilterProcessor(options, innerProcessor));

@@ -117,7 +117,7 @@ public sealed class EdgeCaseTests
     public void AddAllJsonExporter_NullBuilder_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            AllJsonExporterExtensions.AddAllJsonExporter(null!, null));
+            AllJsonExporterExtensions.AddAllJsonExporter(null!, (Action<AllJsonExporterOptions>?)null));
     }
 
     [Fact]
