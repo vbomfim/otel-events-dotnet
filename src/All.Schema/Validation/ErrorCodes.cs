@@ -79,4 +79,7 @@ public static class ErrorCodes
 
     /// <summary>All schemas in a merged set must share the same major version.</summary>
     public const string IncompatibleSchemaVersion = "ALL_SCHEMA_025";
+
+    /// <summary>meterLifecycle must be one of: static, di.</summary>
+    public const string InvalidMeterLifecycle = "ALL_SCHEMA_026";
 }

@@ -63,6 +63,14 @@ public static class NamingHelper
         "s_" + ToCamelCase(metricName);
 
     /// <summary>
+    /// Converts a dot-separated metric name to a PascalCase property name.
+    /// Used in DI mode where metrics are instance properties.
+    /// Example: "order.placed.count" → "OrderPlacedCount".
+    /// </summary>
+    public static string ToMetricPropertyName(string metricName) =>
+        ToPascalCase(metricName);
+
+    /// <summary>
     /// Gets the last segment of a dot-separated name.
     /// Example: "order.placed.amount" → "amount".
     /// </summary>

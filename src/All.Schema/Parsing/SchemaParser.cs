@@ -190,7 +190,8 @@ public sealed class SchemaParser
             Version = GetRequiredScalar(schemaNode, "version", "schema.version"),
             Namespace = GetRequiredScalar(schemaNode, "namespace", "schema.namespace"),
             Description = GetOptionalScalar(schemaNode, "description"),
-            MeterName = GetOptionalScalar(schemaNode, "meterName")
+            MeterName = GetOptionalScalar(schemaNode, "meterName"),
+            MeterLifecycle = ParseMeterLifecycle(GetOptionalScalar(schemaNode, "meterLifecycle"))
         };
     }
 
@@ -459,6 +460,22 @@ public sealed class SchemaParser
             .OfType<YamlScalarNode>()
             .Select(n => n.Value!)
             .ToList();
+    }
+
+    // ── Meter lifecycle parsing ────────────────────────────────────
+
+    private static MeterLifecycle ParseMeterLifecycle(string? value)
+    {
+        if (value is null)
+            return MeterLifecycle.Static;
+
+        return value.ToUpperInvariant() switch
+        {
+            "STATIC" => MeterLifecycle.Static,
+            "DI" => MeterLifecycle.DI,
+            _ => throw new SchemaParseException(ErrorCodes.InvalidMeterLifecycle,
+                $"Invalid meterLifecycle '{value}' — must be 'static' or 'di'.")
+        };
     }
 
     // ── YAML helpers ────────────────────────────────────────────────────

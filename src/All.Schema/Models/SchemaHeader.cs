@@ -19,4 +19,10 @@ public sealed class SchemaHeader
 
     /// <summary>OTEL Meter name. Defaults to Namespace if not specified.</summary>
     public string? MeterName { get; init; }
+
+    /// <summary>
+    /// Meter lifecycle mode. Defaults to <see cref="MeterLifecycle.Static"/>.
+    /// When set to <see cref="MeterLifecycle.DI"/>, generates IMeterFactory-injected metrics class.
+    /// </summary>
+    public MeterLifecycle MeterLifecycle { get; init; } = MeterLifecycle.Static;
 }
