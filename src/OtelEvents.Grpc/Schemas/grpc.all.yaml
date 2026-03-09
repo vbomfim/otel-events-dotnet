@@ -1,0 +1,184 @@
+# ─── OtelEvents.Grpc — Bundled Schema ────────────────────────────────────
+# This schema is embedded in the NuGet package for documentation and
+# tooling inspection. The C# code is pre-compiled — consumers do NOT
+# need All.Schema to use this pack.
+
+schema:
+  name: "OtelEvents.Grpc"
+  version: "1.0.0"
+  namespace: "OtelEvents.Grpc.Events"
+  meterName: "OtelEvents.Grpc"
+  description: "Schema-defined gRPC call lifecycle events for server and client interceptors"
+
+fields:
+  grpcService:
+    type: string
+    description: "Fully qualified gRPC service name (e.g., greet.Greeter)"
+    index: true
+
+  grpcMethod:
+    type: string
+    description: "gRPC method name (e.g., SayHello)"
+    index: true
+
+  grpcStatusCode:
+    type: int
+    description: "gRPC status code (0=OK, 1=Cancelled, 2=Unknown, ...)"
+    index: true
+
+  grpcStatusDetail:
+    type: string
+    description: "gRPC status detail message"
+
+  durationMs:
+    type: double
+    description: "Call duration in milliseconds"
+    unit: "ms"
+
+  requestSize:
+    type: long
+    description: "Request message size in bytes"
+    unit: "bytes"
+
+  responseSize:
+    type: long
+    description: "Response message size in bytes"
+    unit: "bytes"
+
+  grpcSide:
+    type: enum
+    description: "Whether event originates from server or client"
+    values: [Server, Client]
+
+  errorType:
+    type: string
+    description: "Exception type name for failed calls"
+    index: true
+
+enums:
+  GrpcSide:
+    description: "Side of gRPC communication"
+    values:
+      - Server
+      - Client
+
+events:
+  grpc.call.started:
+    id: 10101
+    severity: INFO
+    description: "A gRPC call started processing (server-side) or was initiated (client-side)."
+    message: "gRPC {grpcSide} {grpcService}/{grpcMethod} started"
+    fields:
+      grpcService:
+        ref: grpcService
+        required: true
+      grpcMethod:
+        ref: grpcMethod
+        required: true
+      grpcSide:
+        ref: grpcSide
+        required: true
+      requestSize:
+        ref: requestSize
+        required: false
+    metrics:
+      otel.grpc.call.started.count:
+        type: counter
+        unit: "calls"
+        description: "Total gRPC calls started"
+        labels:
+          - grpcService
+          - grpcMethod
+          - grpcSide
+    tags:
+      - grpc
+
+  grpc.call.completed:
+    id: 10102
+    severity: INFO
+    description: "A gRPC call completed successfully."
+    message: "gRPC {grpcSide} {grpcService}/{grpcMethod} completed with status {grpcStatusCode} in {durationMs}ms"
+    fields:
+      grpcService:
+        ref: grpcService
+        required: true
+      grpcMethod:
+        ref: grpcMethod
+        required: true
+      grpcSide:
+        ref: grpcSide
+        required: true
+      grpcStatusCode:
+        ref: grpcStatusCode
+        required: true
+      grpcStatusDetail:
+        ref: grpcStatusDetail
+        required: false
+      durationMs:
+        ref: durationMs
+        required: true
+      requestSize:
+        ref: requestSize
+        required: false
+      responseSize:
+        ref: responseSize
+        required: false
+    metrics:
+      otel.grpc.call.duration:
+        type: histogram
+        unit: "ms"
+        description: "gRPC call duration"
+        buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+      otel.grpc.call.completed.count:
+        type: counter
+        unit: "calls"
+        description: "Total gRPC calls completed by status"
+        labels:
+          - grpcService
+          - grpcMethod
+          - grpcSide
+          - grpcStatusCode
+    tags:
+      - grpc
+
+  grpc.call.failed:
+    id: 10103
+    severity: ERROR
+    description: "A gRPC call failed with an exception or non-OK status."
+    message: "gRPC {grpcSide} {grpcService}/{grpcMethod} failed with {errorType} after {durationMs}ms"
+    exception: true
+    fields:
+      grpcService:
+        ref: grpcService
+        required: true
+      grpcMethod:
+        ref: grpcMethod
+        required: true
+      grpcSide:
+        ref: grpcSide
+        required: true
+      grpcStatusCode:
+        ref: grpcStatusCode
+        required: true
+      grpcStatusDetail:
+        ref: grpcStatusDetail
+        required: false
+      durationMs:
+        ref: durationMs
+        required: true
+      errorType:
+        ref: errorType
+        required: true
+    metrics:
+      otel.grpc.call.error.count:
+        type: counter
+        unit: "errors"
+        description: "Total gRPC call errors"
+        labels:
+          - grpcService
+          - grpcMethod
+          - grpcSide
+          - grpcStatusCode
+    tags:
+      - grpc
+      - error

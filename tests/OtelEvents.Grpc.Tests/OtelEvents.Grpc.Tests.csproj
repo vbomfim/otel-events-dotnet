@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <NoWarn>CA1063;CA1307;CA1707;CA1816;CA1848;CA2000;CA2007;CA2213;CA2234</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Grpc.Core.Testing" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OtelEvents.Grpc\OtelEvents.Grpc.csproj" />
+    <ProjectReference Include="..\..\src\All.Causality\All.Causality.csproj" />
+  </ItemGroup>
+
+</Project>

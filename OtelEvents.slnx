@@ -6,6 +6,7 @@
     <Project Path="src/All.Schema/All.Schema.csproj" />
     <Project Path="src/All.Testing/All.Testing.csproj" />
     <Project Path="src/OtelEvents.AspNetCore/OtelEvents.AspNetCore.csproj" />
+    <Project Path="src/OtelEvents.Grpc/OtelEvents.Grpc.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/All.Cli/All.Cli.csproj" />
@@ -18,5 +19,6 @@
     <Project Path="tests/All.Schema.Tests/All.Schema.Tests.csproj" />
     <Project Path="tests/All.Testing.Tests/All.Testing.Tests.csproj" />
     <Project Path="tests/OtelEvents.AspNetCore.Tests/OtelEvents.AspNetCore.Tests.csproj" />
+    <Project Path="tests/OtelEvents.Grpc.Tests/OtelEvents.Grpc.Tests.csproj" />
   </Folder>
 </Solution>
