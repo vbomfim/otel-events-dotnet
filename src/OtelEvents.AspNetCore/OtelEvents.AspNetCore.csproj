@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <NoWarn>CA1062;CA1822;CA2000;CA2007;CA2227;SYSLIB1015</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OtelEvents.AspNetCore.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\All.Causality\All.Causality.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Schemas\aspnetcore.all.yaml">
+      <LogicalName>OtelEvents.AspNetCore.aspnetcore.all.yaml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

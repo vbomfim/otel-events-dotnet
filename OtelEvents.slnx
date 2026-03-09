@@ -5,10 +5,12 @@
     <Project Path="src/All.Exporter.Json/All.Exporter.Json.csproj" />
     <Project Path="src/All.Schema/All.Schema.csproj" />
     <Project Path="src/All.Testing/All.Testing.csproj" />
+    <Project Path="src/OtelEvents.AspNetCore/OtelEvents.AspNetCore.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/All.Causality.Tests/All.Causality.Tests.csproj" />
     <Project Path="tests/All.Exporter.Json.Tests/All.Exporter.Json.Tests.csproj" />
     <Project Path="tests/All.Schema.Tests/All.Schema.Tests.csproj" />
+    <Project Path="tests/OtelEvents.AspNetCore.Tests/OtelEvents.AspNetCore.Tests.csproj" />
   </Folder>
 </Solution>

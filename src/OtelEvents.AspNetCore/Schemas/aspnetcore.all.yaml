@@ -1,0 +1,186 @@
+# ─── OtelEvents.AspNetCore — Bundled Schema ─────────────────────────────
+# This schema is embedded in the NuGet package for documentation and
+# tooling inspection. The C# code is pre-compiled — consumers do NOT
+# need All.Schema to use this pack.
+
+schema:
+  name: "OtelEvents.AspNetCore"
+  version: "1.0.0"
+  namespace: "OtelEvents.AspNetCore.Events"
+  meterName: "OtelEvents.AspNetCore"
+  description: "Schema-defined HTTP request lifecycle events for ASP.NET Core"
+
+fields:
+  httpMethod:
+    type: string
+    description: "HTTP request method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)"
+    index: true
+
+  httpPath:
+    type: string
+    description: "Request path (route template when available, e.g., /api/orders/{id})"
+    index: true
+
+  httpStatusCode:
+    type: int
+    description: "HTTP response status code"
+    index: true
+
+  durationMs:
+    type: double
+    description: "Request processing duration in milliseconds"
+    unit: "ms"
+
+  contentLength:
+    type: long
+    description: "Request or response content length in bytes"
+    unit: "bytes"
+
+  userAgent:
+    type: string
+    description: "User-Agent header value"
+
+  clientIp:
+    type: string
+    description: "Client IP address (from X-Forwarded-For or RemoteIpAddress)"
+
+  httpRoute:
+    type: string
+    description: "Matched route template (e.g., /api/orders/{id})"
+    index: true
+
+  requestId:
+    type: string
+    description: "ASP.NET Core HttpContext.TraceIdentifier"
+    index: true
+
+  errorType:
+    type: string
+    description: "Exception type name for failed requests"
+    index: true
+
+events:
+  http.request.received:
+    id: 10001
+    severity: INFO
+    description: "An HTTP request was received by the service. Emitted at the start of request processing."
+    message: "HTTP {httpMethod} {httpPath} received from {clientIp}"
+    fields:
+      httpMethod:
+        ref: httpMethod
+        required: true
+      httpPath:
+        ref: httpPath
+        required: true
+      userAgent:
+        ref: userAgent
+        required: false
+      clientIp:
+        ref: clientIp
+        required: false
+      contentLength:
+        ref: contentLength
+        required: false
+      requestId:
+        ref: requestId
+        required: true
+    metrics:
+      otel.http.request.received.count:
+        type: counter
+        unit: "requests"
+        description: "Total HTTP requests received"
+        labels:
+          - httpMethod
+    tags:
+      - http
+      - aspnetcore
+
+  http.request.completed:
+    id: 10002
+    severity: INFO
+    description: "An HTTP request completed processing successfully (1xx-4xx status codes)."
+    message: "HTTP {httpMethod} {httpPath} completed with {httpStatusCode} in {durationMs}ms"
+    fields:
+      httpMethod:
+        ref: httpMethod
+        required: true
+      httpPath:
+        ref: httpPath
+        required: true
+      httpRoute:
+        ref: httpRoute
+        required: false
+      httpStatusCode:
+        ref: httpStatusCode
+        required: true
+      durationMs:
+        ref: durationMs
+        required: true
+      contentLength:
+        ref: contentLength
+        required: false
+      requestId:
+        ref: requestId
+        required: true
+    metrics:
+      otel.http.request.duration:
+        type: histogram
+        unit: "ms"
+        description: "HTTP request processing duration"
+        buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+      otel.http.response.count:
+        type: counter
+        unit: "responses"
+        description: "Total HTTP responses by status code"
+        labels:
+          - httpMethod
+          - httpStatusCode
+      otel.http.response.size:
+        type: histogram
+        unit: "bytes"
+        description: "HTTP response body size"
+        buckets: [100, 1000, 10000, 100000, 1000000, 10000000]
+    tags:
+      - http
+      - aspnetcore
+
+  http.request.failed:
+    id: 10003
+    severity: ERROR
+    description: "An HTTP request failed with an unhandled exception (5xx or exception thrown)."
+    message: "HTTP {httpMethod} {httpPath} failed with {errorType} after {durationMs}ms"
+    exception: true
+    fields:
+      httpMethod:
+        ref: httpMethod
+        required: true
+      httpPath:
+        ref: httpPath
+        required: true
+      httpRoute:
+        ref: httpRoute
+        required: false
+      httpStatusCode:
+        ref: httpStatusCode
+        required: false
+      durationMs:
+        ref: durationMs
+        required: true
+      errorType:
+        ref: errorType
+        required: true
+      requestId:
+        ref: requestId
+        required: true
+    metrics:
+      otel.http.request.error.count:
+        type: counter
+        unit: "errors"
+        description: "Total HTTP request errors"
+        labels:
+          - httpMethod
+          - errorType
+    tags:
+      - http
+      - aspnetcore
+      - error
