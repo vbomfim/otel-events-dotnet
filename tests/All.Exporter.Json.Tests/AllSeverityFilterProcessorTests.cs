@@ -14,19 +14,28 @@ public sealed class AllSeverityFilterProcessorTests : IDisposable
     private readonly InMemoryLogRecordProcessor _innerProcessor = new();
     private readonly MeterListener _meterListener = new();
     private long _droppedCount;
+    private long _passedCount;
 
     public AllSeverityFilterProcessorTests()
     {
         _meterListener.InstrumentPublished = (instrument, listener) =>
         {
-            if (instrument.Name == "all.processor.severity_filter.events_dropped")
+            if (instrument.Name == "all.processor.severity_filter.events_dropped"
+                || instrument.Name == "all.processor.severity_filter.events_passed")
             {
                 listener.EnableMeasurementEvents(instrument);
             }
         };
         _meterListener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
         {
-            Interlocked.Add(ref _droppedCount, measurement);
+            if (instrument.Name == "all.processor.severity_filter.events_dropped")
+            {
+                Interlocked.Add(ref _droppedCount, measurement);
+            }
+            else if (instrument.Name == "all.processor.severity_filter.events_passed")
+            {
+                Interlocked.Add(ref _passedCount, measurement);
+            }
         });
         _meterListener.Start();
     }
@@ -333,6 +342,211 @@ public sealed class AllSeverityFilterProcessorTests : IDisposable
 
         Assert.True(result);
         Assert.True(_innerProcessor.ShutdownCalled);
+    }
+
+    // ─── LogLevel.None always dropped ───────────────────────────────
+
+    [Fact]
+    public void EventWithLogLevelNone_IsAlwaysDropped()
+    {
+        // Note: OpenTelemetry SDK silently maps LogLevel.None → Trace on
+        // LogRecord.LogLevel setter. ShouldProcess is defense-in-depth,
+        // so we test it directly via the internal method.
+        var result = AllSeverityFilterProcessor.ShouldProcess(LogLevel.None, LogLevel.Trace);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void EventWithLogLevelNone_DroppedEvenWithLowestMinSeverity()
+    {
+        // LogLevel.None should be dropped regardless of min severity
+        var result = AllSeverityFilterProcessor.ShouldProcess(LogLevel.None, LogLevel.Trace);
+
+        Assert.False(result);
+    }
+
+    // ─── Overlapping wildcards: longest-prefix-wins ──────────────────
+
+    [Fact]
+    public void OverlappingWildcards_LongestPrefixWins()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            MinSeverity = LogLevel.Error,
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                ["health.*"] = LogLevel.Warning,
+                ["health.check.*"] = LogLevel.Debug
+            }
+        };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        // "health.check.executed" matches both "health." and "health.check."
+        // Longest prefix "health.check." (Debug) should win
+        processor.OnEnd(CreateLogRecord(LogLevel.Debug, eventName: "health.check.executed"));
+
+        Assert.Single(_innerProcessor.ProcessedRecords);
+    }
+
+    [Fact]
+    public void OverlappingWildcards_ShorterPrefix_UsedWhenLongerDoesNotMatch()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            MinSeverity = LogLevel.Error,
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                ["health.*"] = LogLevel.Warning,
+                ["health.check.*"] = LogLevel.Debug
+            }
+        };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        // "health.ping" matches only "health." (Warning), not "health.check."
+        processor.OnEnd(CreateLogRecord(LogLevel.Warning, eventName: "health.ping"));
+
+        Assert.Single(_innerProcessor.ProcessedRecords);
+    }
+
+    [Fact]
+    public void OverlappingWildcards_ShorterPrefix_DropsWhenBelowOverride()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            MinSeverity = LogLevel.Error,
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                ["health.*"] = LogLevel.Warning,
+                ["health.check.*"] = LogLevel.Debug
+            }
+        };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        // "health.ping" at Debug → matches "health." (Warning) → below → dropped
+        processor.OnEnd(CreateLogRecord(LogLevel.Debug, eventName: "health.ping"));
+
+        Assert.Empty(_innerProcessor.ProcessedRecords);
+    }
+
+    // ─── Bare wildcard "*" rejected ─────────────────────────────────
+    // The BareWildcard_ThrowsArgumentException test below validates that
+    // a universal "*" is rejected at construction time. Use MinSeverity
+    // to set a global threshold instead.
+
+    // ─── Case sensitivity ────────────────────────────────────────────
+
+    [Fact]
+    public void EventNameComparison_IsCaseSensitive_ExactMatch()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            MinSeverity = LogLevel.Error,
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                ["Health.Check.Executed"] = LogLevel.Debug
+            }
+        };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        // Exact match is case-sensitive — lowercase does NOT match
+        processor.OnEnd(CreateLogRecord(LogLevel.Debug, eventName: "health.check.executed"));
+
+        Assert.Empty(_innerProcessor.ProcessedRecords);
+    }
+
+    [Fact]
+    public void EventNameComparison_IsCaseSensitive_WildcardMatch()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            MinSeverity = LogLevel.Error,
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                ["Health.*"] = LogLevel.Debug
+            }
+        };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        // Wildcard prefix match is case-sensitive — lowercase does NOT match
+        processor.OnEnd(CreateLogRecord(LogLevel.Debug, eventName: "health.check.executed"));
+
+        Assert.Empty(_innerProcessor.ProcessedRecords);
+    }
+
+    // ─── events_passed counter ───────────────────────────────────────
+
+    [Fact]
+    public void PassedEvent_IncrementsPassedCounter()
+    {
+        var options = new AllSeverityFilterOptions { MinSeverity = LogLevel.Information };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        processor.OnEnd(CreateLogRecord(LogLevel.Information));
+        processor.OnEnd(CreateLogRecord(LogLevel.Warning));
+        processor.OnEnd(CreateLogRecord(LogLevel.Error));
+
+        _meterListener.RecordObservableInstruments();
+
+        Assert.Equal(3, Interlocked.Read(ref _passedCount));
+    }
+
+    [Fact]
+    public void DroppedEvent_DoesNotIncrementPassedCounter()
+    {
+        var options = new AllSeverityFilterOptions { MinSeverity = LogLevel.Error };
+        using var processor = new AllSeverityFilterProcessor(options, _innerProcessor);
+
+        processor.OnEnd(CreateLogRecord(LogLevel.Debug));
+        processor.OnEnd(CreateLogRecord(LogLevel.Information));
+
+        _meterListener.RecordObservableInstruments();
+
+        Assert.Equal(0, Interlocked.Read(ref _passedCount));
+    }
+
+    // ─── Options validation ──────────────────────────────────────────
+
+    [Fact]
+    public void InvalidMinSeverity_ThrowsArgumentOutOfRangeException()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            MinSeverity = (LogLevel)999
+        };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new AllSeverityFilterProcessor(options, _innerProcessor));
+    }
+
+    [Fact]
+    public void EmptyEventNameOverrideKey_ThrowsArgumentException()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                [""] = LogLevel.Debug
+            }
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            new AllSeverityFilterProcessor(options, _innerProcessor));
+    }
+
+    [Fact]
+    public void BareWildcard_ThrowsArgumentException()
+    {
+        var options = new AllSeverityFilterOptions
+        {
+            EventNameOverrides = new Dictionary<string, LogLevel>
+            {
+                ["*"] = LogLevel.Debug
+            }
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            new AllSeverityFilterProcessor(options, _innerProcessor));
     }
 
     // ─── Constructor validation ───────────────────────────────────────

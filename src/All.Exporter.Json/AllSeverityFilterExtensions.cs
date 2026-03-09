@@ -10,47 +10,45 @@ namespace All.Exporter.Json;
 public static class AllSeverityFilterExtensions
 {
     /// <summary>
-    /// Adds an <see cref="AllSeverityFilterProcessor"/> to the logging pipeline.
-    /// The filter wraps a no-op inner processor by default.
-    /// For production use, construct the processor directly to wrap your
-    /// export processor (e.g., <see cref="SimpleExportProcessor{T}"/>).
+    /// Adds an <see cref="AllSeverityFilterProcessor"/> to the logging pipeline,
+    /// wrapping the specified inner processor. The filter conditionally forwards
+    /// log records to <paramref name="innerProcessor"/> based on severity level.
     /// </summary>
     /// <param name="builder">The <see cref="LoggerProviderBuilder"/> to configure.</param>
     /// <param name="configure">
     /// Optional action to configure <see cref="AllSeverityFilterOptions"/>.
     /// If null, defaults are used (MinSeverity = Information).
     /// </param>
+    /// <param name="innerProcessor">
+    /// The downstream processor to forward passing records to (e.g., a
+    /// <see cref="SimpleExportProcessor{T}"/> or <see cref="BatchExportProcessor{T}"/>).
+    /// </param>
     /// <returns>The <paramref name="builder"/> for chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="builder"/> or <paramref name="innerProcessor"/> is null.
+    /// </exception>
     /// <example>
     /// <code>
-    /// // Standalone registration (no-op inner, for enrichment-only pipelines):
-    /// builder.AddAllSeverityFilter(options =>
-    /// {
-    ///     options.MinSeverity = LogLevel.Warning;
-    ///     options.EventNameOverrides["health.check.*"] = LogLevel.Debug;
-    /// });
-    ///
-    /// // Wrapping the export processor (recommended for production):
-    /// options.AddProcessor(
-    ///     new AllSeverityFilterProcessor(
-    ///         filterOptions,
-    ///         new SimpleExportProcessor&lt;LogRecord&gt;(exporter)));
+    /// // Wrapping an export processor with severity filtering:
+    /// var exporter = new AllJsonExporter(exporterOptions);
+    /// var exportProcessor = new SimpleExportProcessor&lt;LogRecord&gt;(exporter);
+    /// builder.AddAllSeverityFilter(
+    ///     configure: opts => opts.MinSeverity = LogLevel.Warning,
+    ///     innerProcessor: exportProcessor);
     /// </code>
     /// </example>
     public static LoggerProviderBuilder AddAllSeverityFilter(
         this LoggerProviderBuilder builder,
-        Action<AllSeverityFilterOptions>? configure = null)
+        Action<AllSeverityFilterOptions>? configure,
+        BaseProcessor<LogRecord> innerProcessor)
     {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(innerProcessor);
+
         var options = new AllSeverityFilterOptions();
         configure?.Invoke(options);
 
         return builder.AddProcessor(
-            new AllSeverityFilterProcessor(options, new NoOpProcessor()));
+            new AllSeverityFilterProcessor(options, innerProcessor));
     }
-
-    /// <summary>
-    /// No-op processor used as the default inner processor when the filter
-    /// is added standalone via the DI extension.
-    /// </summary>
-    private sealed class NoOpProcessor : BaseProcessor<LogRecord>;
 }

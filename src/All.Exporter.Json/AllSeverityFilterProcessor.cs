@@ -24,6 +24,7 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
     private readonly AllSeverityFilterOptions _options;
     private readonly BaseProcessor<LogRecord> _innerProcessor;
     private readonly Counter<long> _eventsDropped;
+    private readonly Counter<long> _eventsPassed;
     private readonly Dictionary<string, LogLevel> _exactOverrides;
     private readonly List<KeyValuePair<string, LogLevel>> _wildcardOverrides;
     private bool _disposed;
@@ -39,6 +40,13 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="options"/> or <paramref name="innerProcessor"/> is null.
     /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <see cref="AllSeverityFilterOptions.MinSeverity"/> is not a defined enum value.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <see cref="AllSeverityFilterOptions.EventNameOverrides"/> contains
+    /// empty keys or a bare wildcard <c>"*"</c>.
+    /// </exception>
     public AllSeverityFilterProcessor(
         AllSeverityFilterOptions options,
         BaseProcessor<LogRecord> innerProcessor)
@@ -46,12 +54,18 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(innerProcessor);
 
+        ValidateOptions(options);
+
         _options = options;
         _innerProcessor = innerProcessor;
 
         _eventsDropped = SelfMeter.CreateCounter<long>(
             "all.processor.severity_filter.events_dropped",
             description: "Total events dropped by severity filter");
+
+        _eventsPassed = SelfMeter.CreateCounter<long>(
+            "all.processor.severity_filter.events_passed",
+            description: "Total events passed by severity filter");
 
         // Pre-partition overrides into exact and wildcard for fast lookup
         _exactOverrides = [];
@@ -71,6 +85,9 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
                 _exactOverrides[kvp.Key] = kvp.Value;
             }
         }
+
+        // Sort wildcards by prefix length descending — longest (most-specific) first
+        _wildcardOverrides.Sort((a, b) => b.Key.Length.CompareTo(a.Key.Length));
     }
 
     /// <inheritdoc/>
@@ -84,6 +101,7 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
             return;
         }
 
+        _eventsPassed.Add(1);
         _innerProcessor.OnEnd(data);
     }
 
@@ -108,9 +126,45 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
     }
 
     /// <summary>
-    /// Determines if a log record's severity passes the filter.
+    /// Validates filter options at construction time.
     /// </summary>
-    private static bool ShouldProcess(LogLevel recordLevel, LogLevel minLevel)
+    private static void ValidateOptions(AllSeverityFilterOptions options)
+    {
+        if (!Enum.IsDefined(options.MinSeverity))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                options.MinSeverity,
+                "MinSeverity must be a defined LogLevel enum value.");
+        }
+
+        foreach (var kvp in options.EventNameOverrides)
+        {
+            if (string.IsNullOrEmpty(kvp.Key))
+            {
+                throw new ArgumentException(
+                    "EventNameOverrides keys must not be empty.",
+                    nameof(options));
+            }
+
+            if (kvp.Key == "*")
+            {
+                throw new ArgumentException(
+                    "Bare wildcard \"*\" is not allowed in EventNameOverrides. "
+                    + "Use MinSeverity to set a global threshold, or use a qualified "
+                    + "prefix wildcard like \"health.*\".",
+                    nameof(options));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Determines if a log record's severity passes the filter.
+    /// Internal for testability — the SDK silently maps LogLevel.None
+    /// to Trace, so this guard is defense-in-depth and cannot be reached
+    /// through normal LogRecord.LogLevel property setting.
+    /// </summary>
+    internal static bool ShouldProcess(LogLevel recordLevel, LogLevel minLevel)
     {
         // LogLevel.None means the event should never be logged
         if (recordLevel == LogLevel.None)
@@ -125,6 +179,8 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
     /// Resolves the effective minimum log level for a given record,
     /// considering per-event-name overrides.
     /// Exact match takes precedence over wildcard match.
+    /// Wildcards are evaluated longest-prefix-first for deterministic,
+    /// most-specific matching.
     /// Falls back to global <see cref="AllSeverityFilterOptions.MinSeverity"/>.
     /// </summary>
     private LogLevel GetMinLogLevel(LogRecord record)
@@ -142,7 +198,7 @@ public sealed class AllSeverityFilterProcessor : BaseProcessor<LogRecord>
             return exactLevel;
         }
 
-        // Wildcard match (prefix-based, O(n) scan over wildcard rules)
+        // Wildcard match (prefix-based, sorted longest-first for specificity)
         foreach (var wildcard in _wildcardOverrides)
         {
             if (eventName.StartsWith(wildcard.Key, StringComparison.Ordinal))

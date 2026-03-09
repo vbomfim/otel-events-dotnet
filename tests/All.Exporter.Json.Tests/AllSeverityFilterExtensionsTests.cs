@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -11,8 +12,146 @@ namespace All.Exporter.Json.Tests;
 /// </summary>
 public sealed class AllSeverityFilterExtensionsTests
 {
+    // ─── AddAllSeverityFilter with inner processor ───────────────────
+
     [Fact]
-    public void AddAllSeverityFilter_WithinPipeline_FiltersCorrectly()
+    public void AddAllSeverityFilter_WithInnerProcessor_FiltersCorrectly()
+    {
+        // Arrange — full OTEL pipeline with filter wrapping the exporter
+        var exportedRecords = new List<LogLevel>();
+
+        var services = new ServiceCollection();
+        services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Trace));
+        services.AddOpenTelemetry()
+            .WithLogging(builder =>
+            {
+                var exporter = new InMemoryLogExporter(exportedRecords);
+                var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
+
+                builder.AddAllSeverityFilter(
+                    configure: filterOpts =>
+                    {
+                        filterOpts.MinSeverity = LogLevel.Warning;
+                    },
+                    innerProcessor: exportProcessor);
+            });
+
+        using var sp = services.BuildServiceProvider();
+        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+        // Act
+        var logger = loggerFactory.CreateLogger("test");
+        logger.LogDebug("debug");
+        logger.LogInformation("info");
+        logger.LogWarning("warning");
+        logger.LogError("error");
+
+        loggerFactory.Dispose();
+
+        // Assert — only Warning and above pass through
+        Assert.Equal(2, exportedRecords.Count);
+    }
+
+    [Fact]
+    public void AddAllSeverityFilter_DefaultConfig_AppliesInformationThreshold()
+    {
+        // Arrange — pipeline with default filter options wrapping exporter
+        var exportedRecords = new List<LogLevel>();
+
+        var services = new ServiceCollection();
+        services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Trace));
+        services.AddOpenTelemetry()
+            .WithLogging(builder =>
+            {
+                var exporter = new InMemoryLogExporter(exportedRecords);
+                var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
+
+                builder.AddAllSeverityFilter(
+                    configure: null,
+                    innerProcessor: exportProcessor);
+            });
+
+        using var sp = services.BuildServiceProvider();
+        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+        // Act
+        var logger = loggerFactory.CreateLogger("test");
+        logger.LogTrace("trace");
+        logger.LogDebug("debug");
+        logger.LogInformation("info");
+        logger.LogWarning("warning");
+
+        loggerFactory.Dispose();
+
+        // Assert — only Information and above pass through (default min)
+        Assert.Equal(2, exportedRecords.Count);
+    }
+
+    [Fact]
+    public void AddAllSeverityFilter_WithEventNameOverrides_FiltersPerEventName()
+    {
+        // Arrange — pipeline with event name overrides
+        var exportedRecords = new List<LogLevel>();
+
+        var services = new ServiceCollection();
+        services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Trace));
+        services.AddOpenTelemetry()
+            .WithLogging(builder =>
+            {
+                var exporter = new InMemoryLogExporter(exportedRecords);
+                var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
+
+                builder.AddAllSeverityFilter(
+                    configure: filterOpts =>
+                    {
+                        filterOpts.MinSeverity = LogLevel.Warning;
+                        filterOpts.EventNameOverrides["health.*"] = LogLevel.Debug;
+                    },
+                    innerProcessor: exportProcessor);
+            });
+
+        using var sp = services.BuildServiceProvider();
+        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+        // Act
+        var logger = loggerFactory.CreateLogger("test");
+        logger.LogDebug("plain debug");
+        logger.Log(LogLevel.Debug, new EventId(0, "health.check"), "health check");
+        logger.LogWarning("plain warning");
+
+        loggerFactory.Dispose();
+
+        // Assert — override event and warning pass
+        Assert.Equal(2, exportedRecords.Count);
+    }
+
+    // ─── Null guard tests ────────────────────────────────────────────
+
+    [Fact]
+    public void AddAllSeverityFilter_NullBuilder_ThrowsArgumentNullException()
+    {
+        LoggerProviderBuilder? nullBuilder = null;
+
+        Assert.Throws<ArgumentNullException>(() =>
+            nullBuilder!.AddAllSeverityFilter(
+                configure: opts => opts.MinSeverity = LogLevel.Warning,
+                innerProcessor: new InMemoryLogRecordProcessor()));
+    }
+
+    [Fact]
+    public void AddAllSeverityFilter_NullInnerProcessor_ThrowsArgumentNullException()
+    {
+        // Verify via constructor — the extension delegates to it
+        Assert.Throws<ArgumentNullException>(() =>
+            new AllSeverityFilterProcessor(
+                new AllSeverityFilterOptions(),
+                null!));
+    }
+
+    // ─── Direct processor construction (recommended pattern) ─────────
+
+    [Fact]
+    public void DirectConstruction_WithinPipeline_FiltersCorrectly()
     {
         // Arrange — full OTEL pipeline with filter wrapping the exporter
         var exportedRecords = new List<LogLevel>();
@@ -38,75 +177,6 @@ public sealed class AllSeverityFilterExtensionsTests
         logger.LogError("error");
 
         // Assert — only Warning and above pass through
-        Assert.Equal(2, exportedRecords.Count);
-    }
-
-    [Fact]
-    public void AddAllSeverityFilter_DefaultOptions_AppliesInformationThreshold()
-    {
-        // Arrange — pipeline with default filter options
-        var exportedRecords = new List<LogLevel>();
-
-        using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder.SetMinimumLevel(LogLevel.Trace);
-            builder.AddOpenTelemetry(options =>
-            {
-                var exporter = new InMemoryLogExporter(exportedRecords);
-                options.AddProcessor(
-                    new AllSeverityFilterProcessor(
-                        new AllSeverityFilterOptions(), // default: Information
-                        new SimpleLogRecordExportProcessor(exporter)));
-            });
-        });
-
-        // Act
-        var logger = loggerFactory.CreateLogger("test");
-        logger.LogTrace("trace");
-        logger.LogDebug("debug");
-        logger.LogInformation("info");
-        logger.LogWarning("warning");
-
-        // Assert — only Information and above pass through
-        Assert.Equal(2, exportedRecords.Count);
-    }
-
-    [Fact]
-    public void AddAllSeverityFilter_WithEventNameOverrides_FiltersPerEventName()
-    {
-        // Arrange — pipeline with event name overrides
-        var exportedRecords = new List<LogLevel>();
-
-        using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder.SetMinimumLevel(LogLevel.Trace);
-            builder.AddOpenTelemetry(options =>
-            {
-                var exporter = new InMemoryLogExporter(exportedRecords);
-                options.AddProcessor(
-                    new AllSeverityFilterProcessor(
-                        new AllSeverityFilterOptions
-                        {
-                            MinSeverity = LogLevel.Warning,
-                            EventNameOverrides = new Dictionary<string, LogLevel>
-                            {
-                                ["health.*"] = LogLevel.Debug
-                            }
-                        },
-                        new SimpleLogRecordExportProcessor(exporter)));
-            });
-        });
-
-        // Act
-        var logger = loggerFactory.CreateLogger("test");
-        // Debug with no event name → below Warning → dropped
-        logger.LogDebug("plain debug");
-        // Debug with matching event name → at Debug override → passes
-        logger.Log(LogLevel.Debug, new EventId(0, "health.check"), "health check");
-        // Warning with no event name → at Warning → passes
-        logger.LogWarning("plain warning");
-
-        // Assert — override event and warning pass
         Assert.Equal(2, exportedRecords.Count);
     }
 
