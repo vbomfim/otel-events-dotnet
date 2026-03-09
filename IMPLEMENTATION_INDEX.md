@@ -64,10 +64,10 @@ This index guides you through the three comprehensive exploration documents crea
 - Build properties setup
 
 **Section 4: INTEGRATION PACK STRUCTURE**
-- All.Schema - YAML parser & generator
-- All.Causality - Causal linking
-- All.Exporter.Json - JSON export
-- All.Testing - Test utilities
+- OtelEvents.Schema - YAML parser & generator
+- OtelEvents.Causality - Causal linking
+- OtelEvents.Exporter.Json - JSON export
+- OtelEvents.Testing - Test utilities
 
 **Section 5: EVENT EMISSION MECHANICS**
 - Two-step pattern explained
@@ -223,7 +223,7 @@ This index guides you through the three comprehensive exploration documents crea
 - [ ] Events emit correctly
 - [ ] Metrics record with labels
 - [ ] Configuration options work
-- [ ] Causal linking works (with All.Causality)
+- [ ] Causal linking works (with OtelEvents.Causality)
 - [ ] DI registration works
 - [ ] Suppression options work
 
@@ -262,7 +262,7 @@ This index guides you through the three comprehensive exploration documents crea
 **Dependencies:** 3
 - Microsoft.Extensions.Diagnostics.HealthChecks >= 8.0
 - OpenTelemetry >= 1.9
-- All.Causality >= 1.0 (optional)
+- OtelEvents.Causality >= 1.0 (optional)
 
 **Target Frameworks:** 2
 - net8.0

@@ -1,6 +1,6 @@
 # Chapter 7 — Configuration
 
-ALL components are configured through standard .NET mechanisms: `appsettings.json` binding, programmatic `Action<TOptions>` delegates, and environment variable overrides. This chapter covers every configurable option.
+otel-events components are configured through standard .NET mechanisms: `appsettings.json` binding, programmatic `Action<TOptions>` delegates, and environment variable overrides. This chapter covers every configurable option.
 
 ---
 
@@ -29,11 +29,11 @@ ALL uses two primary configuration sections under the `All` root key:
 
 ### How Binding Works
 
-The `AddAllJsonExporter` and `AddAllSeverityFilter` extension methods accept an `IConfiguration` instance and call `.Bind()` on the appropriate section:
+The `AddOtelEventsJsonExporter` and `AddAllSeverityFilter` extension methods accept an `IConfiguration` instance and call `.Bind()` on the appropriate section:
 
 ```csharp
 // Exporter — binds "All:Exporter" section
-builder.AddAllJsonExporter(configuration);
+builder.AddOtelEventsJsonExporter(configuration);
 
 // Filter — binds "All:Filter" section
 builder.AddAllSeverityFilter(configuration, innerProcessor);
@@ -43,7 +43,7 @@ Under the hood, this reads the section and maps JSON properties to the options c
 
 ```csharp
 var section = configuration.GetSection("All:Exporter");
-var options = new AllJsonExporterOptions();
+var options = new OtelEventsJsonExporterOptions();
 section.Bind(options);
 ```
 
@@ -87,7 +87,7 @@ export ALL__Exporter__FilePath=/var/log/events.jsonl
 
 ## EnvironmentProfile Auto-Detection
 
-The `EnvironmentProfileDetector` automatically determines the `AllEnvironmentProfile` from standard .NET environment variables:
+The `EnvironmentProfileDetector` automatically determines the `OtelEventsEnvironmentProfile` from standard .NET environment variables:
 
 1. Checks `ASPNETCORE_ENVIRONMENT` first (ASP.NET Core standard)
 2. Falls back to `DOTNET_ENVIRONMENT` (.NET Generic Host standard)
@@ -97,7 +97,7 @@ The `EnvironmentProfileDetector` automatically determines the `AllEnvironmentPro
 Auto-detection **only** applies when `EnvironmentProfile` is **not** explicitly set in configuration:
 
 ```csharp
-// Auto-detection logic in AddAllJsonExporter:
+// Auto-detection logic in AddOtelEventsJsonExporter:
 if (section["EnvironmentProfile"] is null)
 {
     options.EnvironmentProfile = EnvironmentProfileDetector.Detect();
@@ -118,20 +118,20 @@ if (section["EnvironmentProfile"] is null)
 
 ---
 
-## AllJsonExporterOptions Reference
+## OtelEventsJsonExporterOptions Reference
 
 **Configuration section:** `All:Exporter`
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `Output` | `AllJsonOutput` | `Stdout` | Output target: `Stdout`, `Stderr`, or `File` |
+| `Output` | `OtelEventsJsonOutput` | `Stdout` | Output target: `Stdout`, `Stderr`, or `File` |
 | `FilePath` | `string?` | `null` | File path when `Output` is `File` |
 | `SchemaVersion` | `string` | `"1.0.0"` | Schema version stamped into every envelope as `all.v` |
-| `EnvironmentProfile` | `AllEnvironmentProfile` | `Production` | Security-sensitive defaults preset. Auto-detected from `ASPNETCORE_ENVIRONMENT` or `DOTNET_ENVIRONMENT` if not explicitly set |
+| `EnvironmentProfile` | `OtelEventsEnvironmentProfile` | `Production` | Security-sensitive defaults preset. Auto-detected from `ASPNETCORE_ENVIRONMENT` or `DOTNET_ENVIRONMENT` if not explicitly set |
 | `ExceptionDetailLevel` | `ExceptionDetailLevel?` | `null` | Exception detail in JSON. When `null`, resolved from `EnvironmentProfile` |
 | `EmitHostInfo` | `bool` | `false` | Emit `all.host` and `all.pid` in the envelope. May expose infrastructure details |
 | `MaxAttributeValueLength` | `int` | `4096` | Maximum length for any single string attribute value. Values exceeding this are truncated with `"…[truncated]"` |
-| `AttributeAllowlist` | `ISet<string>?` | `null` | When set, only listed attributes pass through for non-ALL LogRecords. `null` = all pass |
+| `AttributeAllowlist` | `ISet<string>?` | `null` | When set, only listed attributes pass through for non-otel-events LogRecords. `null` = all pass |
 | `AttributeDenylist` | `ISet<string>` | `[]` | Attributes to never emit. Takes precedence over allowlist |
 | `RedactPatterns` | `IList<string>` | `[]` | Regex patterns for value-level redaction. Matching values replaced with `[REDACTED]` |
 | `LockTimeout` | `TimeSpan` | `100ms` | Lock timeout for stream writes. Batches that cannot acquire the lock are dropped |
@@ -144,14 +144,14 @@ When `ExceptionDetailLevel` is `null` (the default), it resolves based on `Envir
 internal ExceptionDetailLevel ResolvedExceptionDetailLevel =>
     ExceptionDetailLevel ?? EnvironmentProfile switch
     {
-        AllEnvironmentProfile.Development => ExceptionDetailLevel.Full,
-        AllEnvironmentProfile.Staging     => ExceptionDetailLevel.TypeAndMessage,
-        AllEnvironmentProfile.Production  => ExceptionDetailLevel.TypeAndMessage,
+        OtelEventsEnvironmentProfile.Development => ExceptionDetailLevel.Full,
+        OtelEventsEnvironmentProfile.Staging     => ExceptionDetailLevel.TypeAndMessage,
+        OtelEventsEnvironmentProfile.Production  => ExceptionDetailLevel.TypeAndMessage,
         _                                 => ExceptionDetailLevel.TypeAndMessage,
     };
 ```
 
-### AllJsonOutput Enum
+### OtelEventsJsonOutput Enum
 
 | Value | Description |
 |---|---|
@@ -169,7 +169,7 @@ internal ExceptionDetailLevel ResolvedExceptionDetailLevel =>
 
 ---
 
-## AllSeverityFilterOptions Reference
+## OtelEventsSeverityFilterOptions Reference
 
 **Configuration section:** `All:Filter`
 
@@ -217,9 +217,9 @@ builder.AddAllSeverityFilter(
 
 ---
 
-## AllRateLimitOptions Reference
+## OtelEventsRateLimitOptions Reference
 
-**Configuration:** Programmatic only (`Action<AllRateLimitOptions>`)
+**Configuration:** Programmatic only (`Action<OtelEventsRateLimitOptions>`)
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -245,13 +245,13 @@ builder.AddAllRateLimiter(
 
 ---
 
-## AllSamplingOptions Reference
+## OtelEventsSamplingOptions Reference
 
-**Configuration:** Programmatic only (`Action<AllSamplingOptions>`)
+**Configuration:** Programmatic only (`Action<OtelEventsSamplingOptions>`)
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `Strategy` | `AllSamplingStrategy` | `Head` | `Head` (probability at arrival) or `Tail` (error-aware) |
+| `Strategy` | `OtelEventsSamplingStrategy` | `Head` | `Head` (probability at arrival) or `Tail` (error-aware) |
 | `DefaultSamplingRate` | `double` | `1.0` | Default probability (0.0–1.0). `1.0` = sample everything |
 | `EventRates` | `Dictionary<string, double>` | `{}` | Per-event-name sampling rates. Exact matches take precedence over wildcards |
 | `AlwaysSampleErrors` | `bool` | `true` | Always sample error-level events. Only applies to `Tail` strategy |
@@ -270,7 +270,7 @@ builder.AddAllRateLimiter(
 builder.AddAllSampler(
     configure: opts =>
     {
-        opts.Strategy = AllSamplingStrategy.Tail;
+        opts.Strategy = OtelEventsSamplingStrategy.Tail;
         opts.DefaultSamplingRate = 0.1;          // Sample 10% by default
         opts.AlwaysSampleErrors = true;          // Always keep errors
         opts.ErrorMinLevel = LogLevel.Error;
@@ -313,14 +313,14 @@ builder.Services.AddOpenTelemetry()
     .WithLogging(logging =>
     {
         // Causality processor
-        logging.AddProcessor<AllCausalityProcessor>();
+        logging.AddProcessor<OtelEventsCausalityProcessor>();
 
         // JSON exporter — bound from appsettings.json
-        logging.AddAllJsonExporter(builder.Configuration);
+        logging.AddOtelEventsJsonExporter(builder.Configuration);
 
         // Severity filter — bound from appsettings.json
         var exportProcessor = new SimpleLogRecordExportProcessor(
-            new AllJsonExporter(new AllJsonExporterOptions()));
+            new OtelEventsJsonExporter(new OtelEventsJsonExporterOptions()));
         logging.AddAllSeverityFilter(builder.Configuration, exportProcessor);
 
         // Rate limiting — programmatic only
@@ -336,7 +336,7 @@ builder.Services.AddOpenTelemetry()
         logging.AddAllSampler(
             opts =>
             {
-                opts.Strategy = AllSamplingStrategy.Tail;
+                opts.Strategy = OtelEventsSamplingStrategy.Tail;
                 opts.DefaultSamplingRate = 0.5;
                 opts.AlwaysSampleErrors = true;
             },
@@ -348,5 +348,5 @@ builder.Services.AddOpenTelemetry()
 
 ## Next Steps
 
-- [Chapter 8 — Testing](08-testing.md) — validate your configuration with `All.Testing`
+- [Chapter 8 — Testing](08-testing.md) — validate your configuration with `OtelEvents.Testing`
 - [Chapter 10 — Security & Privacy](10-security-privacy.md) — deep dive into `EnvironmentProfile` redaction behavior

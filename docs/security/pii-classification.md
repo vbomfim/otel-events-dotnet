@@ -54,9 +54,9 @@ events:
 Individual fields can be explicitly opted in or out of redaction at runtime. This is useful when a specific service has a documented legal basis (e.g., audit trail requirement) to emit PII in Production.
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+    options.EnvironmentProfile = OtelEventsEnvironmentProfile.Production;
 
     // Override: allow userId (pii) in Production for this specific service
     // Requires documented legal basis (e.g., audit trail requirement)
@@ -76,7 +76,7 @@ logging.AddAllJsonExporter(options =>
 
 ## Regulatory Compliance
 
-ALL provides the classification and redaction mechanisms. Specific regulatory compliance configuration is the responsibility of the deploying organization.
+otel-events provides the classification and redaction mechanisms. Specific regulatory compliance configuration is the responsibility of the deploying organization.
 
 | Regulation | ALL Mechanism |
 |------------|---------------|
@@ -85,7 +85,7 @@ ALL provides the classification and redaction mechanisms. Specific regulatory co
 | **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; ALL does not provide encryption at rest (log storage responsibility) |
 | **SOC 2** | Audit trail via `all.event_id`, `all.seq`, `traceId`; `all.host`/`all.pid` opt-in for attribution; SBOM generation in CI |
 
-> **Decision (OQ-PG-03):** ALL provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. ALL's defaults are privacy-preserving (PII redacted in Production).
+> **Decision (OQ-PG-03):** otel-events provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. ALL's defaults are privacy-preserving (PII redacted in Production).
 
 ## Related
 

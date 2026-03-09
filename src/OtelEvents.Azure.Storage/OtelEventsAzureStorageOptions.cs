@@ -21,7 +21,7 @@ public sealed class OtelEventsAzureStorageOptions
     /// <summary>
     /// Enable causal scope per storage operation. When true, events emitted during
     /// the operation share a parentEventId for causal linking.
-    /// Default: true (requires All.Causality; no-op otherwise).
+    /// Default: true (requires OtelEvents.Causality; no-op otherwise).
     /// </summary>
     public bool EnableCausalScope { get; set; } = true;
 

@@ -1,4 +1,4 @@
-# ALL — Another Logging Library
+# otel-events — Another Logging Library
 
 [![CI](https://github.com/all4dotnet/otel-events-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/all4dotnet/otel-events-dotnet/actions/workflows/ci.yml)
 
@@ -6,24 +6,24 @@
 
 ## Overview
 
-ALL extends the standard OpenTelemetry pipeline with:
+otel-events extends the standard OpenTelemetry pipeline with:
 
 - **Schema-driven events** — Define events in YAML, get type-safe C# methods via code generation
 - **AI-optimized JSON export** — Compact, single-line JSONL output optimized for machine investigation
 - **Causal event linking** — Track cause-and-effect relationships between events via `eventId`/`parentEventId`
 - **Compile-time enforcement** — Roslyn analyzers catch `Console.Write`, untyped `ILogger` usage, and schema violations
 
-Projects already using OpenTelemetry .NET can adopt ALL incrementally — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through the existing OTEL pipeline.
+Projects already using OpenTelemetry .NET can adopt otel-events incrementally — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through the existing OTEL pipeline.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| `All.Schema` | YAML parser, schema model, validation, and code generator |
-| `All.Exporter.Json` | Custom OTEL `BaseExporter<LogRecord>` for AI-optimized JSONL |
-| `All.Causality` | Custom OTEL `BaseProcessor<LogRecord>` for causal event linking |
-| `All.Analyzers` | Roslyn analyzers for logging hygiene enforcement |
-| `All.Testing` | In-memory `LogRecord` collector and assertion extensions |
+| `OtelEvents.Schema` | YAML parser, schema model, validation, and code generator |
+| `OtelEvents.Exporter.Json` | Custom OTEL `BaseExporter<LogRecord>` for AI-optimized JSONL |
+| `OtelEvents.Causality` | Custom OTEL `BaseProcessor<LogRecord>` for causal event linking |
+| `OtelEvents.Analyzers` | Roslyn analyzers for logging hygiene enforcement |
+| `OtelEvents.Testing` | In-memory `LogRecord` collector and assertion extensions |
 
 ## Quick Start
 
@@ -57,15 +57,15 @@ dotnet test -c Release --verbosity minimal
 ```
 otel-events-dotnet/
 ├── src/
-│   ├── All.Schema/              # YAML schema parser & code generator
-│   ├── All.Exporter.Json/       # JSON log exporter for OTEL pipeline
-│   ├── All.Causality/           # Causal event linking processor
-│   ├── All.Analyzers/           # Roslyn analyzers
-│   └── All.Testing/             # Test utilities
+│   ├── OtelEvents.Schema/              # YAML schema parser & code generator
+│   ├── OtelEvents.Exporter.Json/       # JSON log exporter for OTEL pipeline
+│   ├── OtelEvents.Causality/           # Causal event linking processor
+│   ├── OtelEvents.Analyzers/           # Roslyn analyzers
+│   └── OtelEvents.Testing/             # Test utilities
 ├── tests/
-│   ├── All.Schema.Tests/
-│   ├── All.Exporter.Json.Tests/
-│   └── All.Causality.Tests/
+│   ├── OtelEvents.Schema.Tests/
+│   ├── OtelEvents.Exporter.Json.Tests/
+│   └── OtelEvents.Causality.Tests/
 ├── Directory.Build.props        # Shared MSBuild properties
 ├── Directory.Packages.props     # Central package management
 └── OtelEvents.slnx              # Solution file
@@ -84,7 +84,7 @@ For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 
 ## User Guide
 
-See the [ALL User Guide](docs/user-guide/README.md) for comprehensive documentation:
+See the [otel-events User Guide](docs/user-guide/README.md) for comprehensive documentation:
 
 - [Getting Started](docs/user-guide/04-getting-started.md) — 10-minute tutorial
 - [Schema Reference](docs/user-guide/05-schema-reference.md) — Complete YAML grammar

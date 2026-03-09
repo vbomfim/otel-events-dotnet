@@ -1,4 +1,4 @@
-using All.Causality;
+using OtelEvents.Causality;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +34,7 @@ public class OtelEventsGrpcClientInterceptorTests
             {
                 options.IncludeFormattedMessage = true;
                 options.ParseStateValues = true;
-                options.AddProcessor(new AllCausalityProcessor());
+                options.AddProcessor(new OtelEventsCausalityProcessor());
                 options.AddProcessor(new SimpleLogRecordExportProcessor(exporter));
             });
         });

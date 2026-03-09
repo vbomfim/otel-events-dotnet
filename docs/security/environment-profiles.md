@@ -49,9 +49,9 @@ The most restrictive profile. Only `public`-classified fields are visible.
 ## Configuration
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+    options.EnvironmentProfile = OtelEventsEnvironmentProfile.Production;
 });
 ```
 

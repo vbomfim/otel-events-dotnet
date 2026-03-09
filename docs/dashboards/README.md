@@ -141,8 +141,8 @@ Navigate to [http://localhost:3000](http://localhost:3000) (admin/admin) and fin
 Use `SchemaMetricsDashboardGenerator` to generate dashboard JSON from any `.all.yaml` schema:
 
 ```csharp
-using All.Schema.CodeGen;
-using All.Schema.Parsing;
+using OtelEvents.Schema.CodeGen;
+using OtelEvents.Schema.Parsing;
 
 // Parse your schema
 var parser = new SchemaParser();

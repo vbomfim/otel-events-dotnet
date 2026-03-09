@@ -1,6 +1,6 @@
 # Chapter 9 — CLI Tool Reference
 
-The ALL CLI (`dotnet all`) provides commands for schema validation, code generation, version comparison, and documentation generation. Install it as a .NET global or local tool.
+The otel-events CLI (`dotnet otel-events`) provides commands for schema validation, code generation, version comparison, and documentation generation. Install it as a .NET global or local tool.
 
 ---
 
@@ -8,14 +8,14 @@ The ALL CLI (`dotnet all`) provides commands for schema validation, code generat
 
 ```bash
 # Global tool
-dotnet tool install --global All.Cli
+dotnet tool install --global OtelEvents.Cli
 
 # Local tool (recommended for CI)
 dotnet new tool-manifest
-dotnet tool install All.Cli
+dotnet tool install OtelEvents.Cli
 ```
 
-After installation, the tool is available as `dotnet all`:
+After installation, the tool is available as `dotnet otel-events`:
 
 ```bash
 dotnet all --help

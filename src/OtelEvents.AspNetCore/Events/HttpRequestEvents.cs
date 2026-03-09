@@ -9,7 +9,7 @@ namespace OtelEvents.AspNetCore.Events;
 /// </summary>
 /// <remarks>
 /// This code is pre-compiled in the NuGet package — consumers do NOT need
-/// All.Schema at build time. The YAML schema is embedded for documentation
+/// OtelEvents.Schema at build time. The YAML schema is embedded for documentation
 /// and tooling inspection only.
 /// </remarks>
 internal static partial class HttpRequestEvents

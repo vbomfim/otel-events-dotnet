@@ -34,7 +34,7 @@ a **Gateway** Collector deployment for OTLP metrics and traces.
 │                                                          │
 │  ┌─────────────────────┐  stdout  ┌──────────────────┐  │
 │  │ .NET Application     │─────────▶│ Container Runtime │  │
-│  │ (AllJsonExporter     │  JSONL   │ (writes to        │  │
+│  │ (OtelEventsJsonExporter     │  JSONL   │ (writes to        │  │
 │  │  → stdout)           │          │  /var/log/pods/)   │  │
 │  └─────────────────────┘          └────────┬─────────┘  │
 │                                             │            │

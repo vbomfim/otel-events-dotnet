@@ -6,14 +6,14 @@ Step-by-step guide for migrating from plain `ILogger` usage to ALL-generated sch
 
 ## Migration Philosophy
 
-ALL is designed for **gradual, non-breaking adoption**. You don't need to rewrite your application in one go:
+otel-events is designed for **gradual, non-breaking adoption**. You don't need to rewrite your application in one go:
 
 1. ALL-generated events and hand-written `ILogger` calls **coexist** in the same pipeline
-2. The `AllJsonExporter` exports **all** `LogRecord`s — both ALL-generated and plain `ILogger` calls
+2. The `OtelEventsJsonExporter` exports **all** `LogRecord`s — both ALL-generated and plain `ILogger` calls
 3. Third-party library logs pass through unchanged
 4. You migrate one event category at a time
 
-> **Nothing breaks.** Adding ALL to an existing OTEL setup is additive. Your existing `ILogger` calls, severity filters, and OTLP exporters continue working exactly as before.
+> **Nothing breaks.** Adding otel-events to an existing OTEL setup is additive. Your existing `ILogger` calls, severity filters, and OTLP exporters continue working exactly as before.
 
 ---
 
@@ -41,25 +41,25 @@ Add ALL packages alongside your existing OTEL setup:
 
 ```bash
 # Core: schema parser + code generator
-dotnet add package All.Schema
+dotnet add package OtelEvents.Schema
 
 # AI-optimized JSON exporter
-dotnet add package All.Exporter.Json
+dotnet add package OtelEvents.Exporter.Json
 
 # Causal event linking (optional)
-dotnet add package All.Causality
+dotnet add package OtelEvents.Causality
 
 # Compile-time analyzers (optional — add after initial migration)
-dotnet add package All.Analyzers
+dotnet add package OtelEvents.Analyzers
 ```
 
-> **Tip:** Hold off on `All.Analyzers` until you've migrated a few event categories. Adding it immediately will flag every existing `ILogger` call as `ALL002`, which creates noise during migration.
+> **Tip:** Hold off on `OtelEvents.Analyzers` until you've migrated a few event categories. Adding it immediately will flag every existing `ILogger` call as `ALL002`, which creates noise during migration.
 
 ---
 
-## Step 2 — Register ALL in Program.cs
+## Step 2 — Register otel-events in Program.cs
 
-Add ALL components to your existing OTEL setup. **Don't remove anything** — ALL extends, it doesn't replace:
+Add otel-events components to your existing OTEL setup. **Don't remove anything** — otel-events extends, it doesn't replace:
 
 ```csharp
 // BEFORE: Existing OTEL setup
@@ -74,19 +74,19 @@ builder.Services.AddOpenTelemetry()
         metrics.AddOtlpExporter();   // Keep existing metrics
     });
 
-// AFTER: Add ALL alongside existing setup
+// AFTER: Add otel-events alongside existing setup
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService("my-service"))
     .WithLogging(logging =>
     {
-        // NEW: ALL causality processor
-        logging.AddProcessor<AllCausalityProcessor>();
+        // NEW: otel-events causality processor
+        logging.AddProcessor<OtelEventsCausalityProcessor>();
 
-        // NEW: ALL JSON exporter (stdout)
-        logging.AddAllJsonExporter(options =>
+        // NEW: otel-events JSON exporter (stdout)
+        logging.AddOtelEventsJsonExporter(options =>
         {
-            options.Output = AllJsonOutput.Stdout;
-            options.EnvironmentProfile = AllEnvironmentProfile.Development;
+            options.Output = OtelEventsJsonOutput.Stdout;
+            options.EnvironmentProfile = OtelEventsEnvironmentProfile.Development;
         });
 
         logging.AddOtlpExporter();   // Keep existing exporter
@@ -100,7 +100,7 @@ builder.Services.AddOpenTelemetry()
     });
 ```
 
-At this point, your existing logs flow through both the OTLP exporter AND the ALL JSON exporter. Non-ALL `LogRecord`s appear in JSONL with `"event": "dotnet.ilogger"`.
+At this point, your existing logs flow through both the OTLP exporter AND the otel-events JSON exporter. Non-otel-events `LogRecord`s appear in JSONL with `"event": "dotnet.ilogger"`.
 
 ---
 
@@ -275,13 +275,13 @@ public class OrderService
 
 ---
 
-## Step 6 — Non-ALL Passthrough
+## Step 6 — Non-otel-events Passthrough
 
 During migration, your codebase will have a mix of ALL-generated events and plain `ILogger` calls. This is expected and fully supported.
 
-### How non-ALL LogRecords are handled
+### How non-otel-events LogRecords are handled
 
-The `AllJsonExporter` exports **all** `LogRecord`s:
+The `OtelEventsJsonExporter` exports **all** `LogRecord`s:
 
 | Source | `event` field | `attr` field |
 |--------|--------------|-------------|
@@ -290,14 +290,14 @@ The `AllJsonExporter` exports **all** `LogRecord`s:
 | Direct `_logger.LogInformation(...)` | `"dotnet.ilogger"` (fallback) | State key-value pairs |
 | Third-party library (EF Core, ASP.NET) | `EventId.Name` if set | Library-specific attributes |
 
-### Filtering non-ALL attributes
+### Filtering non-otel-events attributes
 
-Non-ALL `LogRecord`s may contain sensitive data. Configure filtering:
+Non-otel-events `LogRecord`s may contain sensitive data. Configure filtering:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    // Only pass through these attributes from non-ALL LogRecords
+    // Only pass through these attributes from non-otel-events LogRecords
     options.AttributeAllowlist = ["RequestPath", "StatusCode", "ElapsedMs"];
 
     // Never emit these attributes (takes precedence)
@@ -328,7 +328,7 @@ dotnet all validate events.all.yaml
 ### Enable analyzers
 
 ```bash
-dotnet add package All.Analyzers
+dotnet add package OtelEvents.Analyzers
 ```
 
 Start with warnings, then promote to errors as migration completes:
@@ -364,8 +364,8 @@ Use this checklist to track your migration progress:
 
 ### Phase 1 — Foundation (Sprint 1)
 
-- [ ] Install `All.Schema`, `All.Exporter.Json`, `All.Causality`
-- [ ] Register ALL components in `Program.cs` alongside existing OTEL
+- [ ] Install `OtelEvents.Schema`, `OtelEvents.Exporter.Json`, `OtelEvents.Causality`
+- [ ] Register otel-events components in `Program.cs` alongside existing OTEL
 - [ ] Create initial `events.all.yaml` with 3–5 high-priority events
 - [ ] Run `dotnet all generate` and verify generated code
 - [ ] Replace first event category (e.g., HTTP request events)
@@ -376,9 +376,9 @@ Use this checklist to track your migration progress:
 
 - [ ] Migrate remaining event categories one at a time
 - [ ] Add sensitivity annotations to PII fields
-- [ ] Configure `AttributeAllowlist` / `AttributeDenylist` for non-ALL logs
+- [ ] Configure `AttributeAllowlist` / `AttributeDenylist` for non-otel-events logs
 - [ ] Add integration packs for common frameworks (AspNetCore, CosmosDB, etc.)
-- [ ] Install `All.Analyzers` with warning-level severity
+- [ ] Install `OtelEvents.Analyzers` with warning-level severity
 
 ### Phase 3 — Enforcement (Sprint 4+)
 
@@ -393,7 +393,7 @@ Use this checklist to track your migration progress:
 
 ## What Stays the Same
 
-| Aspect | Before ALL | After ALL |
+| Aspect | Before otel-events | After otel-events |
 |--------|-----------|----------|
 | OTEL `AddOtlpExporter()` | ✅ Works | ✅ Still works — unchanged |
 | `builder.Logging.AddFilter(...)` | ✅ Works | ✅ Still works — unchanged |
@@ -406,6 +406,6 @@ Use this checklist to track your migration progress:
 
 ## Next Steps
 
-- [Chapter 13 — FAQ](13-faq.md) — common questions about ALL adoption
+- [Chapter 13 — FAQ](13-faq.md) — common questions about otel-events adoption
 - [Chapter 7 — Configuration](07-configuration.md) — configure for production
 - [Chapter 11 — Advanced Topics](11-advanced-topics.md) — rate limiting, sampling, schema versioning

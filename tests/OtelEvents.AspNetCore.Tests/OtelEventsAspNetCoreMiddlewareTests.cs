@@ -1,4 +1,4 @@
-using All.Causality;
+using OtelEvents.Causality;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -43,7 +43,7 @@ public class OtelEventsAspNetCoreMiddlewareTests : IAsyncDisposable
                     {
                         options.IncludeFormattedMessage = true;
                         options.ParseStateValues = true;
-                        options.AddProcessor(new AllCausalityProcessor());
+                        options.AddProcessor(new OtelEventsCausalityProcessor());
                         options.AddProcessor(new SimpleLogRecordExportProcessor(exporter));
                     });
                 });
@@ -649,7 +649,7 @@ public class OtelEventsAspNetCoreMiddlewareTests : IAsyncDisposable
         // Act
         await client.GetAsync("/api/orders");
 
-        // Assert — received event should have all.event_id (from AllCausalityProcessor)
+        // Assert — received event should have all.event_id (from OtelEventsCausalityProcessor)
         var received = exporter.AssertSingle("http.request.received");
         Assert.True(received.Attributes.ContainsKey("all.event_id"),
             "Received event should have all.event_id");

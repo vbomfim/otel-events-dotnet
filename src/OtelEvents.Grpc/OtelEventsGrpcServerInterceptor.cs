@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using All.Causality;
+using OtelEvents.Causality;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.Extensions.Logging;
@@ -55,7 +55,7 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         IDisposable? causalScope = null;
         if (_options.EnableCausalScope)
         {
-            causalScope = AllCausalityContext.SetParent(Uuid7.FormatEventId());
+            causalScope = OtelEventsCausalityContext.SetParent(Uuid7.FormatEventId());
         }
 
         var sw = Stopwatch.StartNew();
@@ -114,7 +114,7 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         IDisposable? causalScope = null;
         if (_options.EnableCausalScope)
         {
-            causalScope = AllCausalityContext.SetParent(Uuid7.FormatEventId());
+            causalScope = OtelEventsCausalityContext.SetParent(Uuid7.FormatEventId());
         }
 
         var sw = Stopwatch.StartNew();
@@ -168,7 +168,7 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         IDisposable? causalScope = null;
         if (_options.EnableCausalScope)
         {
-            causalScope = AllCausalityContext.SetParent(Uuid7.FormatEventId());
+            causalScope = OtelEventsCausalityContext.SetParent(Uuid7.FormatEventId());
         }
 
         var sw = Stopwatch.StartNew();
@@ -226,7 +226,7 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         IDisposable? causalScope = null;
         if (_options.EnableCausalScope)
         {
-            causalScope = AllCausalityContext.SetParent(Uuid7.FormatEventId());
+            causalScope = OtelEventsCausalityContext.SetParent(Uuid7.FormatEventId());
         }
 
         var sw = Stopwatch.StartNew();

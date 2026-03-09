@@ -1,4 +1,4 @@
-using All.Causality;
+using OtelEvents.Causality;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +34,7 @@ public class OtelEventsGrpcServerInterceptorTests
             {
                 options.IncludeFormattedMessage = true;
                 options.ParseStateValues = true;
-                options.AddProcessor(new AllCausalityProcessor());
+                options.AddProcessor(new OtelEventsCausalityProcessor());
                 options.AddProcessor(new SimpleLogRecordExportProcessor(exporter));
             });
         });
@@ -493,7 +493,7 @@ public class OtelEventsGrpcServerInterceptorTests
         await interceptor.UnaryServerHandler<string, string>(
             "request", context, (_, _) => Task.FromResult("response"));
 
-        // Assert — started event should have all.event_id (from AllCausalityProcessor)
+        // Assert — started event should have all.event_id (from OtelEventsCausalityProcessor)
         var started = exporter.AssertSingle("grpc.call.started");
         Assert.True(started.Attributes.ContainsKey("all.event_id"),
             "Started event should have all.event_id");

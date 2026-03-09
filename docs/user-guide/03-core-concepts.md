@@ -24,7 +24,7 @@ Every event has:
 
 ### How an Event Maps to OTEL
 
-When you call an ALL-generated extension method like `_logger.OrderPlaced(...)`, two things happen simultaneously:
+When you call an otel-events-generated extension method like `_logger.OrderPlaced(...)`, two things happen simultaneously:
 
 1. **LogRecord** — The `[LoggerMessage]`-generated partial method creates a native OTEL `LogRecord` with all fields as structured attributes. This record flows through the standard OTEL log pipeline (processors → exporters).
 
@@ -156,7 +156,7 @@ For the complete YAML grammar, see [Chapter 5 — Schema Reference](05-schema-re
 
 ## JSON Envelope
 
-Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line with a predictable structure — the **ALL envelope**:
+Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON line with a predictable structure — the **ALL envelope**:
 
 ```json
 {
@@ -194,8 +194,8 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line with
 | `environment` | OTEL Resource `deployment.environment` | Deployment environment |
 | `traceId` | `Activity.Current.TraceId` | W3C trace ID (from OTEL) |
 | `spanId` | `Activity.Current.SpanId` | W3C span ID (from OTEL) |
-| `eventId` | `all.event_id` attribute | UUID v7 with `evt_` prefix (from `AllCausalityProcessor`) |
-| `parentEventId` | `all.parent_event_id` attribute | Parent event's ID (from `AllCausalityContext`) |
+| `eventId` | `all.event_id` attribute | UUID v7 with `evt_` prefix (from `OtelEventsCausalityProcessor`) |
+| `parentEventId` | `all.parent_event_id` attribute | Parent event's ID (from `OtelEventsCausalityContext`) |
 | `attr` | `LogRecord.Attributes` | Typed key-value payload from event fields |
 | `tags` | `all.tags` attribute | Schema-defined tags |
 | `all.v` | Exporter config | Schema version stamp |
@@ -224,7 +224,7 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line with
 
 ## Causality
 
-OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. ALL's `AllCausalityProcessor` adds **causal event trees** — linking child events to their parent.
+OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. ALL's `OtelEventsCausalityProcessor` adds **causal event trees** — linking child events to their parent.
 
 ### Causal Tree Example
 
@@ -237,11 +237,11 @@ evt_001: order.processing.started (orderId: "ORD-123")
 
 ### How it Works
 
-1. **`AllCausalityProcessor`** — An OTEL `BaseProcessor<LogRecord>` that generates a unique `eventId` (UUID v7 with `evt_` prefix) for every `LogRecord` and reads the `parentEventId` from ambient context.
+1. **`OtelEventsCausalityProcessor`** — An OTEL `BaseProcessor<LogRecord>` that generates a unique `eventId` (UUID v7 with `evt_` prefix) for every `LogRecord` and reads the `parentEventId` from ambient context.
 
-2. **`AllCausalityContext`** — Uses `AsyncLocal<string?>` to store the current parent event ID, flowing naturally across `async`/`await` boundaries.
+2. **`OtelEventsCausalityContext`** — Uses `AsyncLocal<string?>` to store the current parent event ID, flowing naturally across `async`/`await` boundaries.
 
-3. **`AllCausalityContext.SetParent()`** — Sets the parent event ID for the duration of a scope:
+3. **`OtelEventsCausalityContext.SetParent()`** — Sets the parent event ID for the duration of a scope:
 
 ```csharp
 public async Task ProcessOrder(OrderRequest request)
@@ -250,7 +250,7 @@ public async Task ProcessOrder(OrderRequest request)
     _logger.OrderProcessingStarted(request.OrderId);
 
     // Set causal parent for subsequent events
-    using (AllCausalityContext.SetParent(lastEmittedEventId))
+    using (OtelEventsCausalityContext.SetParent(lastEmittedEventId))
     {
         _logger.PaymentProcessed(request.OrderId, request.Amount);
         _logger.InventoryReserved(request.OrderId, request.Items.Count);
@@ -272,7 +272,7 @@ public async Task ProcessOrder(OrderRequest request)
 
 ## Sensitivity Levels
 
-Every field in a schema supports an optional `sensitivity` attribute that classifies data sensitivity. The `AllJsonExporter` uses this to apply redaction based on the current `EnvironmentProfile`.
+Every field in a schema supports an optional `sensitivity` attribute that classifies data sensitivity. The `OtelEventsJsonExporter` uses this to apply redaction based on the current `EnvironmentProfile`.
 
 ### The Four Levels
 
@@ -325,7 +325,7 @@ For the complete redaction matrix by environment, see [Environment Profiles](#en
 
 ## Environment Profiles
 
-`AllEnvironmentProfile` adjusts multiple security-sensitive defaults at once. Think of it as a "security preset" for your environment.
+`OtelEventsEnvironmentProfile` adjusts multiple security-sensitive defaults at once. Think of it as a "security preset" for your environment.
 
 ### The Three Profiles
 
@@ -365,7 +365,7 @@ The `EnvironmentProfileDetector` reads the environment automatically:
 
 > `credential` fields are **always redacted**, even in `Development`. If you need a credential value in local debugging, inspect it in the debugger, not the log output.
 
-> `Production` is the **default** profile. If environment variables are unset, ALL defaults to `Production` — the most restrictive mode.
+> `Production` is the **default** profile. If environment variables are unset, otel-events defaults to `Production` — the most restrictive mode.
 
 ---
 
@@ -375,7 +375,7 @@ The `EnvironmentProfileDetector` reads the environment automatically:
 |------|-----------|
 | **Event** | A discrete, typed, schema-defined occurrence — emitted as an OTEL `LogRecord` with associated metrics |
 | **Schema** | YAML file (`.all.yaml`) defining events, fields, metrics, and metadata |
-| **Envelope** | The fixed JSON structure that `AllJsonExporter` writes for every `LogRecord` |
+| **Envelope** | The fixed JSON structure that `OtelEventsJsonExporter` writes for every `LogRecord` |
 | **Exporter** | An OTEL `BaseExporter<T>` that sends telemetry to a destination |
 | **Processor** | An OTEL `BaseProcessor<T>` that enriches or transforms telemetry in-flight |
 | **Codegen** | Source generator that creates C# from YAML schemas |

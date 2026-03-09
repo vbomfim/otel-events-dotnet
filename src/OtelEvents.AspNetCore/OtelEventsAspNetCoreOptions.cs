@@ -13,7 +13,7 @@ public sealed class OtelEventsAspNetCoreOptions
     /// <summary>
     /// Enable causal scope per request. When true, all events emitted during
     /// request processing share a parentEventId pointing to the http.request.received event.
-    /// Default: true (requires All.Causality to be referenced; no-op otherwise).
+    /// Default: true (requires OtelEvents.Causality to be referenced; no-op otherwise).
     /// </summary>
     public bool EnableCausalScope { get; set; } = true;
 

@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using All.Causality;
+using OtelEvents.Causality;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
@@ -65,7 +65,7 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
             var parentEventId = GetLastEmittedEventId(context);
             if (parentEventId is not null)
             {
-                causalScope = AllCausalityContext.SetParent(parentEventId);
+                causalScope = OtelEventsCausalityContext.SetParent(parentEventId);
             }
         }
 
@@ -218,13 +218,13 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
 
     /// <summary>
     /// Attempts to retrieve the last emitted event ID from the OTEL pipeline.
-    /// Uses the current AllCausalityContext if a parent was already set,
+    /// Uses the current OtelEventsCausalityContext if a parent was already set,
     /// otherwise generates a new event ID for the causal scope root.
     /// </summary>
     private static string? GetLastEmittedEventId(HttpContext context)
     {
         // The received event was just logged via the OTEL pipeline.
-        // The AllCausalityProcessor adds all.event_id to each LogRecord.
+        // The OtelEventsCausalityProcessor adds all.event_id to each LogRecord.
         // We need a stable event ID for the causal scope root.
         // Generate a new UUID v7 event ID for the causal scope.
         return Uuid7.FormatEventId();

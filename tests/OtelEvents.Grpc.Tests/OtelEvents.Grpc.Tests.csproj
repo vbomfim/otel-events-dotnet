@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OtelEvents.Grpc\OtelEvents.Grpc.csproj" />
-    <ProjectReference Include="..\..\src\All.Causality\All.Causality.csproj" />
+    <ProjectReference Include="..\..\src\OtelEvents.Causality\OtelEvents.Causality.csproj" />
   </ItemGroup>
 
 </Project>

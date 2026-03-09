@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\All.Causality\All.Causality.csproj" />
+    <ProjectReference Include="..\OtelEvents.Causality\OtelEvents.Causality.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,12 +1,12 @@
 # Chapter 11 — Advanced Topics
 
-This chapter covers advanced ALL features for production-scale deployments: rate limiting, event sampling, schema versioning, schema sharing, schema signing, DI-based metrics, Roslyn analyzers, and dashboard generation.
+This chapter covers advanced otel-events features for production-scale deployments: rate limiting, event sampling, schema versioning, schema sharing, schema signing, DI-based metrics, Roslyn analyzers, and dashboard generation.
 
 ---
 
 ## Rate Limiting
 
-At high throughput, some event categories can flood the pipeline. The `AllRateLimitProcessor` is a `BaseProcessor<LogRecord>` that caps event emission per category using a sliding time window.
+At high throughput, some event categories can flood the pipeline. The `OtelEventsRateLimitProcessor` is a `BaseProcessor<LogRecord>` that caps event emission per category using a sliding time window.
 
 ### Configuration
 
@@ -50,7 +50,7 @@ builder.Services.AddOpenTelemetry()
 
 ## Event Sampling
 
-Probabilistic sampling reduces event volume while preserving statistical properties. ALL provides two strategies via `AllSamplingProcessor`, a `BaseProcessor<LogRecord>`:
+Probabilistic sampling reduces event volume while preserving statistical properties. otel-events provides two strategies via `OtelEventsSamplingProcessor`, a `BaseProcessor<LogRecord>`:
 
 ### Head Sampling
 
@@ -59,7 +59,7 @@ Decides **before processing** based on pure probability:
 ```csharp
 logging.AddAllSampler(options =>
 {
-    options.Strategy = AllSamplingStrategy.Head;
+    options.Strategy = OtelEventsSamplingStrategy.Head;
     options.DefaultSamplingRate = 0.1;   // Sample 10% of all events
 
     // Per-event overrides
@@ -79,7 +79,7 @@ Error-aware sampling — **always keeps errors**, applies probability to non-err
 ```csharp
 logging.AddAllSampler(options =>
 {
-    options.Strategy = AllSamplingStrategy.Tail;
+    options.Strategy = OtelEventsSamplingStrategy.Tail;
     options.DefaultSamplingRate = 0.1;        // Sample 10% of non-error events
     options.AlwaysSampleErrors = true;        // Always keep error+ events
     options.ErrorMinLevel = LogLevel.Error;   // What counts as "error"
@@ -162,7 +162,7 @@ Share event contracts across services by packaging schemas in NuGet packages.
 </PropertyGroup>
 
 <ItemGroup>
-  <!-- All.Schema.targets auto-packages .all.yaml files -->
+  <!-- OtelEvents.Schema.targets auto-packages .all.yaml files -->
   <Content Include="schemas/**/*.all.yaml" Pack="true"
            PackagePath="contentFiles/any/any/schemas/" />
 </ItemGroup>
@@ -241,7 +241,7 @@ dotnet all verify events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 ## IMeterFactory DI Mode
 
-By default, ALL generates static `Meter` instances. For DI-friendly, disposable meters (useful in testing and multi-tenant scenarios), enable `IMeterFactory` mode:
+By default, otel-events generates static `Meter` instances. For DI-friendly, disposable meters (useful in testing and multi-tenant scenarios), enable `IMeterFactory` mode:
 
 ### Schema configuration
 
@@ -299,12 +299,12 @@ builder.Services.AddMyAppMetrics();
 
 ## Roslyn Analyzers
 
-The `All.Analyzers` package provides compile-time checks that enforce schema usage and logging hygiene.
+The `OtelEvents.Analyzers` package provides compile-time checks that enforce schema usage and logging hygiene.
 
 ### Install
 
 ```bash
-dotnet add package All.Analyzers
+dotnet add package OtelEvents.Analyzers
 ```
 
 Analyzers activate automatically when the package is referenced.
@@ -314,11 +314,11 @@ Analyzers activate automatically when the package is referenced.
 | Rule | Severity | Title | Description |
 |------|----------|-------|-------------|
 | **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use ALL-generated events instead. |
-| **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.LogInformation`, `ILogger.LogError`, etc. without using an ALL-generated extension method. |
-| **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an ALL-generated method parameter. Pass raw values — ALL handles message interpolation. |
+| **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.LogInformation`, `ILogger.LogError`, etc. without using an otel-events-generated extension method. |
+| **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events-generated method parameter. Pass raw values — otel-events handles message interpolation. |
 | **ALL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
 | **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
-| **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an ALL event with the caught exception. |
+| **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an otel-events event with the caught exception. |
 | **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use ALL-generated events instead. |
 | **ALL008** | Error | Reserved prefix usage | Code uses `all.` prefix in field names — reserved for library metadata. |
 | **ALL009** | Warning | PII field without redaction | Schema field with `sensitivity: pii` or `sensitivity: credential` used but no redaction policy configured. |
@@ -397,5 +397,5 @@ Pre-built Grafana templates are available in the repository's `docs/dashboards/`
 
 ## Next Steps
 
-- [Chapter 12 — Migration Guide](12-migration-guide.md) — step-by-step migration from plain `ILogger` to ALL
+- [Chapter 12 — Migration Guide](12-migration-guide.md) — step-by-step migration from plain `ILogger` to otel-events
 - [Chapter 13 — FAQ](13-faq.md) — frequently asked questions

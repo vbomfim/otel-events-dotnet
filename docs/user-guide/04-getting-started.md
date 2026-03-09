@@ -1,6 +1,6 @@
 # Chapter 4 — Getting Started
 
-This tutorial takes you from zero to your first schema-defined event in 10 minutes. By the end, you'll have a running ASP.NET Core API that emits ALL events as structured JSONL on stdout.
+This tutorial takes you from zero to your first schema-defined event in 10 minutes. By the end, you'll have a running ASP.NET Core API that emits otel-events events as structured JSONL on stdout.
 
 ---
 
@@ -26,16 +26,16 @@ cd MyOrderService
 
 ```bash
 # Core: schema parser + code generator
-dotnet add package All.Schema
+dotnet add package OtelEvents.Schema
 
 # JSON exporter: AI-optimized JSONL on stdout
-dotnet add package All.Exporter.Json
+dotnet add package OtelEvents.Exporter.Json
 
 # Causality: eventId/parentEventId causal linking
-dotnet add package All.Causality
+dotnet add package OtelEvents.Causality
 
 # Analyzers: compile-time logging hygiene
-dotnet add package All.Analyzers
+dotnet add package OtelEvents.Analyzers
 ```
 
 Or use the meta-package for everything:
@@ -189,26 +189,26 @@ You now have IntelliSense-enabled, type-safe event methods.
 Update `Program.cs`:
 
 ```csharp
-using All.Causality;
-using All.Exporter.Json;
+using OtelEvents.Causality;
+using OtelEvents.Exporter.Json;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ─── Standard OTEL setup — ALL extends it ──────────────────────────
+// ─── Standard OTEL setup — otel-events extends it ──────────────────────────
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService("order-service"))
     .WithLogging(logging =>
     {
         // ALL: causal event linking
-        logging.AddProcessor<AllCausalityProcessor>();
+        logging.AddProcessor<OtelEventsCausalityProcessor>();
 
         // ALL: AI-optimized JSON exporter
-        logging.AddAllJsonExporter(options =>
+        logging.AddOtelEventsJsonExporter(options =>
         {
-            options.Output = AllJsonOutput.Stdout;
+            options.Output = OtelEventsJsonOutput.Stdout;
             options.SchemaVersion = "1.0.0";
         });
     })
@@ -292,16 +292,16 @@ dotnet run 2>/dev/null | jq .
 
 ## Step 8: Verify with Tests
 
-Add `All.Testing` to your test project:
+Add `OtelEvents.Testing` to your test project:
 
 ```bash
-dotnet add tests/MyOrderService.Tests package All.Testing
+dotnet add tests/MyOrderService.Tests package OtelEvents.Testing
 ```
 
-Write a test using `AllTestHost`:
+Write a test using `OtelEventsTestHost`:
 
 ```csharp
-using All.Testing;
+using OtelEvents.Testing;
 using MyOrderService.Events;
 
 public class OrderEventTests : IDisposable
@@ -311,7 +311,7 @@ public class OrderEventTests : IDisposable
 
     public OrderEventTests()
     {
-        (_factory, _exporter) = AllTestHost.Create();
+        (_factory, _exporter) = OtelEventsTestHost.Create();
     }
 
     [Fact]
@@ -360,11 +360,11 @@ In 10 minutes, you now have:
 |---------|-----|
 | ✅ Type-safe events | YAML schema → generated `ILogger<T>` extension methods |
 | ✅ Auto-generated metrics | Counters and histograms from schema `metrics:` block |
-| ✅ AI-optimized JSON | Single-line JSONL on stdout via `AllJsonExporter` |
-| ✅ Causal linking | `eventId`/`parentEventId` via `AllCausalityProcessor` |
-| ✅ Compile-time checks | `All.Analyzers` catches `Console.Write` and untyped `ILogger` |
+| ✅ AI-optimized JSON | Single-line JSONL on stdout via `OtelEventsJsonExporter` |
+| ✅ Causal linking | `eventId`/`parentEventId` via `OtelEventsCausalityProcessor` |
+| ✅ Compile-time checks | `OtelEvents.Analyzers` catches `Console.Write` and untyped `ILogger` |
 | ✅ IntelliSense | Full autocompletion with parameter names and docs |
-| ✅ Unit tests | `AllTestHost` + `InMemoryLogExporter` for assertions |
+| ✅ Unit tests | `OtelEventsTestHost` + `InMemoryLogExporter` for assertions |
 
 ---
 

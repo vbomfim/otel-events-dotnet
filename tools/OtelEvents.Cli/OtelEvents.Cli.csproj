@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>otel-events</ToolCommandName>
+    <PackageId>OtelEvents.Cli</PackageId>
+    <Description>CLI tool for validating, generating, and comparing otel-events schema files</Description>
+    <NoWarn>CA1002;CA1307;CA1310;CA1515;CA1822;CA1859</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OtelEvents.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OtelEvents.Schema\OtelEvents.Schema.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,29 +1,29 @@
 # Chapter 8 — Testing with ALL
 
-ALL ships a dedicated testing package — `All.Testing` — that plugs into the OTEL pipeline and captures log records for assertion. This chapter shows how to write unit tests for services that emit ALL events.
+otel-events ships a dedicated testing package — `OtelEvents.Testing` — that plugs into the OTEL pipeline and captures log records for assertion. This chapter shows how to write unit tests for services that emit otel-events events.
 
 ---
 
-## All.Testing Package Overview
+## OtelEvents.Testing Package Overview
 
 Install the package in your test project:
 
 ```bash
-dotnet add package All.Testing
+dotnet add package OtelEvents.Testing
 ```
 
 The package provides four core types:
 
 | Type | Purpose |
 |---|---|
-| `AllTestHost` | Factory that creates a pre-configured `ILoggerFactory` + `InMemoryLogExporter` pair |
+| `OtelEventsTestHost` | Factory that creates a pre-configured `ILoggerFactory` + `InMemoryLogExporter` pair |
 | `InMemoryLogExporter` | OTEL `BaseExporter<LogRecord>` that captures records in memory |
 | `ExportedLogRecord` | Immutable snapshot of a `LogRecord` safe for assertions |
 | `LogAssertions` | Extension methods for fluent event assertions |
 
 ### Why a Dedicated Package?
 
-OTEL's `LogRecord` is **mutable and pooled** — the SDK recycles instances after export. If your test captures a reference to a `LogRecord`, the data may change or be zeroed out by the time you assert on it. `All.Testing` solves this by snapshotting each record into an immutable `ExportedLogRecord` at export time.
+OTEL's `LogRecord` is **mutable and pooled** — the SDK recycles instances after export. If your test captures a reference to a `LogRecord`, the data may change or be zeroed out by the time you assert on it. `OtelEvents.Testing` solves this by snapshotting each record into an immutable `ExportedLogRecord` at export time.
 
 ---
 
@@ -49,12 +49,12 @@ public sealed class InMemoryLogExporter : BaseExporter<LogRecord>
 
 ---
 
-## AllTestHost.Create()
+## OtelEventsTestHost.Create()
 
-`AllTestHost.Create()` is the fastest way to set up a test logging pipeline:
+`OtelEventsTestHost.Create()` is the fastest way to set up a test logging pipeline:
 
 ```csharp
-public static class AllTestHost
+public static class OtelEventsTestHost
 {
     public static (ILoggerFactory Factory, InMemoryLogExporter Exporter) Create();
     public static (ILoggerFactory Factory, InMemoryLogExporter Exporter) CreateWithCausality();
@@ -71,7 +71,7 @@ public static class AllTestHost
 ### Basic Usage
 
 ```csharp
-var (factory, exporter) = AllTestHost.Create();
+var (factory, exporter) = OtelEventsTestHost.Create();
 var logger = factory.CreateLogger("TestCategory");
 
 logger.LogInformation("Hello {Name}", "World");
@@ -85,10 +85,10 @@ factory.Dispose();
 
 ### With Causality
 
-`CreateWithCausality()` adds the `AllCausalityProcessor` to the pipeline, so `all.event_id` and `all.parent_event_id` attributes are populated:
+`CreateWithCausality()` adds the `OtelEventsCausalityProcessor` to the pipeline, so `all.event_id` and `all.parent_event_id` attributes are populated:
 
 ```csharp
-var (factory, exporter) = AllTestHost.CreateWithCausality();
+var (factory, exporter) = OtelEventsTestHost.CreateWithCausality();
 var logger = factory.CreateLogger("TestCategory");
 
 logger.LogInformation(new EventId(1, "order.placed"), "Order placed");
@@ -256,7 +256,7 @@ public class OrderServiceTests : IDisposable
     public OrderServiceTests()
     {
         // Set up the test pipeline
-        (_factory, _exporter) = AllTestHost.Create();
+        (_factory, _exporter) = OtelEventsTestHost.Create();
 
         var logger = _factory.CreateLogger<OrderEventSource>();
         _service = new OrderService(logger);
@@ -319,7 +319,7 @@ public class OrderServiceTests : IDisposable
 [Fact]
 public void ProcessOrder_EmitsMultipleEvents()
 {
-    var (factory, exporter) = AllTestHost.Create();
+    var (factory, exporter) = OtelEventsTestHost.Create();
     var logger = factory.CreateLogger<OrderEventSource>();
 
     // Emit multiple events
@@ -343,7 +343,7 @@ public void ProcessOrder_EmitsMultipleEvents()
 [Fact]
 public void FailedOperation_EmitsErrorEventWithException()
 {
-    var (factory, exporter) = AllTestHost.Create();
+    var (factory, exporter) = OtelEventsTestHost.Create();
     var logger = factory.CreateLogger<OrderEventSource>();
 
     var exception = new InvalidOperationException("Out of stock");
@@ -387,7 +387,7 @@ public void Test2()
 | Tip | Why |
 |---|---|
 | Always dispose `ILoggerFactory` in test cleanup | Ensures the OTEL pipeline flushes all pending records |
-| Use `SimpleLogRecordExportProcessor` (default in `AllTestHost`) | Synchronous export — records captured before assertions run |
+| Use `SimpleLogRecordExportProcessor` (default in `OtelEventsTestHost`) | Synchronous export — records captured before assertions run |
 | Test event names, not formatted messages | Event names are stable; message templates may change |
 | Use `AssertSingle` to get a record for attribute assertions | Returns the record directly for chaining |
 | Test at the service boundary, not the logger | Ensures the service calls the right event method with correct data |

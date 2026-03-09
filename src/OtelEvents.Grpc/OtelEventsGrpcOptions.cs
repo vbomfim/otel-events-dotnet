@@ -9,7 +9,7 @@ public sealed class OtelEventsGrpcOptions
     /// <summary>
     /// Enable causal scope per gRPC call. When true, all events emitted during
     /// call processing share a parentEventId pointing to the grpc.call.started event.
-    /// Default: true (requires All.Causality to be referenced; no-op otherwise).
+    /// Default: true (requires OtelEvents.Causality to be referenced; no-op otherwise).
     /// </summary>
     public bool EnableCausalScope { get; set; } = true;
 

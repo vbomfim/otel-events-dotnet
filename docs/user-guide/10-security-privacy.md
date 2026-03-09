@@ -1,6 +1,6 @@
 # Chapter 10 — Security & Privacy
 
-ALL provides a layered security model for controlling what data appears in log output. Sensitivity classification in schemas, environment-aware redaction, and defense-in-depth patterns work together to prevent accidental data exposure.
+otel-events provides a layered security model for controlling what data appears in log output. Sensitivity classification in schemas, environment-aware redaction, and defense-in-depth patterns work together to prevent accidental data exposure.
 
 ---
 
@@ -59,7 +59,7 @@ When a field's sensitivity level requires redaction in the current `EnvironmentP
 
 ## Redaction by EnvironmentProfile
 
-The `AllEnvironmentProfile` controls which sensitivity levels are redacted. The matrix below shows what's visible in each profile:
+The `OtelEventsEnvironmentProfile` controls which sensitivity levels are redacted. The matrix below shows what's visible in each profile:
 
 | Sensitivity | Development | Staging | Production |
 |---|---|---|---|
@@ -79,7 +79,7 @@ The `AllEnvironmentProfile` controls which sensitivity levels are redacted. The 
 ### Key Design Decision
 
 - `credential` fields are **always redacted**, even in `Development`. If you need a credential value in local debugging, inspect it in the debugger, not the log output.
-- `Production` is the **default** profile. If `ASPNETCORE_ENVIRONMENT` and `DOTNET_ENVIRONMENT` are both unset, ALL defaults to `Production` — the most restrictive mode. This is a fail-closed design.
+- `Production` is the **default** profile. If `ASPNETCORE_ENVIRONMENT` and `DOTNET_ENVIRONMENT` are both unset, otel-events defaults to `Production` — the most restrictive mode. This is a fail-closed design.
 
 ---
 
@@ -88,9 +88,9 @@ The `AllEnvironmentProfile` controls which sensitivity levels are redacted. The 
 For cases where you need to override the default redaction behavior for specific fields, `SensitivityOverrides` allows explicit opt-in or opt-out:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+    options.EnvironmentProfile = OtelEventsEnvironmentProfile.Production;
 
     options.SensitivityOverrides = new Dictionary<string, bool>
     {
@@ -117,14 +117,14 @@ logging.AddAllJsonExporter(options =>
 
 ## Defense-in-Depth Patterns
 
-Beyond schema-level sensitivity classification, ALL provides runtime safeguards that catch sensitive data regardless of schema configuration.
+Beyond schema-level sensitivity classification, otel-events provides runtime safeguards that catch sensitive data regardless of schema configuration.
 
 ### RedactPatterns
 
 User-configured regex patterns for value-level redaction. Every string attribute value is tested against these patterns:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
     options.RedactPatterns =
     [
@@ -155,7 +155,7 @@ These patterns act as a safety net — even if a field is not annotated with `se
 Block specific attribute names from ever appearing in the output:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
     options.AttributeDenylist = new HashSet<string>
     {
@@ -171,12 +171,12 @@ Denied attributes are **completely excluded** from the JSON envelope — neither
 
 ### AttributeAllowlist
 
-For non-ALL `LogRecord`s (from third-party libraries), restrict which attributes are emitted:
+For non-otel-events `LogRecord`s (from third-party libraries), restrict which attributes are emitted:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    // Only emit these attributes from non-ALL LogRecords
+    // Only emit these attributes from non-otel-events LogRecords
     options.AttributeAllowlist = new HashSet<string>
     {
         "RequestPath",
@@ -194,7 +194,7 @@ The exporter applies security controls in this order:
 
 1. **Reserved prefix stripping** — remove unauthorized `all.*` attributes
 2. **AttributeDenylist** — exclude denied attribute names entirely
-3. **AttributeAllowlist** — filter non-ALL attributes to allowed names
+3. **AttributeAllowlist** — filter non-otel-events attributes to allowed names
 4. **Built-in defense patterns** — hard-coded credential detection (always active)
 5. **RedactPatterns** — user-configured regex patterns
 6. **Value truncation** — truncate strings exceeding `MaxAttributeValueLength`
@@ -220,9 +220,9 @@ The `ExceptionDetailLevel` controls how much exception information appears in th
 ### Explicit Override
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+    options.EnvironmentProfile = OtelEventsEnvironmentProfile.Production;
     // Override: use TypeOnly for minimal exception disclosure
     options.ExceptionDetailLevel = ExceptionDetailLevel.TypeOnly;
 });
@@ -230,7 +230,7 @@ logging.AddAllJsonExporter(options =>
 
 ### Inner Exception Depth Limit
 
-ALL caps inner exception serialization at **5 levels** of nesting. This prevents unbounded recursion from circular or deeply nested exception chains.
+otel-events caps inner exception serialization at **5 levels** of nesting. This prevents unbounded recursion from circular or deeply nested exception chains.
 
 ---
 
@@ -264,7 +264,7 @@ dotnet_diagnostic.ALL009.severity = none
 
 ## Regulatory Compliance Quick Reference
 
-| Regulation | ALL Controls |
+| Regulation | otel-events Controls |
 |---|---|
 | **GDPR** | `sensitivity: pii` → Production redaction. `CaptureClientIp` and `CaptureUserAgent` default to `false` |
 | **CCPA** | Same as GDPR — PII classification covers California consumer data |

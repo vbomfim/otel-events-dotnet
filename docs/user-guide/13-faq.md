@@ -6,55 +6,55 @@ Frequently asked questions about ALL.
 
 ## General
 
-### Does ALL replace OpenTelemetry?
+### Does otel-events replace OpenTelemetry?
 
-**No.** ALL is an **extension** to the OpenTelemetry .NET SDK, not a replacement. ALL adds four components to your existing OTEL pipeline:
+**No.** otel-events is an **extension** to the OpenTelemetry .NET SDK, not a replacement. otel-events adds four components to your existing OTEL pipeline:
 
-| ALL Component | OTEL Extension Point |
+| otel-events Component | OTEL Extension Point |
 |---------------|---------------------|
-| `All.Schema` | N/A (build-time code generator) |
-| `AllJsonExporter` | `BaseExporter<LogRecord>` |
-| `AllCausalityProcessor` | `BaseProcessor<LogRecord>` |
-| `All.Analyzers` | Roslyn `DiagnosticAnalyzer` |
+| `OtelEvents.Schema` | N/A (build-time code generator) |
+| `OtelEventsJsonExporter` | `BaseExporter<LogRecord>` |
+| `OtelEventsCausalityProcessor` | `BaseProcessor<LogRecord>` |
+| `OtelEvents.Analyzers` | Roslyn `DiagnosticAnalyzer` |
 
-Your existing OTEL exporters (`AddOtlpExporter()`), trace instrumentation (`AddAspNetCoreInstrumentation()`), and metric pipelines continue working unchanged. ALL sits alongside them.
+Your existing OTEL exporters (`AddOtlpExporter()`), trace instrumentation (`AddAspNetCoreInstrumentation()`), and metric pipelines continue working unchanged. otel-events sits alongside them.
 
-### Can I use ALL without OTEL?
+### Can I use otel-events without OTEL?
 
-No. ALL generates code that uses OTEL types — `ILogger<T>`, `Meter`, `Counter<T>`, `Histogram<T>`, `LogRecord`. The OpenTelemetry .NET SDK must be configured in your application. ALL extends OTEL; it has no standalone runtime.
+No. otel-events generates code that uses OTEL types — `ILogger<T>`, `Meter`, `Counter<T>`, `Histogram<T>`, `LogRecord`. The OpenTelemetry .NET SDK must be configured in your application. otel-events extends OTEL; it has no standalone runtime.
 
-### Can I use ALL with Serilog?
+### Can I use otel-events with Serilog?
 
 **Yes, indirectly.** ALL-generated code uses `ILogger<T>` (Microsoft.Extensions.Logging). Serilog integrates with this via `Serilog.Extensions.Logging`. The flow is:
 
 ```
 ALL-generated code → ILogger<T> → Serilog sink (via bridge)
-                                 → OTEL LoggerProvider → AllJsonExporter
+                                 → OTEL LoggerProvider → OtelEventsJsonExporter
 ```
 
-However, `AllJsonExporter` and Serilog sinks produce different output formats. You can use both, but the JSONL output from `AllJsonExporter` is specifically optimized for AI investigation and won't go through Serilog.
+However, `OtelEventsJsonExporter` and Serilog sinks produce different output formats. You can use both, but the JSONL output from `OtelEventsJsonExporter` is specifically optimized for AI investigation and won't go through Serilog.
 
 > **Recommendation:** If you're adopting ALL, use the OTEL pipeline directly (`AddOpenTelemetry().WithLogging(...)`) rather than routing through Serilog. This avoids an unnecessary abstraction layer.
 
-### Can I use ALL with NLog or log4net?
+### Can I use otel-events with NLog or log4net?
 
-The same pattern as Serilog applies — ALL works through `ILogger<T>`, which NLog and log4net can bridge. But ALL's JSON exporter runs in the OTEL pipeline, not through those frameworks. For the best experience, use OTEL's native logging pipeline.
+The same pattern as Serilog applies — otel-events works through `ILogger<T>`, which NLog and log4net can bridge. But otel-events' JSON exporter runs in the OTEL pipeline, not through those frameworks. For the best experience, use OTEL's native logging pipeline.
 
 ### What .NET versions are supported?
 
 | Package | Target Frameworks |
 |---------|-------------------|
-| `All.Schema` | `netstandard2.0` (build-time only) |
-| `All.Exporter.Json` | `net8.0`, `net9.0` |
-| `All.Causality` | `net8.0`, `net9.0` |
-| `All.Analyzers` | `netstandard2.0` (build-time only) |
-| `All.Testing` | `net8.0`, `net9.0` |
+| `OtelEvents.Schema` | `netstandard2.0` (build-time only) |
+| `OtelEvents.Exporter.Json` | `net8.0`, `net9.0` |
+| `OtelEvents.Causality` | `net8.0`, `net9.0` |
+| `OtelEvents.Analyzers` | `netstandard2.0` (build-time only) |
+| `OtelEvents.Testing` | `net8.0`, `net9.0` |
 
 Runtime packages require **.NET 8+** (LTS baseline). Build-time packages target `netstandard2.0` per Roslyn/MSBuild requirements.
 
-### Is ALL AOT-compatible?
+### Is otel-events AOT-compatible?
 
-Yes. ALL is designed for Native AOT:
+Yes. otel-events is designed for Native AOT:
 
 - `[LoggerMessage]` source generator — zero-alloc, no reflection
 - `System.Text.Json` source generators — AOT-friendly serialization
@@ -133,7 +133,7 @@ builder.Logging.AddFilter<OpenTelemetryLoggerProvider>(
 builder.Services.AddOpenTelemetry()
     .WithLogging(logging =>
     {
-        logging.AddAllJsonExporter();  // Is this present?
+        logging.AddOtelEventsJsonExporter();  // Is this present?
     });
 ```
 
@@ -142,7 +142,7 @@ builder.Services.AddOpenTelemetry()
 The OTEL SDK batches `LogRecord`s before calling exporters (default: 5-second interval). Events may not appear immediately. For debugging, reduce the batch interval:
 
 ```csharp
-logging.AddAllJsonExporter();
+logging.AddOtelEventsJsonExporter();
 // Or configure the OTEL batch processor:
 // Default batch export interval is 5 seconds
 ```
@@ -161,14 +161,14 @@ private readonly ILogger<OrderEventSource> _logger;
 
 **5. Check for rate limiting or sampling:**
 
-If you've configured `AllRateLimitProcessor` or `AllSamplingProcessor`, events may be intentionally dropped. Check the self-telemetry counters:
+If you've configured `OtelEventsRateLimitProcessor` or `OtelEventsSamplingProcessor`, events may be intentionally dropped. Check the self-telemetry counters:
 
 - `all.ratelimiter.events_dropped`
 - `all.sampler.events_dropped`
 
 ### How do I see pretty-printed JSON?
 
-ALL always outputs single-line JSONL. For human-readable output, pipe through `jq`:
+otel-events always outputs single-line JSONL. For human-readable output, pipe through `jq`:
 
 ```bash
 # Pretty-print all events
@@ -186,14 +186,14 @@ dotnet run 2>&1 | jq '{event: .event, eventId: .eventId, parentEventId: .parentE
 
 ### Why is `eventId` missing from my events?
 
-`eventId` is added by `AllCausalityProcessor`. Ensure it's registered in the pipeline:
+`eventId` is added by `OtelEventsCausalityProcessor`. Ensure it's registered in the pipeline:
 
 ```csharp
 builder.Services.AddOpenTelemetry()
     .WithLogging(logging =>
     {
-        logging.AddProcessor<AllCausalityProcessor>();  // Required for eventId
-        logging.AddAllJsonExporter();
+        logging.AddProcessor<OtelEventsCausalityProcessor>();  // Required for eventId
+        logging.AddOtelEventsJsonExporter();
     });
 ```
 
@@ -209,17 +209,17 @@ ALL's overhead is minimal and well-characterized:
 
 | Component | Target | Measurement |
 |-----------|--------|-------------|
-| ALL extension method (log + metrics) | < 500ns p95 | BenchmarkDotNet |
-| `AllJsonExporter` per-record serialization | < 1μs p95 | BenchmarkDotNet |
-| `AllCausalityProcessor` per-record | < 200ns p95 | BenchmarkDotNet |
+| otel-events extension method (log + metrics) | < 500ns p95 | BenchmarkDotNet |
+| `OtelEventsJsonExporter` per-record serialization | < 1μs p95 | BenchmarkDotNet |
+| `OtelEventsCausalityProcessor` per-record | < 200ns p95 | BenchmarkDotNet |
 | Memory per event | < 256 bytes | `[MemoryDiagnoser]` |
 | Throughput | > 100,000 events/s | Sustained benchmark |
 
-For context: at 100,000 events/s, ALL consumes ~50ms of CPU per second. The OTEL SDK pipeline itself (batching, export) adds its own overhead on top of this.
+For context: at 100,000 events/s, otel-events consumes ~50ms of CPU per second. The OTEL SDK pipeline itself (batching, export) adds its own overhead on top of this.
 
-### Does ALL allocate on the hot path?
+### Does otel-events allocate on the hot path?
 
-ALL minimizes allocations:
+otel-events minimizes allocations:
 
 | Component | Allocation Strategy |
 |-----------|-------------------|
@@ -230,21 +230,21 @@ ALL minimizes allocations:
 | Event ID generation | UUID v7 from `Guid.CreateVersion7()` (.NET 9+) or custom impl (.NET 8) |
 | Sequence number | `Interlocked.Increment` (no lock, no allocation) |
 
-### Will ALL cause GC pressure?
+### Will otel-events cause GC pressure?
 
-At typical volumes (< 10,000 events/s), no measurable GC impact. At high volumes (> 50,000 events/s), monitor Gen2 GC collections — target < 3/min. The main allocation source is the OTEL SDK's batching buffers, not ALL components.
+At typical volumes (< 10,000 events/s), no measurable GC impact. At high volumes (> 50,000 events/s), monitor Gen2 GC collections — target < 3/min. The main allocation source is the OTEL SDK's batching buffers, not otel-events components.
 
 ---
 
 ## Configuration
 
-### How do I configure ALL for production?
+### How do I configure otel-events for production?
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    options.Output = AllJsonOutput.Stdout;
-    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+    options.Output = OtelEventsJsonOutput.Stdout;
+    options.EnvironmentProfile = OtelEventsEnvironmentProfile.Production;
     // Production defaults:
     //   ExceptionDetailLevel = TypeAndMessage (no stack traces)
     //   EmitHostInfo = false
@@ -260,7 +260,7 @@ See [Chapter 7 — Configuration](07-configuration.md) for all options.
 
 ### Can I use appsettings.json for configuration?
 
-Yes. ALL binds to the `ALL` configuration section:
+Yes. otel-events binds to the `OtelEvents` configuration section:
 
 ```json
 {
@@ -306,7 +306,7 @@ logging.AddAllRateLimiter(options =>
 
 ### What happens to third-party library logs?
 
-Third-party libraries using `ILogger` (Entity Framework, ASP.NET Core, HttpClient) produce `LogRecord`s that flow through the OTEL pipeline. `AllJsonExporter` exports them alongside ALL events:
+Third-party libraries using `ILogger` (Entity Framework, ASP.NET Core, HttpClient) produce `LogRecord`s that flow through the OTEL pipeline. `OtelEventsJsonExporter` exports them alongside otel-events events:
 
 - **Event name**: `LogRecord.EventId.Name` if set, otherwise `"dotnet.ilogger"`
 - **Attributes**: State key-value pairs from the `LogRecord`
@@ -314,7 +314,7 @@ Third-party libraries using `ILogger` (Entity Framework, ASP.NET Core, HttpClien
 
 No special bridge or configuration needed — it works automatically.
 
-### Can I use ALL with existing `[LoggerMessage]` definitions?
+### Can I use otel-events with existing `[LoggerMessage]` definitions?
 
 Yes. Existing hand-written `[LoggerMessage]` methods produce standard `LogRecord`s that flow through the OTEL pipeline. They'll appear in the JSONL output with the `EventId.Name` you specified.
 
@@ -326,19 +326,19 @@ No. Integration packs (e.g., `OtelEvents.AspNetCore`) produce **log events** (`L
 
 You get complementary data:
 - **OTEL traces**: Distributed request flow across services
-- **ALL events**: Structured, schema-defined occurrence records with causal linking
+- **otel-events events**: Structured, schema-defined occurrence records with causal linking
 
 ---
 
 ## Deployment
 
-### How does ALL work in containers?
+### How does otel-events work in containers?
 
-ALL is designed for containerized environments:
+otel-events is designed for containerized environments:
 
-1. `AllJsonExporter` writes JSONL to **stdout** (container-native log collection)
+1. `OtelEventsJsonExporter` writes JSONL to **stdout** (container-native log collection)
 2. The OTEL Collector's `filelog` receiver reads container stdout from `/var/log/pods/`
-3. The Collector parses the ALL JSON envelope and exports to backends (Loki, Elasticsearch, OTLP)
+3. The Collector parses the otel-events JSON envelope and exports to backends (Loki, Elasticsearch, OTLP)
 
 See [the Deployment Guide](../deployment/README.md) for OTEL Collector configuration, Dockerfiles, and Kubernetes manifests.
 

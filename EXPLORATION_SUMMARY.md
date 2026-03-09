@@ -22,20 +22,20 @@
 ├── OtelEvents.slnx (Solution file)
 │
 ├── src/
-│   ├── All.Analyzers/                # Roslyn analyzers for logging hygiene
-│   ├── All.Causality/                # Causal event linking processor
-│   ├── All.Exporter.Json/            # JSON log exporter for OTEL pipeline
-│   ├── All.Schema/                   # YAML schema parser & code generator
-│   ├── All.Testing/                  # Test utilities
+│   ├── OtelEvents.Analyzers/                # Roslyn analyzers for logging hygiene
+│   ├── OtelEvents.Causality/                # Causal event linking processor
+│   ├── OtelEvents.Exporter.Json/            # JSON log exporter for OTEL pipeline
+│   ├── OtelEvents.Schema/                   # YAML schema parser & code generator
+│   ├── OtelEvents.Testing/                  # Test utilities
 │   ├── OtelEvents.AspNetCore/        # ASP.NET Core integration
 │   └── OtelEvents.HealthChecks/      # Health checks integration
 │
 └── tests/
-    ├── All.Analyzers.Tests/
-    ├── All.Causality.Tests/
-    ├── All.Exporter.Json.Tests/
-    ├── All.Schema.Tests/
-    ├── All.Testing.Tests/
+    ├── OtelEvents.Analyzers.Tests/
+    ├── OtelEvents.Causality.Tests/
+    ├── OtelEvents.Exporter.Json.Tests/
+    ├── OtelEvents.Schema.Tests/
+    ├── OtelEvents.Testing.Tests/
     ├── OtelEvents.AspNetCore.Tests/
     └── OtelEvents.HealthChecks.Tests/
 ```
@@ -59,16 +59,16 @@
 ## 2. ALL.SCHEMA PROJECT OVERVIEW
 
 ### Project File
-**Path:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/All.Schema.csproj`
+**Path:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/OtelEvents.Schema.csproj`
 - **NoWarn:** CA1002, CA1032, CA1064, CA1305, CA1307, CA1720, CA1822, CA1062, CA1859
 - **Dependencies:** YamlDotNet
-- **Visibility:** InternalsVisibleTo = All.Schema.Tests
+- **Visibility:** InternalsVisibleTo = OtelEvents.Schema.Tests
 - **EmbeddedResource:** `lifecycle.all.yaml` (built-in schema)
 
 ### Directory Structure
 ```
-src/All.Schema/
-├── All.Schema.csproj
+src/OtelEvents.Schema/
+├── OtelEvents.Schema.csproj
 ├── BuiltInSchemas.cs              # Access to embedded lifecycle schema
 ├── bin/
 ├── obj/
@@ -125,8 +125,8 @@ Currently not yet implemented in source, but infrastructure exists for it.
 ## 4. KEY IMPLEMENTATIONS
 
 ### 4.1 SchemaParser
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Parsing/SchemaParser.cs`
-**Namespace:** `All.Schema.Parsing`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Parsing/SchemaParser.cs`
+**Namespace:** `OtelEvents.Schema.Parsing`
 **Class:** `public sealed class SchemaParser`
 
 #### Public API
@@ -179,8 +179,8 @@ public sealed class ParseResult
 ---
 
 ### 4.2 SchemaValidator
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Validation/SchemaValidator.cs`
-**Namespace:** `All.Schema.Validation`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Validation/SchemaValidator.cs`
+**Namespace:** `OtelEvents.Schema.Validation`
 **Class:** `public sealed partial class SchemaValidator` (uses regex source generators)
 
 #### Public API
@@ -247,8 +247,8 @@ public sealed class ValidationResult
 ---
 
 ### 4.3 CodeGenerator
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/CodeGen/CodeGenerator.cs`
-**Namespace:** `All.Schema.CodeGen`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/CodeGen/CodeGenerator.cs`
+**Namespace:** `OtelEvents.Schema.CodeGen`
 **Class:** `public sealed class CodeGenerator` (625 lines)
 
 #### Public API
@@ -315,8 +315,8 @@ public static class TypeMapper
 ---
 
 ### 4.4 SchemaComparer
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Comparison/SchemaComparer.cs`
-**Namespace:** `All.Schema.Comparison`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Comparison/SchemaComparer.cs`
+**Namespace:** `OtelEvents.Schema.Comparison`
 **Class:** `public sealed class SchemaComparer`
 
 #### Public API
@@ -363,8 +363,8 @@ public sealed class SchemaComparisonResult
 ---
 
 ### 4.5 SchemaMerger (Supporting Class)
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Parsing/SchemaMerger.cs`
-**Namespace:** `All.Schema.Parsing`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Parsing/SchemaMerger.cs`
+**Namespace:** `OtelEvents.Schema.Parsing`
 **Class:** `public sealed class SchemaMerger`
 
 #### Public API
@@ -401,7 +401,7 @@ public sealed class MergeResult
 
 ### SchemaDocument
 ```csharp
-namespace All.Schema.Models;
+namespace OtelEvents.Schema.Models;
 
 public sealed class SchemaDocument
 {
@@ -527,7 +527,7 @@ public sealed class SchemaError
 ```
 
 ### ErrorCodes Class
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Validation/ErrorCodes.cs`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Validation/ErrorCodes.cs`
 
 All 26 error codes as `public const string`:
 - DuplicateEventName = "ALL_SCHEMA_001"
@@ -539,8 +539,8 @@ All 26 error codes as `public const string`:
 ## 7. SCHEMA FILES
 
 ### Built-in Lifecycle Schema
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Schemas/lifecycle.all.yaml`
-- Namespace: `All.Events.Lifecycle`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Schemas/lifecycle.all.yaml`
+- Namespace: `OtelEvents.Events.Lifecycle`
 - Version: `1.0.0`
 - Meter: `all.lifecycle`
 - Enums: `HealthStatus`, `LifecyclePhase`
@@ -555,7 +555,7 @@ All 26 error codes as `public const string`:
 
 ### Test Framework
 **Framework:** xUnit
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/All.Schema.Tests/All.Schema.Tests.csproj`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/OtelEvents.Schema.Tests/OtelEvents.Schema.Tests.csproj`
 
 **Dependencies:**
 ```xml
@@ -575,14 +575,14 @@ All 26 error codes as `public const string`:
 ### Test Classes
 
 #### SchemaParserTests
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/All.Schema.Tests/SchemaParserTests.cs`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/OtelEvents.Schema.Tests/SchemaParserTests.cs`
 - Tests for YAML schema parsing validation
 - Uses `[Fact]` attributes for test methods
 - Helper string constants with triple-quoted YAML (multiline strings)
 - Pattern: Parse → Assert (IsSuccess/Document properties)
 
 #### SchemaValidatorTests
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/All.Schema.Tests/SchemaValidatorTests.cs`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/OtelEvents.Schema.Tests/SchemaValidatorTests.cs`
 - Tests for all 26 validation rules (ALL_SCHEMA_001-026)
 - Each rule has dedicated test(s)
 - Pattern: Create schema with violation → Validate → Assert error code present
@@ -590,7 +590,7 @@ All 26 error codes as `public const string`:
 - Uses `Assert.False(result.IsValid)` and `Assert.Contains(result.Errors, e => e.Code == ErrorCodes.XXX)`
 
 #### CodeGeneratorTests
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/All.Schema.Tests/CodeGeneratorTests.cs`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/OtelEvents.Schema.Tests/CodeGeneratorTests.cs`
 - Large test class (~80+ test methods)
 - Tests code generation for: enums, events, metrics, extensions, DI registration
 - Pattern: Create schema → Generate → Assert content includes expected C# constructs
@@ -606,7 +606,7 @@ All 26 error codes as `public const string`:
   7. Security & metadata tests
 
 #### SchemaComparerTests
-**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/All.Schema.Tests/SchemaComparerTests.cs`
+**File:** `/Users/vbomfim/dev/otel-events-dotnet/tests/OtelEvents.Schema.Tests/SchemaComparerTests.cs`
 - Tests schema comparison/diffing logic
 - Pattern: Compare old → new schema → Assert changes and breaking status
 - Helper methods: `CreateSchema()`, `CreateEvent()`, `CreateField()`
@@ -653,10 +653,10 @@ Assert.Contains(result.Errors, e => e.Code == ErrorCodes.SomeCode)
 - **Implicit Usings:** enabled globally
 - **Warnings:** All treated as errors (`TreatWarningsAsErrors`)
 
-### Dependencies (All.Schema)
+### Dependencies (OtelEvents.Schema)
 - **YamlDotNet** - YAML parsing
 
-### Dependencies (All.Schema.Tests)
+### Dependencies (OtelEvents.Schema.Tests)
 - xUnit
 - xunit.runner.visualstudio
 - coverlet.collector (code coverage)
@@ -664,13 +664,13 @@ Assert.Contains(result.Errors, e => e.Code == ErrorCodes.SomeCode)
 - Microsoft.Extensions.Logging.Abstractions
 
 ### Code Generation
-- No external code generators in All.Schema itself
+- No external code generators in OtelEvents.Schema itself
 - Uses YamlDotNet for parsing
 - CodeGenerator produces C# source text (not invoking external generators)
 - Regex source generators (`[GeneratedRegex]`) in SchemaValidator
 
 ### Embedded Resources
-- `lifecycle.all.yaml` embedded in All.Schema.csproj
+- `lifecycle.all.yaml` embedded in OtelEvents.Schema.csproj
 - Accessible via `BuiltInSchemas.LoadLifecycleSchema()` or `.GetLifecycleSchemaYaml()`
 
 ---
@@ -697,7 +697,7 @@ From SPECIFICATION.md section on deferred features:
 
 ### File structure from SPECIFICATION (Appendix C)
 ```
-All.Schema/
+OtelEvents.Schema/
 ├── Cli/
 │   └── ValidateCommand.cs            # dotnet all validate (Phase 3)
 ```
@@ -721,11 +721,11 @@ All.Schema/
 - Prevents unintended subclassing
 
 ### Namespace Organization
-- `All.Schema.Models` - Data model classes
-- `All.Schema.Parsing` - Parser + merger
-- `All.Schema.Validation` - Validator + error codes
-- `All.Schema.Comparison` - Comparer + change types
-- `All.Schema.CodeGen` - Code generation + helpers
+- `OtelEvents.Schema.Models` - Data model classes
+- `OtelEvents.Schema.Parsing` - Parser + merger
+- `OtelEvents.Schema.Validation` - Validator + error codes
+- `OtelEvents.Schema.Comparison` - Comparer + change types
+- `OtelEvents.Schema.CodeGen` - Code generation + helpers
 
 ### Extension Methods for Type Parsing
 ```csharp
@@ -832,20 +832,20 @@ var yaml = BuiltInSchemas.GetLifecycleSchemaYaml();
 ## 14. FILE PATHS SUMMARY
 
 **Core Implementation:**
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Parsing/SchemaParser.cs`
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Validation/SchemaValidator.cs`
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/CodeGen/CodeGenerator.cs`
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Comparison/SchemaComparer.cs`
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Parsing/SchemaMerger.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Parsing/SchemaParser.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Validation/SchemaValidator.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/CodeGen/CodeGenerator.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Comparison/SchemaComparer.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Parsing/SchemaMerger.cs`
 
 **Models:**
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Models/*.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Models/*.cs`
 
 **Schemas:**
-- `/Users/vbomfim/dev/otel-events-dotnet/src/All.Schema/Schemas/lifecycle.all.yaml`
+- `/Users/vbomfim/dev/otel-events-dotnet/src/OtelEvents.Schema/Schemas/lifecycle.all.yaml`
 
 **Tests:**
-- `/Users/vbomfim/dev/otel-events-dotnet/tests/All.Schema.Tests/*.cs`
+- `/Users/vbomfim/dev/otel-events-dotnet/tests/OtelEvents.Schema.Tests/*.cs`
 
 **Documentation:**
 - `/Users/vbomfim/dev/otel-events-dotnet/SPECIFICATION.md`

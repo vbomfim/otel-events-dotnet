@@ -456,8 +456,8 @@ builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService("my-service"))
     .WithLogging(logging =>
     {
-        logging.AddProcessor<AllCausalityProcessor>();
-        logging.AddAllJsonExporter(builder.Configuration);
+        logging.AddProcessor<OtelEventsCausalityProcessor>();
+        logging.AddOtelEventsJsonExporter(builder.Configuration);
     })
     .WithMetrics(metrics =>
     {
@@ -499,4 +499,4 @@ builder.Services.AddOtelEventsHealthChecks();
 ## Next Steps
 
 - [Chapter 7 — Configuration](07-configuration.md) — configure the exporter, filtering, and rate limiting
-- [Chapter 8 — Testing](08-testing.md) — test your events with `All.Testing`
+- [Chapter 8 — Testing](08-testing.md) — test your events with `OtelEvents.Testing`

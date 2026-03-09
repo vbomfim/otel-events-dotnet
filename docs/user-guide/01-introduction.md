@@ -1,4 +1,4 @@
-# Chapter 1 — Introduction: What is ALL?
+# Chapter 1 — Introduction: What is otel-events?
 
 ## The Problem with Freestyle Logging
 
@@ -32,20 +32,20 @@ Four developers, four styles, one event. Now multiply this by 200 events across 
 
 ---
 
-## What is ALL?
+## What is otel-events?
 
 **Another Logging Library (ALL)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it.
 
-> ALL is NOT a replacement for OpenTelemetry. It is an extension that adds schema-driven code generation, AI-optimized JSON export, and causal event linking to your existing OTEL pipeline.
+> otel-events is NOT a replacement for OpenTelemetry. It is an extension that adds schema-driven code generation, AI-optimized JSON export, and causal event linking to your existing OTEL pipeline.
 
 ALL extends the standard OpenTelemetry pipeline with exactly four components. Everything else is standard OTEL:
 
-| ALL Component | OTEL Extension Point | What it does |
+| otel-events Component | OTEL Extension Point | What it does |
 |---------------|---------------------|-------------|
-| **All.Schema** (build-time) | N/A — build-time only | Parses YAML → generates C# code that uses `[LoggerMessage]` + `Meter` + `Counter<T>` + `Histogram<T>` |
-| **AllJsonExporter** | `BaseExporter<LogRecord>` | Formats `LogRecord`s as AI-optimized single-line JSONL to stdout/file |
-| **AllCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `all.event_id` (UUID v7) and `all.parent_event_id` to each `LogRecord` |
-| **All.Analyzers** | Roslyn `DiagnosticAnalyzer` | Compile-time enforcement — detects `Console.Write`, validates schema usage |
+| **OtelEvents.Schema** (build-time) | N/A — build-time only | Parses YAML → generates C# code that uses `[LoggerMessage]` + `Meter` + `Counter<T>` + `Histogram<T>` |
+| **OtelEventsJsonExporter** | `BaseExporter<LogRecord>` | Formats `LogRecord`s as AI-optimized single-line JSONL to stdout/file |
+| **OtelEventsCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `all.event_id` (UUID v7) and `all.parent_event_id` to each `LogRecord` |
+| **OtelEvents.Analyzers** | Roslyn `DiagnosticAnalyzer` | Compile-time enforcement — detects `Console.Write`, validates schema usage |
 
 ### Core Thesis
 
@@ -53,11 +53,11 @@ ALL extends the standard OpenTelemetry pipeline with exactly four components. Ev
 
 ---
 
-## How ALL Extends OTEL
+## How otel-events Extends OTEL
 
-ALL does not replace, wrap, or abstract OpenTelemetry. Projects already using the OpenTelemetry .NET SDK can **adopt ALL incrementally** — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through their existing OTEL pipeline. No migration. No replacement. No parallel infrastructure.
+otel-events does not replace, wrap, or abstract OpenTelemetry. Projects already using the OpenTelemetry .NET SDK can **adopt otel-events incrementally** — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through their existing OTEL pipeline. No migration. No replacement. No parallel infrastructure.
 
-### What ALL provides
+### What otel-events provides
 
 - **Schema-driven events** — Define events in YAML, get type-safe C# extension methods via code generation
 - **AI-optimized JSON export** — Compact, single-line JSONL output optimized for machine investigation
@@ -83,19 +83,19 @@ ALL is split into focused packages — use only what you need:
 
 | Package | Description | When to use |
 |---------|-------------|-------------|
-| `All.Schema` | YAML parser, schema model, validation, code generator | Always — this is the core value |
-| `All.Exporter.Json` | Custom OTEL `BaseExporter<LogRecord>` for AI-optimized JSONL | When you want structured JSONL on stdout |
-| `All.Causality` | Custom OTEL `BaseProcessor<LogRecord>` for causal event linking | When you want cause-and-effect trees |
-| `All.Analyzers` | Roslyn analyzers for logging hygiene enforcement | When you want compile-time rules |
-| `All.Testing` | In-memory `LogRecord` collector and assertion extensions | In test projects |
+| `OtelEvents.Schema` | YAML parser, schema model, validation, code generator | Always — this is the core value |
+| `OtelEvents.Exporter.Json` | Custom OTEL `BaseExporter<LogRecord>` for AI-optimized JSONL | When you want structured JSONL on stdout |
+| `OtelEvents.Causality` | Custom OTEL `BaseProcessor<LogRecord>` for causal event linking | When you want cause-and-effect trees |
+| `OtelEvents.Analyzers` | Roslyn analyzers for logging hygiene enforcement | When you want compile-time rules |
+| `OtelEvents.Testing` | In-memory `LogRecord` collector and assertion extensions | In test projects |
 
 ### Adoption Scenarios
 
 | Scenario | Packages Needed |
 |----------|----------------|
-| Schema-driven events + OTLP export (no JSON stdout) | `All.Schema` |
-| Schema-driven events + AI-optimized JSON stdout | `All.Schema` + `All.Exporter.Json` |
-| Full ALL experience | `All.Schema` + `All.Exporter.Json` + `All.Causality` + `All.Analyzers` |
+| Schema-driven events + OTLP export (no JSON stdout) | `OtelEvents.Schema` |
+| Schema-driven events + AI-optimized JSON stdout | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` |
+| Full otel-events experience | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.Analyzers` |
 | Greenfield project (everything) | `All4dotnet` (meta-package) |
 
 ---
@@ -117,5 +117,5 @@ ALL is split into focused packages — use only what you need:
 
 ## Next Steps
 
-- [Chapter 2 — ALL vs Plain OTEL](02-all-vs-plain-otel.md) — see the before and after, side by side
+- [Chapter 2 — otel-events vs Plain OTEL](02-otel-events-vs-plain-otel.md) — see the before and after, side by side
 - [Chapter 4 — Getting Started](04-getting-started.md) — emit your first event in 10 minutes
