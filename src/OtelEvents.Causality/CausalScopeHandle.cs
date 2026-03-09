@@ -9,6 +9,7 @@ namespace OtelEvents.Causality;
 public sealed class CausalScopeHandle : IDisposable
 {
     private readonly string? _previousParentEventId;
+    private readonly CausalScopeHandle? _previousScope;
     private readonly long _startTimestamp;
 
     /// <summary>
@@ -27,14 +28,17 @@ public sealed class CausalScopeHandle : IDisposable
         EventId = eventId;
         _startTimestamp = Stopwatch.GetTimestamp();
         _previousParentEventId = OtelEventsCausalityContext.CurrentParentEventId;
+        _previousScope = OtelEventsCausalityContext.CurrentScope;
         OtelEventsCausalityContext.CurrentParentEventId = eventId;
+        OtelEventsCausalityContext.CurrentScope = this;
     }
 
     /// <summary>
-    /// Restores the previous parent event ID.
+    /// Restores the previous parent event ID and scope.
     /// </summary>
     public void Dispose()
     {
         OtelEventsCausalityContext.CurrentParentEventId = _previousParentEventId;
+        OtelEventsCausalityContext.CurrentScope = _previousScope;
     }
 }

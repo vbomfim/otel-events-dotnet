@@ -8,6 +8,7 @@ namespace OtelEvents.Causality;
 public static class OtelEventsCausalityContext
 {
     private static readonly AsyncLocal<string?> s_parentEventId = new();
+    private static readonly AsyncLocal<CausalScopeHandle?> s_currentScope = new();
 
     /// <summary>
     /// Gets or sets the current parent event ID in the ambient async context.
@@ -17,6 +18,16 @@ public static class OtelEventsCausalityContext
     {
         get => s_parentEventId.Value;
         set => s_parentEventId.Value = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the current causal scope handle.
+    /// Used by <see cref="OtelEventsCausalityProcessor"/> to read elapsed time automatically.
+    /// </summary>
+    public static CausalScopeHandle? CurrentScope
+    {
+        get => s_currentScope.Value;
+        internal set => s_currentScope.Value = value;
     }
 
     /// <summary>

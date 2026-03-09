@@ -27,12 +27,14 @@ public sealed class OtelEventsCausalityProcessor : BaseProcessor<LogRecord>
         // Generate unique event ID (UUID v7 — time-sortable)
         var eventId = Uuid7.FormatEventId();
 
-        // Read parent event ID from ambient context
+        // Read parent event ID and elapsed time from ambient context
         var parentEventId = OtelEventsCausalityContext.CurrentParentEventId;
+        var currentScope = OtelEventsCausalityContext.CurrentScope;
 
         // Build the new attributes list
         var existingAttributes = logRecord.Attributes;
-        var newCount = (existingAttributes?.Count ?? 0) + 1 + (parentEventId is not null ? 1 : 0);
+        var extraCount = 1 + (parentEventId is not null ? 1 : 0) + (currentScope is not null ? 1 : 0);
+        var newCount = (existingAttributes?.Count ?? 0) + extraCount;
         var attributes = new List<KeyValuePair<string, object?>>(newCount);
 
         // Preserve existing attributes
@@ -50,6 +52,12 @@ public sealed class OtelEventsCausalityProcessor : BaseProcessor<LogRecord>
         if (parentEventId is not null)
         {
             attributes.Add(new KeyValuePair<string, object?>("all.parent_event_id", parentEventId));
+        }
+
+        // Auto-stamp elapsed time from current scope
+        if (currentScope is not null)
+        {
+            attributes.Add(new KeyValuePair<string, object?>("all.elapsed_ms", Math.Round(currentScope.ElapsedMilliseconds, 2)));
         }
 
         logRecord.Attributes = attributes;
