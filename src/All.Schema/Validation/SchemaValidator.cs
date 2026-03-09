@@ -31,6 +31,12 @@ public sealed partial class SchemaValidator
     [GeneratedRegex(@"\{(\w+)\}")]
     private static partial Regex PlaceholderRegex();
 
+    [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")]
+    private static partial Regex NamespaceRegex();
+
+    [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$")]
+    private static partial Regex CSharpIdentifierRegex();
+
     /// <summary>
     /// Validates a single schema document.
     /// </summary>
@@ -63,6 +69,12 @@ public sealed partial class SchemaValidator
             var meterName = doc.Schema.MeterName ?? doc.Schema.Namespace;
             ValidateMeterName(meterName, errors);
 
+            // ALL_SCHEMA_021: Namespace validation
+            ValidateNamespace(doc.Schema.Namespace, errors);
+
+            // ALL_SCHEMA_022: Schema name validation
+            ValidateSchemaName(doc.Schema.Name, errors);
+
             // Collect shared fields
             foreach (var field in doc.Fields)
             {
@@ -93,6 +105,9 @@ public sealed partial class SchemaValidator
                             Message = $"Enum '{enumDef.Name}' has duplicate value '{value}'."
                         });
                     }
+
+                    // ALL_SCHEMA_023: Enum value must be valid C# identifier
+                    ValidateEnumValue(value, enumDef.Name, errors);
                 }
 
                 allEnums[enumDef.Name] = enumDef;
@@ -326,6 +341,42 @@ public sealed partial class SchemaValidator
             {
                 Code = ErrorCodes.InvalidMetricType,
                 Message = $"Metric '{metric.Name}' in event '{eventName}' has invalid type '{metric.RawType}'."
+            });
+        }
+    }
+
+    private static void ValidateNamespace(string ns, List<SchemaError> errors)
+    {
+        if (string.IsNullOrEmpty(ns) || !NamespaceRegex().IsMatch(ns))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidNamespace,
+                Message = $"Schema namespace '{ns}' is not a valid .NET namespace (must be dot-separated valid identifiers)."
+            });
+        }
+    }
+
+    private static void ValidateSchemaName(string name, List<SchemaError> errors)
+    {
+        if (string.IsNullOrEmpty(name) || !CSharpIdentifierRegex().IsMatch(name))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidSchemaName,
+                Message = $"Schema name '{name}' is not a valid C# identifier."
+            });
+        }
+    }
+
+    private static void ValidateEnumValue(string value, string enumName, List<SchemaError> errors)
+    {
+        if (string.IsNullOrEmpty(value) || !CSharpIdentifierRegex().IsMatch(value))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidEnumValue,
+                Message = $"Enum value '{value}' in enum '{enumName}' is not a valid C# identifier (must match ^[A-Za-z_][A-Za-z0-9_]*$)."
             });
         }
     }

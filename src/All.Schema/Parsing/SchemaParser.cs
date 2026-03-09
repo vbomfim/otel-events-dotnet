@@ -332,7 +332,7 @@ public sealed class SchemaParser
             var sensitivity = Sensitivity.Public;
             if (sensitivityStr is not null)
             {
-                SensitivityExtensions.TryParseSensitivity(sensitivityStr, out sensitivity);
+                _ = SensitivityExtensions.TryParseSensitivity(sensitivityStr, out sensitivity);
             }
 
             var maxLengthStr = GetOptionalScalar(mapping, "maxLength");

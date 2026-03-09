@@ -64,4 +64,16 @@ public static class ErrorCodes
 
     /// <summary>Enum values must not contain duplicates.</summary>
     public const string DuplicateEnumValue = "ALL_SCHEMA_020";
+
+    /// <summary>Namespace must be a valid .NET namespace (dot-separated identifiers).</summary>
+    public const string InvalidNamespace = "ALL_SCHEMA_021";
+
+    /// <summary>Schema name must be a valid C# identifier.</summary>
+    public const string InvalidSchemaName = "ALL_SCHEMA_022";
+
+    /// <summary>Enum values must be valid C# identifiers.</summary>
+    public const string InvalidEnumValue = "ALL_SCHEMA_023";
+
+    /// <summary>Import path must not traverse outside the schema directory.</summary>
+    public const string ImportPathTraversal = "ALL_SCHEMA_024";
 }

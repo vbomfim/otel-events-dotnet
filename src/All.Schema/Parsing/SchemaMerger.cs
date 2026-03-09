@@ -107,10 +107,25 @@ public sealed class SchemaMerger
         documents.Add(doc);
 
         // Resolve imports relative to the current file's directory
-        var baseDir = Path.GetDirectoryName(fullPath) ?? ".";
+        var baseDir = Path.GetFullPath(Path.GetDirectoryName(fullPath) ?? ".");
+        var baseDirNormalized = baseDir.EndsWith(Path.DirectorySeparatorChar)
+            ? baseDir
+            : baseDir + Path.DirectorySeparatorChar;
         foreach (var import in doc.Imports)
         {
-            var importPath = Path.Combine(baseDir, import);
+            var importPath = Path.GetFullPath(Path.Combine(baseDir, import));
+
+            // Path traversal guard: import must stay within the schema directory
+            if (!importPath.StartsWith(baseDirNormalized, StringComparison.Ordinal))
+            {
+                errors.Add(new SchemaError
+                {
+                    Code = ErrorCodes.ImportPathTraversal,
+                    Message = $"Import '{import}' resolves to '{importPath}' which is outside the schema directory '{baseDir}'."
+                });
+                continue;
+            }
+
             ResolveAndParse(importPath, documents, errors, visited);
         }
     }
