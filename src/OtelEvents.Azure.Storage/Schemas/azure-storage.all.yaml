@@ -1,0 +1,168 @@
+schema:
+  name: "OtelEvents.Azure.Storage"
+  version: "1.0.0"
+  namespace: "OtelEvents.Azure.Storage.Events"
+  meterName: "OtelEvents.Azure.Storage"
+  description: "Schema-defined events for Azure Blob and Queue Storage operations"
+
+fields:
+  storageAccountName:
+    type: string
+    description: "Azure Storage account name"
+    index: true
+
+  storageContainerName:
+    type: string
+    description: "Blob container name"
+    index: true
+
+  storageQueueName:
+    type: string
+    description: "Queue name"
+    index: true
+
+  storageBlobName:
+    type: string
+    description: "Blob name (path within container)"
+
+  storageBlobSize:
+    type: long
+    description: "Blob size in bytes"
+    unit: "bytes"
+
+  storageContentType:
+    type: string
+    description: "Content-Type of the blob"
+
+  durationMs:
+    type: double
+    description: "Operation duration in milliseconds"
+    unit: "ms"
+
+  storageStatusCode:
+    type: int
+    description: "HTTP status code from Azure Storage API response"
+    index: true
+
+  errorType:
+    type: string
+    description: "Exception type name for failed operations"
+    index: true
+
+  storageMessageCount:
+    type: int
+    description: "Number of messages received from a queue"
+
+events:
+  storage.blob.uploaded:
+    id: 10301
+    severity: INFO
+    description: "A blob was uploaded to Azure Blob Storage."
+    message: "Blob uploaded to {storageContainerName}/{storageBlobName} ({storageBlobSize} bytes) in {durationMs}ms"
+    fields: [storageAccountName, storageContainerName, storageBlobName, storageBlobSize, storageContentType, durationMs, storageStatusCode]
+    metrics:
+      otel.storage.blob.upload.duration:
+        type: histogram
+        unit: "ms"
+        buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+      otel.storage.blob.upload.size:
+        type: histogram
+        unit: "bytes"
+        buckets: [1024, 10240, 102400, 1048576, 10485760, 104857600]
+      otel.storage.blob.upload.count:
+        type: counter
+        unit: "uploads"
+        labels: [storageContainerName]
+    tags: [storage, blob]
+
+  storage.blob.downloaded:
+    id: 10302
+    severity: INFO
+    description: "A blob was downloaded from Azure Blob Storage."
+    message: "Blob downloaded from {storageContainerName}/{storageBlobName} ({storageBlobSize} bytes) in {durationMs}ms"
+    fields: [storageAccountName, storageContainerName, storageBlobName, storageBlobSize, storageContentType, durationMs, storageStatusCode]
+    metrics:
+      otel.storage.blob.download.duration:
+        type: histogram
+        unit: "ms"
+        buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+      otel.storage.blob.download.size:
+        type: histogram
+        unit: "bytes"
+        buckets: [1024, 10240, 102400, 1048576, 10485760, 104857600]
+    tags: [storage, blob]
+
+  storage.blob.deleted:
+    id: 10303
+    severity: INFO
+    description: "A blob was deleted from Azure Blob Storage."
+    message: "Blob deleted from {storageContainerName}/{storageBlobName} in {durationMs}ms"
+    fields: [storageAccountName, storageContainerName, storageBlobName, durationMs, storageStatusCode]
+    metrics:
+      otel.storage.blob.delete.count:
+        type: counter
+        unit: "deletes"
+        labels: [storageContainerName]
+    tags: [storage, blob]
+
+  storage.blob.failed:
+    id: 10304
+    severity: ERROR
+    exception: true
+    description: "An Azure Blob Storage operation failed."
+    message: "Blob operation on {storageContainerName}/{storageBlobName} failed with {storageStatusCode} after {durationMs}ms"
+    fields: [storageAccountName, storageContainerName, storageBlobName, durationMs, storageStatusCode, errorType]
+    metrics:
+      otel.storage.blob.error.count:
+        type: counter
+        unit: "errors"
+        labels: [storageContainerName, storageStatusCode]
+    tags: [storage, blob, error]
+
+  storage.queue.sent:
+    id: 10305
+    severity: INFO
+    description: "A message was sent to an Azure Storage Queue."
+    message: "Message sent to queue {storageQueueName} in {durationMs}ms"
+    fields: [storageAccountName, storageQueueName, durationMs, storageStatusCode]
+    metrics:
+      otel.storage.queue.send.count:
+        type: counter
+        unit: "messages"
+        labels: [storageQueueName]
+      otel.storage.queue.send.duration:
+        type: histogram
+        unit: "ms"
+        buckets: [1, 5, 10, 25, 50, 100, 250, 500]
+    tags: [storage, queue]
+
+  storage.queue.received:
+    id: 10306
+    severity: INFO
+    description: "Messages were received from an Azure Storage Queue."
+    message: "Received {storageMessageCount} messages from queue {storageQueueName} in {durationMs}ms"
+    fields: [storageAccountName, storageQueueName, storageMessageCount, durationMs, storageStatusCode]
+    metrics:
+      otel.storage.queue.receive.count:
+        type: counter
+        unit: "receives"
+        labels: [storageQueueName]
+      otel.storage.queue.receive.message.count:
+        type: histogram
+        unit: "messages"
+        buckets: [1, 5, 10, 20, 32]
+    tags: [storage, queue]
+
+  storage.queue.failed:
+    id: 10307
+    severity: ERROR
+    exception: true
+    description: "An Azure Storage Queue operation failed."
+    message: "Queue operation on {storageQueueName} failed with {storageStatusCode} after {durationMs}ms"
+    fields: [storageAccountName, storageQueueName, durationMs, storageStatusCode, errorType]
+    metrics:
+      otel.storage.queue.error.count:
+        type: counter
+        unit: "errors"
+        labels: [storageQueueName, storageStatusCode]
+    tags: [storage, queue, error]
