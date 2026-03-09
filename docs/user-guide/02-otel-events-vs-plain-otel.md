@@ -141,6 +141,10 @@ events:
       amount:
         type: double
         required: true
+      durationMs:
+        type: double
+        required: true
+        description: "Time to process the order in milliseconds"
     metrics:
       order.placed.count:
         type: counter
@@ -150,6 +154,10 @@ events:
         type: histogram
         unit: "USD"
         description: "Order amount distribution"
+      order.placed.duration:
+        type: histogram
+        unit: "ms"
+        description: "Order processing duration"
     tags:
       - commerce
       - orders
@@ -161,15 +169,15 @@ events:
 using MyApp.Events;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using OtelEvents.Causality;
 
 public class OrderController : ControllerBase
 {
-    // ILogger<T> — same as any OTEL project
-    private readonly ILogger<OrderPlacedEventSource> _logger;
+    private readonly ILogger<OrderController> _logger;
     private readonly IOrderService _orderService;
 
     public OrderController(
-        ILogger<OrderPlacedEventSource> logger,
+        ILogger<OrderController> logger,
         IOrderService orderService)
     {
         _logger = logger;
@@ -179,31 +187,39 @@ public class OrderController : ControllerBase
     [HttpPost("orders")]
     public async Task<IActionResult> CreateOrder(CreateOrderRequest request)
     {
+        var sw = Stopwatch.StartNew();
+
+        // Causal scope — all events inside share a parentEventId
+        using var scope = OtelEventsCausalScope.Begin(
+            Uuid7.FormatEventId(Uuid7.CreateUuid7()));
+
         var order = await _orderService.CreateAsync(request);
 
         // ─── One call: log + metrics + type safety + IntelliSense ──────
-        _logger.OrderPlaced(
+        _logger.EmitOrderPlaced(
             orderId: order.Id,
             customerId: request.CustomerId,
-            amount: (double)request.Amount);
+            amount: (double)request.Amount,
+            durationMs: sw.Elapsed.TotalMilliseconds);
 
         return Created($"/orders/{order.Id}", order);
     }
 }
 ```
 
-That's it. The generated `OrderPlaced` extension method:
+That's it. The generated `EmitOrderPlaced` extension method:
 
 - Calls the `[LoggerMessage]` partial method → creates an OTEL `LogRecord`
 - Records the `order.placed.count` counter
-- Records the `order.placed.amount` histogram
+- Records the `order.placed.amount` histogram with the dollar amount
+- Records the `order.placed.duration` histogram with the elapsed time
 - Provides full IntelliSense with parameter names and XML doc comments
 - Enforces types at compile time (`string orderId`, not `object`)
 
 ### otel-events JSON output (OtelEventsJsonExporter)
 
 ```json
-{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order ORD-789 placed by CUST-001 for 99.99","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"ORD-789","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"all.v":"1.0.0","all.seq":42}
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order ORD-789 placed by CUST-001 for 99.99","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","parentEventId":"evt_019470a0-a1b2-7c3d-8e4f-5a6b7c8d9e0f","attr":{"orderId":"ORD-789","customerId":"CUST-001","amount":99.99,"durationMs":42.7},"tags":["commerce","orders"],"all.v":"1.0.0","all.seq":42}
 ```
 
 Single line. No nulls. UTC microsecond timestamps. Causal event ID. Service name from OTEL resource. Schema version stamp. Monotonic sequence number.
