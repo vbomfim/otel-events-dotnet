@@ -1,8 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <NoWarn>CA1002;CA1062;CA1305;CA1307;CA1720;CA1822;CA2000;CA2227</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="All.Exporter.Json.Tests" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <NoWarn>CA1002;CA1062;CA1305;CA1307;CA1720;CA1822;CA2000;CA2227</NoWarn>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="OpenTelemetry" />
