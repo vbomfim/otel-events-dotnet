@@ -1,0 +1,332 @@
+using System.Text.RegularExpressions;
+using All.Schema.Models;
+
+namespace All.Schema.Validation;
+
+/// <summary>
+/// Validates <see cref="SchemaDocument"/> instances against ALL_SCHEMA_001–018 rules.
+/// Operates on already-parsed documents (post-parse validation).
+/// </summary>
+public sealed partial class SchemaValidator
+{
+    /// <summary>Maximum allowed events across all merged schemas.</summary>
+    internal const int MaxEventCount = 500;
+
+    /// <summary>Maximum allowed fields per event.</summary>
+    internal const int MaxFieldsPerEvent = 50;
+
+    // Regex: lowercase alphanumeric + dots, must have at least one dot
+    [GeneratedRegex(@"^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$")]
+    private static partial Regex EventNameRegex();
+
+    // Regex: semver (simplified — major.minor.patch with optional pre-release)
+    [GeneratedRegex(@"^\d+\.\d+\.\d+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?(\+[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$")]
+    private static partial Regex SemverRegex();
+
+    // Regex: valid .NET identifier segments separated by dots
+    [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")]
+    private static partial Regex MeterNameRegex();
+
+    // Regex: message template placeholder extraction
+    [GeneratedRegex(@"\{(\w+)\}")]
+    private static partial Regex PlaceholderRegex();
+
+    /// <summary>
+    /// Validates a single schema document.
+    /// </summary>
+    public ValidationResult Validate(SchemaDocument document)
+    {
+        return Validate([document]);
+    }
+
+    /// <summary>
+    /// Validates multiple schema documents (merged schema).
+    /// Enforces cross-document rules like unique event names/IDs and event count limits.
+    /// </summary>
+    public ValidationResult Validate(IReadOnlyList<SchemaDocument> documents)
+    {
+        var errors = new List<SchemaError>();
+
+        // Collect all shared fields and enums across all documents for ref resolution
+        var allSharedFields = new Dictionary<string, FieldDefinition>(StringComparer.OrdinalIgnoreCase);
+        var allEnums = new Dictionary<string, EnumDefinition>(StringComparer.OrdinalIgnoreCase);
+        var allEventNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var allEventIds = new HashSet<int>();
+        var totalEvents = 0;
+
+        foreach (var doc in documents)
+        {
+            // ALL_SCHEMA_010: Semver version
+            ValidateSemver(doc.Schema.Version, errors);
+
+            // ALL_SCHEMA_013: Meter name
+            var meterName = doc.Schema.MeterName ?? doc.Schema.Namespace;
+            ValidateMeterName(meterName, errors);
+
+            // Collect shared fields
+            foreach (var field in doc.Fields)
+            {
+                allSharedFields[field.Name] = field;
+            }
+
+            // ALL_SCHEMA_009: Enum non-empty + collect
+            foreach (var enumDef in doc.Enums)
+            {
+                if (enumDef.Values.Count == 0)
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.EmptyEnum,
+                        Message = $"Enum '{enumDef.Name}' must have at least one value."
+                    });
+                }
+
+                // ALL_SCHEMA_020: Duplicate enum values
+                var distinctValues = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var value in enumDef.Values)
+                {
+                    if (!distinctValues.Add(value))
+                    {
+                        errors.Add(new SchemaError
+                        {
+                            Code = ErrorCodes.DuplicateEnumValue,
+                            Message = $"Enum '{enumDef.Name}' has duplicate value '{value}'."
+                        });
+                    }
+                }
+
+                allEnums[enumDef.Name] = enumDef;
+            }
+
+            // Validate each event
+            foreach (var evt in doc.Events)
+            {
+                totalEvents++;
+
+                // ALL_SCHEMA_001: Unique event names
+                if (!allEventNames.Add(evt.Name))
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.DuplicateEventName,
+                        Message = $"Duplicate event name '{evt.Name}'."
+                    });
+                }
+
+                // ALL_SCHEMA_012: Unique event IDs
+                if (!allEventIds.Add(evt.Id))
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.DuplicateEventId,
+                        Message = $"Duplicate event id '{evt.Id}' on event '{evt.Name}'."
+                    });
+                }
+
+                // ALL_SCHEMA_006: Event name format
+                ValidateEventNameFormat(evt.Name, errors);
+
+                // ALL_SCHEMA_011: Reserved prefix on event name
+                ValidateReservedPrefix(evt.Name, "Event name", errors);
+
+                // ALL_SCHEMA_003: Message template placeholders match fields
+                ValidateMessageTemplate(evt, errors);
+
+                // ALL_SCHEMA_018: Field count limit
+                if (evt.Fields.Count > MaxFieldsPerEvent)
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.FieldCountExceeded,
+                        Message = $"Event '{evt.Name}' has {evt.Fields.Count} fields, exceeding the maximum of {MaxFieldsPerEvent}."
+                    });
+                }
+
+                // Validate each field
+                foreach (var field in evt.Fields)
+                {
+                    ValidateField(field, evt.Name, allSharedFields, allEnums, errors);
+                }
+
+                // Validate each metric
+                foreach (var metric in evt.Metrics)
+                {
+                    ValidateMetric(metric, evt.Name, errors);
+                }
+            }
+        }
+
+        // ALL_SCHEMA_017: Event count limit (across merged schemas)
+        if (totalEvents > MaxEventCount)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.EventCountExceeded,
+                Message = $"Total event count ({totalEvents}) exceeds the maximum of {MaxEventCount}."
+            });
+        }
+
+        return errors.Count == 0
+            ? ValidationResult.Success()
+            : ValidationResult.Failure(errors);
+    }
+
+    private static void ValidateSemver(string version, List<SchemaError> errors)
+    {
+        if (!SemverRegex().IsMatch(version))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidSemver,
+                Message = $"Schema version '{version}' is not valid semver."
+            });
+        }
+    }
+
+    private static void ValidateMeterName(string meterName, List<SchemaError> errors)
+    {
+        if (!MeterNameRegex().IsMatch(meterName))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidMeterName,
+                Message = $"Meter name '{meterName}' is not a valid .NET identifier."
+            });
+        }
+    }
+
+    private static void ValidateEventNameFormat(string eventName, List<SchemaError> errors)
+    {
+        if (!EventNameRegex().IsMatch(eventName))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidEventNameFormat,
+                Message = $"Event name '{eventName}' must be lowercase, dot-namespaced (e.g., 'http.request.received')."
+            });
+        }
+    }
+
+    private static void ValidateReservedPrefix(string name, string context, List<SchemaError> errors)
+    {
+        if (name.StartsWith("all.", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.ReservedPrefix,
+                Message = $"{context} '{name}' must not start with the reserved 'all.' prefix."
+            });
+        }
+    }
+
+    private static void ValidateMessageTemplate(EventDefinition evt, List<SchemaError> errors)
+    {
+        var placeholders = PlaceholderRegex().Matches(evt.Message)
+            .Select(m => m.Groups[1].Value)
+            .ToList();
+
+        var fieldNames = new HashSet<string>(
+            evt.Fields.Select(f => f.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var placeholder in placeholders)
+        {
+            if (!fieldNames.Contains(placeholder))
+            {
+                errors.Add(new SchemaError
+                {
+                    Code = ErrorCodes.MessageTemplateMismatch,
+                    Message = $"Event '{evt.Name}' message placeholder '{{{placeholder}}}' does not match any field."
+                });
+            }
+        }
+    }
+
+    private static void ValidateField(
+        FieldDefinition field,
+        string eventName,
+        Dictionary<string, FieldDefinition> sharedFields,
+        Dictionary<string, EnumDefinition> enums,
+        List<SchemaError> errors)
+    {
+        // ALL_SCHEMA_011: Reserved prefix on field name
+        if (field.Name.StartsWith("all.", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.ReservedPrefix,
+                Message = $"Field name '{field.Name}' in event '{eventName}' must not start with the reserved 'all.' prefix."
+            });
+        }
+
+        // ALL_SCHEMA_005: Type validity (if raw type was provided but didn't parse)
+        if (field.RawType is not null && field.Type is null && field.Ref is null)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidType,
+                Message = $"Field '{field.Name}' in event '{eventName}' has invalid type '{field.RawType}'."
+            });
+        }
+
+        // ALL_SCHEMA_004: Ref resolution
+        if (field.Ref is not null)
+        {
+            if (!sharedFields.ContainsKey(field.Ref) && !enums.ContainsKey(field.Ref))
+            {
+                errors.Add(new SchemaError
+                {
+                    Code = ErrorCodes.UnresolvedRef,
+                    Message = $"Field '{field.Name}' in event '{eventName}' references undefined field/enum '{field.Ref}'."
+                });
+            }
+        }
+
+        // ALL_SCHEMA_007: Required field must have a type (directly or via ref)
+        if (field.Required && field.Type is null && field.Ref is null)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.RequiredFieldMissingType,
+                Message = $"Required field '{field.Name}' in event '{eventName}' must have a type or ref."
+            });
+        }
+
+        // ALL_SCHEMA_014: Sensitivity validity
+        if (field.RawSensitivity is not null &&
+            !SensitivityExtensions.TryParseSensitivity(field.RawSensitivity, out _))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidSensitivity,
+                Message = $"Field '{field.Name}' in event '{eventName}' has invalid sensitivity '{field.RawSensitivity}'."
+            });
+        }
+
+        // ALL_SCHEMA_015: maxLength validity
+        if (field.RawMaxLength is not null)
+        {
+            if (!int.TryParse(field.RawMaxLength, out var ml) || ml <= 0)
+            {
+                errors.Add(new SchemaError
+                {
+                    Code = ErrorCodes.InvalidMaxLength,
+                    Message = $"Field '{field.Name}' in event '{eventName}' has invalid maxLength '{field.RawMaxLength}' — must be a positive integer."
+                });
+            }
+        }
+    }
+
+    private static void ValidateMetric(MetricDefinition metric, string eventName, List<SchemaError> errors)
+    {
+        // ALL_SCHEMA_008: Metric type validity
+        if (metric.RawType is not null && !MetricTypeExtensions.TryParseMetricType(metric.RawType, out _))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidMetricType,
+                Message = $"Metric '{metric.Name}' in event '{eventName}' has invalid type '{metric.RawType}'."
+            });
+        }
+    }
+}
