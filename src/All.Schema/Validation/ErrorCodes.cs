@@ -76,4 +76,7 @@ public static class ErrorCodes
 
     /// <summary>Import path must not traverse outside the schema directory.</summary>
     public const string ImportPathTraversal = "ALL_SCHEMA_024";
+
+    /// <summary>meterLifecycle must be one of: static, di.</summary>
+    public const string InvalidMeterLifecycle = "ALL_SCHEMA_025";
 }
