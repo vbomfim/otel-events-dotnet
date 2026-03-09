@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <NoWarn>CA1031;CA1062;CA1822;CA2000;SYSLIB1015</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OtelEvents.Azure.CosmosDb.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="OpenTelemetry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\All.Causality\All.Causality.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Schemas\cosmosdb.all.yaml">
+      <LogicalName>OtelEvents.Azure.CosmosDb.cosmosdb.all.yaml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
