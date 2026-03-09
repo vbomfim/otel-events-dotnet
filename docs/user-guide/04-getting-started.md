@@ -1,0 +1,380 @@
+# Chapter 4 — Getting Started
+
+This tutorial takes you from zero to your first schema-defined event in 10 minutes. By the end, you'll have a running ASP.NET Core API that emits ALL events as structured JSONL on stdout.
+
+---
+
+## Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) (or .NET 8/9)
+- A terminal
+- An editor with C# support (VS Code, Visual Studio, Rider)
+
+---
+
+## Step 1: Create a Project
+
+```bash
+# Create a new minimal API project
+dotnet new webapi -n MyOrderService
+cd MyOrderService
+```
+
+---
+
+## Step 2: Install ALL Packages
+
+```bash
+# Core: schema parser + code generator
+dotnet add package All.Schema
+
+# JSON exporter: AI-optimized JSONL on stdout
+dotnet add package All.Exporter.Json
+
+# Causality: eventId/parentEventId causal linking
+dotnet add package All.Causality
+
+# Analyzers: compile-time logging hygiene
+dotnet add package All.Analyzers
+```
+
+Or use the meta-package for everything:
+
+```bash
+dotnet add package All4dotnet
+```
+
+---
+
+## Step 3: Create Your Schema
+
+Create a `schemas/` directory and add your first schema file:
+
+```bash
+mkdir schemas
+```
+
+Create `schemas/orders.all.yaml`:
+
+```yaml
+schema:
+  name: "OrderEvents"
+  version: "1.0.0"
+  namespace: "MyOrderService.Events"
+  meterName: "MyOrderService.Events.Orders"
+  description: "Events for the order-processing service"
+
+fields:
+  orderId:
+    type: string
+    description: "Unique order identifier"
+    index: true
+
+  customerId:
+    type: string
+    description: "Customer who placed the order"
+    index: true
+
+  durationMs:
+    type: double
+    description: "Duration in milliseconds"
+    unit: "ms"
+
+enums:
+  OrderStatus:
+    description: "Current state of an order"
+    values:
+      - Pending
+      - Confirmed
+      - Shipped
+      - Delivered
+      - Cancelled
+
+events:
+  order.placed:
+    id: 1001
+    severity: INFO
+    description: "An order was placed by a customer"
+    message: "Order {orderId} placed by {customerId} for {amount}"
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      customerId:
+        ref: customerId
+        required: true
+      amount:
+        type: double
+        required: true
+    metrics:
+      order.placed.count:
+        type: counter
+        unit: "orders"
+        description: "Total orders placed"
+      order.placed.amount:
+        type: histogram
+        unit: "USD"
+        description: "Order amount distribution"
+    tags:
+      - commerce
+      - orders
+
+  order.status.changed:
+    id: 1002
+    severity: INFO
+    description: "An order's status changed"
+    message: "Order {orderId} changed from {previousStatus} to {newStatus}"
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      previousStatus:
+        type: enum
+        values: [Pending, Confirmed, Shipped, Delivered, Cancelled]
+        required: true
+      newStatus:
+        type: enum
+        values: [Pending, Confirmed, Shipped, Delivered, Cancelled]
+        required: true
+    tags:
+      - commerce
+      - orders
+
+  order.failed:
+    id: 1003
+    severity: ERROR
+    description: "Order processing failed"
+    message: "Order {orderId} failed: {reason}"
+    exception: true
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      reason:
+        type: string
+        required: true
+    metrics:
+      order.failure.count:
+        type: counter
+        description: "Total order failures"
+    tags:
+      - commerce
+      - orders
+```
+
+---
+
+## Step 4: Generate Code
+
+Run the code generator:
+
+```bash
+dotnet all generate schemas/orders.all.yaml -o Generated/
+```
+
+This creates:
+
+| File | Contents |
+|------|----------|
+| `Generated/OrderEventsEventSource.g.cs` | `[LoggerMessage]` partial methods + `ILogger<T>` extension methods |
+| `Generated/OrderStatus.g.cs` | Generated enum type with `ToStringFast()` |
+| `Generated/OrderEventsMetrics.g.cs` | Static `Meter`, `Counter`, `Histogram` instances |
+
+You now have IntelliSense-enabled, type-safe event methods.
+
+---
+
+## Step 5: Configure OTEL + ALL
+
+Update `Program.cs`:
+
+```csharp
+using All.Causality;
+using All.Exporter.Json;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ─── Standard OTEL setup — ALL extends it ──────────────────────────
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService("order-service"))
+    .WithLogging(logging =>
+    {
+        // ALL: causal event linking
+        logging.AddProcessor<AllCausalityProcessor>();
+
+        // ALL: AI-optimized JSON exporter
+        logging.AddAllJsonExporter(options =>
+        {
+            options.Output = AllJsonOutput.Stdout;
+            options.SchemaVersion = "1.0.0";
+        });
+    })
+    .WithMetrics(metrics =>
+    {
+        // Pick up ALL-generated meters
+        metrics.AddMeter("MyOrderService.Events.*");
+    });
+
+var app = builder.Build();
+```
+
+---
+
+## Step 6: Emit Events
+
+Add an endpoint that uses the generated event methods:
+
+```csharp
+using MyOrderService.Events;
+
+// ... after building the app ...
+
+app.MapPost("/orders", (CreateOrderRequest request, ILogger<OrderEventsEventSource> logger) =>
+{
+    var orderId = Guid.NewGuid().ToString("N")[..8];
+
+    // ─── Type-safe, schema-enforced event ──────────────────────────
+    logger.OrderPlaced(
+        orderId: orderId,
+        customerId: request.CustomerId,
+        amount: request.Amount);
+
+    return Results.Created($"/orders/{orderId}", new { id = orderId });
+});
+
+app.MapPost("/orders/{id}/ship", (string id, ILogger<OrderEventsEventSource> logger) =>
+{
+    logger.OrderStatusChanged(
+        orderId: id,
+        previousStatus: OrderStatus.Confirmed,
+        newStatus: OrderStatus.Shipped);
+
+    return Results.Ok();
+});
+
+app.Run();
+
+record CreateOrderRequest(string CustomerId, double Amount);
+```
+
+---
+
+## Step 7: Run and See Output
+
+```bash
+dotnet run
+```
+
+In another terminal, send a request:
+
+```bash
+curl -X POST http://localhost:5000/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": "CUST-001", "amount": 99.99}'
+```
+
+You'll see a single JSONL line on stdout:
+
+```json
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"all.v":"1.0.0","all.seq":1}
+```
+
+Use `jq` to pretty-print for readability:
+
+```bash
+dotnet run 2>/dev/null | jq .
+```
+
+---
+
+## Step 8: Verify with Tests
+
+Add `All.Testing` to your test project:
+
+```bash
+dotnet add tests/MyOrderService.Tests package All.Testing
+```
+
+Write a test using `AllTestHost`:
+
+```csharp
+using All.Testing;
+using MyOrderService.Events;
+
+public class OrderEventTests : IDisposable
+{
+    private readonly ILoggerFactory _factory;
+    private readonly InMemoryLogExporter _exporter;
+
+    public OrderEventTests()
+    {
+        (_factory, _exporter) = AllTestHost.Create();
+    }
+
+    [Fact]
+    public void OrderPlaced_EmitsCorrectEvent()
+    {
+        var logger = _factory.CreateLogger<OrderEventsEventSource>();
+
+        logger.OrderPlaced(
+            orderId: "ORD-001",
+            customerId: "CUST-001",
+            amount: 42.00);
+
+        var record = _exporter.AssertSingle("order.placed");
+        record.AssertAttribute("orderId", "ORD-001");
+        record.AssertAttribute("customerId", "CUST-001");
+        record.AssertAttribute("amount", 42.00);
+    }
+
+    [Fact]
+    public void OrderFailed_EmitsErrorWithException()
+    {
+        var logger = _factory.CreateLogger<OrderEventsEventSource>();
+        var exception = new InvalidOperationException("Out of stock");
+
+        logger.OrderFailed(
+            orderId: "ORD-002",
+            reason: "Out of stock",
+            exception: exception);
+
+        var record = _exporter.AssertSingle("order.failed");
+        Assert.Equal(LogLevel.Error, record.LogLevel);
+        Assert.NotNull(record.Exception);
+    }
+
+    public void Dispose() => _factory.Dispose();
+}
+```
+
+---
+
+## What You've Built
+
+In 10 minutes, you now have:
+
+| Feature | How |
+|---------|-----|
+| ✅ Type-safe events | YAML schema → generated `ILogger<T>` extension methods |
+| ✅ Auto-generated metrics | Counters and histograms from schema `metrics:` block |
+| ✅ AI-optimized JSON | Single-line JSONL on stdout via `AllJsonExporter` |
+| ✅ Causal linking | `eventId`/`parentEventId` via `AllCausalityProcessor` |
+| ✅ Compile-time checks | `All.Analyzers` catches `Console.Write` and untyped `ILogger` |
+| ✅ IntelliSense | Full autocompletion with parameter names and docs |
+| ✅ Unit tests | `AllTestHost` + `InMemoryLogExporter` for assertions |
+
+---
+
+## What's Next?
+
+| Want to... | Go to... |
+|-----------|----------|
+| Learn the full YAML grammar | [Chapter 5 — Schema Reference](05-schema-reference.md) |
+| Add HTTP/gRPC/CosmosDB/Storage events automatically | [Chapter 6 — Integration Packs](06-integration-packs.md) |
+| Configure for production | [Chapter 7 — Configuration](07-configuration.md) |
+| Write more tests | [Chapter 8 — Testing](08-testing.md) |
+| Validate schemas in CI | [Chapter 9 — CLI Tool](09-cli-tool.md) |
+| Understand security & PII | [Chapter 10 — Security & Privacy](10-security-privacy.md) |
