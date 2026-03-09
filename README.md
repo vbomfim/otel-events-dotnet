@@ -82,6 +82,18 @@ See [docs/security/](docs/security/) for standalone security documentation, incl
 
 For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 
+## User Guide
+
+See the [User Guide](docs/user-guide/README.md) for comprehensive documentation:
+
+- [Introduction — What is ALL?](docs/user-guide/01-introduction.md)
+- [ALL vs Plain OTEL](docs/user-guide/02-all-vs-plain-otel.md) — side-by-side comparison
+- [Core Concepts](docs/user-guide/03-core-concepts.md) — Events, Schemas, Causality, Sensitivity
+- [Getting Started](docs/user-guide/04-getting-started.md) — 10-minute tutorial
+- [Schema Reference](docs/user-guide/05-schema-reference.md) — complete YAML grammar
+- [Integration Packs](docs/user-guide/06-integration-packs.md) — AspNetCore, gRPC, CosmosDB, Storage, HealthChecks
+- [Configuration](docs/user-guide/07-configuration.md), [Testing](docs/user-guide/08-testing.md), [CLI Tool](docs/user-guide/09-cli-tool.md), [Security](docs/user-guide/10-security-privacy.md)
+
 ## Specification
 
 See [SPECIFICATION.md](SPECIFICATION.md) for the full project specification, including architecture, YAML schema format, JSON envelope format, and design decisions.

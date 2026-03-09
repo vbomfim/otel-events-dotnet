@@ -18,8 +18,8 @@
 | 8 | [Testing](08-testing.md) | `All.Testing` package, `AllTestHost`, assertions, test patterns |
 | 9 | [CLI Tool](09-cli-tool.md) | `dotnet all validate`, `generate`, `diff`, `docs` commands |
 | 10 | [Security & Privacy](10-security-privacy.md) | Sensitivity classification, redaction, environment profiles, OWASP mapping |
-| 11 | [Advanced Topics](11-advanced-topics.md) | Rate limiting, sampling, schema versioning, NuGet sharing, signing, analyzers |
-| 12 | [Migration & FAQ](12-migration-and-faq.md) | Migration from plain ILogger, coexistence strategy, troubleshooting |
+| 11 | [Advanced Topics](11-advanced-topics.md) | Rate limiting, sampling, schema versioning |
+| 12 | [Migration & FAQ](12-migration-and-faq.md) | Adopting ALL in existing projects, frequently asked questions |
 
 ---
 
