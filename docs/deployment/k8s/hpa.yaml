@@ -1,0 +1,34 @@
+# HorizontalPodAutoscaler for ALL-based .NET services.
+#
+# Scales between 3 and 20 replicas based on CPU and memory utilization.
+# Adjust thresholds based on your service's resource profile.
+#
+# Customize: Replace "my-service" with your service name.
+# See resource-sizing.md for throughput-based sizing recommendations.
+#
+# See: SPECIFICATION.md §17.4
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-service-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-service
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

@@ -1,0 +1,18 @@
+# PodDisruptionBudget for ALL-based .NET services.
+#
+# Ensures at least 2 pods remain available during voluntary disruptions
+# (node drains, rolling updates, cluster maintenance).
+#
+# Customize: Replace "my-service" with your service name.
+#
+# See: SPECIFICATION.md §17.4
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-service-pdb
+  namespace: production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: my-service

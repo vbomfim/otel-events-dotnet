@@ -75,6 +75,16 @@ otel-events-dotnet/
 
 See [SPECIFICATION.md](SPECIFICATION.md) for the full project specification, including architecture, YAML schema format, JSON envelope format, and design decisions.
 
+## Deployment
+
+See the [Container & Kubernetes Deployment Guide](docs/deployment/README.md) for:
+
+- OTEL Collector configuration for ALL envelope parsing
+- Sample Dockerfile (distroless, non-root, SBOM)
+- Kubernetes manifests (Deployment, PDB, HPA, NetworkPolicy)
+- Resource sizing recommendations
+- TLS/mTLS configuration for OTLP endpoints
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or pull request.

@@ -1,0 +1,85 @@
+# OTEL Collector configuration for ALL (Another Logging Library) envelope.
+#
+# This configuration sets up the OTEL Collector with:
+#   - filelog receiver: reads container stdout from /var/log/pods/
+#   - CRI format parsing: extracts log line from container runtime wrapper
+#   - ALL JSON envelope parsing: extracts event name, severity, timestamp
+#   - OTLP and Loki exporters: forwards logs to backend systems
+#
+# Deploy as a DaemonSet on each Kubernetes node.
+# See: SPECIFICATION.md §17.1
+
+receivers:
+  filelog:
+    include:
+      - /var/log/pods/*/*/*.log
+    operators:
+      # Parse container runtime wrapper (CRI format)
+      - type: regex_parser
+        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      # Parse ALL JSON envelope
+      - type: json_parser
+        parse_from: attributes.log
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%dT%H:%M:%S.%fZ'
+      # Move ALL envelope fields to OTEL LogRecord attributes
+      - type: move
+        from: attributes.event
+        to: attributes["event.name"]
+      - type: move
+        from: attributes.severity
+        to: attributes["severity_text"]
+      - type: severity_parser
+        parse_from: attributes.severityNumber
+        mapping:
+          trace: 1
+          debug: 5
+          info: 9
+          warn: 13
+          error: 17
+          fatal: 21
+    include_file_name: false
+    include_file_path: true
+    storage: file_storage
+
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        tls:
+          cert_file: /etc/otel/certs/tls.crt
+          key_file: /etc/otel/certs/tls.key
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /etc/otel/certs/tls.crt
+          key_file: /etc/otel/certs/tls.key
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1000
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+exporters:
+  otlp:
+    endpoint: "otel-gateway.monitoring.svc.cluster.local:4317"
+    tls:
+      insecure: false
+      ca_file: /etc/otel/certs/ca.crt
+  loki:
+    endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [memory_limiter, batch]
+      exporters: [otlp, loki]

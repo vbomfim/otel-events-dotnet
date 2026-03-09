@@ -1,0 +1,105 @@
+# Kubernetes Deployment manifest for .NET services using ALL.
+#
+# Security features:
+#   - runAsNonRoot with explicit UID/GID
+#   - Read-only root filesystem
+#   - All capabilities dropped
+#   - Seccomp profile: RuntimeDefault
+#   - Resource limits enforced
+#
+# Customize: Replace "my-service" and "ghcr.io/myorg/my-service:v1.0.0"
+# with your service name and container image.
+#
+# See: SPECIFICATION.md §17.4
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-service
+  namespace: production
+  labels:
+    app: my-service
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-service
+  template:
+    metadata:
+      labels:
+        app: my-service
+        version: v1.0.0
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: my-service
+          image: ghcr.io/myorg/my-service:v1.0.0
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: ALL__EnvironmentProfile
+              value: "Production"
+            - name: ALL__EmitHostInfo
+              value: "false"
+            - name: OTEL_SERVICE_NAME
+              value: "my-service"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=production,service.version=v1.0.0"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "https://otel-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+            - name: OTEL_EXPORTER_OTLP_CERTIFICATE
+              value: "/etc/otel/certs/ca.crt"
+          volumeMounts:
+            - name: otel-certs
+              mountPath: /etc/otel/certs
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+      volumes:
+        - name: otel-certs
+          secret:
+            secretName: otel-tls-certs
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi
+      terminationGracePeriodSeconds: 30
