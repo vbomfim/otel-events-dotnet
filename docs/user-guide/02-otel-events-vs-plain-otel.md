@@ -169,7 +169,6 @@ events:
 using MyApp.Events;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using OtelEvents.Causality;
 
 public class OrderController : ControllerBase
 {
@@ -187,14 +186,10 @@ public class OrderController : ControllerBase
     [HttpPost("orders")]
     public async Task<IActionResult> CreateOrder(CreateOrderRequest request)
     {
-        var sw = Stopwatch.StartNew();
-
-        // Causal scope — sets AsyncLocal parentEventId.
-        // All events emitted inside this scope (including from _orderService)
-        // automatically get parentEventId stamped by OtelEventsCausalityProcessor.
-        // The scope variable isn't referenced directly — it works via ambient context.
-        using var scope = OtelEventsCausalScope.Begin(
-            Uuid7.FormatEventId(Uuid7.CreateUuid7()));
+        // Causal scope — auto-generates eventId, tracks elapsed time.
+        // All events emitted inside (including from _orderService)
+        // automatically get parentEventId via AsyncLocal ambient context.
+        using var scope = OtelEventsCausalScope.Begin();
 
         var order = await _orderService.CreateAsync(request);
 
@@ -203,7 +198,7 @@ public class OrderController : ControllerBase
             orderId: order.Id,
             customerId: request.CustomerId,
             amount: (double)request.Amount,
-            durationMs: sw.Elapsed.TotalMilliseconds);
+            durationMs: scope.ElapsedMilliseconds);  // Duration from scope — no Stopwatch needed
 
         return Created($"/orders/{order.Id}", order);
     }
