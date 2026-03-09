@@ -1,7 +1,7 @@
 namespace All.Schema.Validation;
 
 /// <summary>
-/// Error code constants for schema validation rules (ALL_SCHEMA_001 through ALL_SCHEMA_018).
+/// Error code constants for schema validation rules (ALL_SCHEMA_001 through ALL_SCHEMA_025).
 /// </summary>
 public static class ErrorCodes
 {
@@ -76,4 +76,7 @@ public static class ErrorCodes
 
     /// <summary>Import path must not traverse outside the schema directory.</summary>
     public const string ImportPathTraversal = "ALL_SCHEMA_024";
+
+    /// <summary>All schemas in a merged set must share the same major version.</summary>
+    public const string IncompatibleSchemaVersion = "ALL_SCHEMA_025";
 }

@@ -4,7 +4,7 @@ using All.Schema.Models;
 namespace All.Schema.Validation;
 
 /// <summary>
-/// Validates <see cref="SchemaDocument"/> instances against ALL_SCHEMA_001–018 rules.
+/// Validates <see cref="SchemaDocument"/> instances against ALL_SCHEMA_001–025 rules.
 /// Operates on already-parsed documents (post-parse validation).
 /// </summary>
 public sealed partial class SchemaValidator
@@ -180,6 +180,9 @@ public sealed partial class SchemaValidator
                 Message = $"Total event count ({totalEvents}) exceeds the maximum of {MaxEventCount}."
             });
         }
+
+        // ALL_SCHEMA_025: Schema version compatibility (same major version required)
+        ValidateVersionCompatibility(documents, errors);
 
         return errors.Count == 0
             ? ValidationResult.Success()
@@ -379,5 +382,48 @@ public sealed partial class SchemaValidator
                 Message = $"Enum value '{value}' in enum '{enumName}' is not a valid C# identifier (must match ^[A-Za-z_][A-Za-z0-9_]*$)."
             });
         }
+    }
+
+    private static void ValidateVersionCompatibility(
+        IReadOnlyList<SchemaDocument> documents,
+        List<SchemaError> errors)
+    {
+        if (documents.Count <= 1)
+            return;
+
+        var firstMajor = ExtractMajorVersion(documents[0].Schema.Version);
+        if (firstMajor < 0)
+            return; // Invalid semver already reported by ALL_SCHEMA_010
+
+        for (var i = 1; i < documents.Count; i++)
+        {
+            var major = ExtractMajorVersion(documents[i].Schema.Version);
+            if (major < 0)
+                continue; // Invalid semver already reported
+
+            if (major != firstMajor)
+            {
+                errors.Add(new SchemaError
+                {
+                    Code = ErrorCodes.IncompatibleSchemaVersion,
+                    Message = $"Schema '{documents[i].Schema.Name}' version '{documents[i].Schema.Version}' " +
+                              $"has major version {major}, which is incompatible with major version {firstMajor} " +
+                              $"from schema '{documents[0].Schema.Name}'."
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extracts the major version number from a semver string.
+    /// Returns -1 if the version is not valid semver.
+    /// </summary>
+    private static int ExtractMajorVersion(string version)
+    {
+        var dotIndex = version.IndexOf('.', StringComparison.Ordinal);
+        if (dotIndex <= 0)
+            return -1;
+
+        return int.TryParse(version.AsSpan(0, dotIndex), out var major) ? major : -1;
     }
 }

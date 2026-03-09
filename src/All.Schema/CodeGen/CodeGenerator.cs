@@ -117,6 +117,10 @@ public sealed class CodeGenerator
         sb.AppendLine($"namespace {ns};");
         sb.AppendLine();
 
+        // 0. Metadata class (schema version + name constants)
+        GenerateMetadataClass(sb, schemaName, doc);
+        sb.AppendLine();
+
         // 1. LoggerMessage partial class
         GenerateLoggerExtensionsClass(sb, schemaName, doc.Events);
         sb.AppendLine();
@@ -132,6 +136,26 @@ public sealed class CodeGenerator
         GenerateEventExtensionsClass(sb, schemaName, doc.Events, hasAnyMetrics);
 
         return new GeneratedFile($"{schemaName}Events.g.cs", sb.ToString());
+    }
+
+    // ── Metadata Class ────────────────────────────────────────────
+
+    private static void GenerateMetadataClass(
+        StringBuilder sb,
+        string schemaName,
+        SchemaDocument doc)
+    {
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine($"/// Schema metadata for {schemaName}.");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine($"public static class {schemaName}Metadata");
+        sb.AppendLine("{");
+        sb.AppendLine($"    /// <summary>The schema version from the YAML definition.</summary>");
+        sb.AppendLine($"    public const string SchemaVersion = \"{EscapeString(doc.Schema.Version)}\";");
+        sb.AppendLine();
+        sb.AppendLine($"    /// <summary>The schema name from the YAML definition.</summary>");
+        sb.AppendLine($"    public const string SchemaName = \"{EscapeString(doc.Schema.Name)}\";");
+        sb.AppendLine("}");
     }
 
     // ── LoggerMessage Extensions ───────────────────────────────────
