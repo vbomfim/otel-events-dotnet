@@ -18,8 +18,9 @@
 | 8 | [Testing](08-testing.md) | `All.Testing` package, `AllTestHost`, assertions, test patterns |
 | 9 | [CLI Tool](09-cli-tool.md) | `dotnet all validate`, `generate`, `diff`, `docs` commands |
 | 10 | [Security & Privacy](10-security-privacy.md) | Sensitivity classification, redaction, environment profiles, OWASP mapping |
-| 11 | [Advanced Topics](11-advanced-topics.md) | Rate limiting, sampling, schema versioning |
-| 12 | [Migration & FAQ](12-migration-and-faq.md) | Adopting ALL in existing projects, frequently asked questions |
+| 11 | [Advanced Topics](11-advanced-topics.md) | Rate limiting, sampling, schema versioning, sharing, signing, analyzers |
+| 12 | [Migration Guide](12-migration-guide.md) | Step-by-step migration from plain `ILogger` to ALL |
+| 13 | [FAQ](13-faq.md) | Common questions about ALL adoption, debugging, and performance |
 
 ---
 
@@ -39,4 +40,5 @@
 | **Application Developer** — wants to emit events fast | [Chapter 4 — Getting Started](04-getting-started.md) |
 | **Tech Lead / Architect** — evaluating ALL for the team | [Chapter 1 — Introduction](01-introduction.md) → [Chapter 2 — ALL vs Plain OTEL](02-all-vs-plain-otel.md) |
 | **Platform / SRE Engineer** — cares about JSON output and deployment | [Chapter 3 — Core Concepts](03-core-concepts.md) → [Chapter 7 — Configuration](07-configuration.md) |
+| **Migrating from plain ILogger** — already logging, want schema enforcement | [Chapter 12 — Migration Guide](12-migration-guide.md) |
 | **Newcomer to OTEL** — hasn't used OpenTelemetry before | [Chapter 1 — Introduction](01-introduction.md) (start from the beginning) |
