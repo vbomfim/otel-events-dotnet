@@ -56,6 +56,24 @@ public sealed class OtelEventsJsonExporterOptions
     public IList<string> RedactPatterns { get; set; } = [];
 
     /// <summary>
+    /// Per-field sensitivity overrides. When a field name maps to <c>true</c>, the field is
+    /// allowed even if the profile×sensitivity matrix would redact it. When <c>false</c>,
+    /// the field is force-redacted regardless of the matrix.
+    /// </summary>
+    /// <remarks>
+    /// Use sparingly. Document legal basis for Production PII overrides.
+    /// Spec reference: SPECIFICATION.md §16.2.
+    /// </remarks>
+    public IDictionary<string, bool>? SensitivityOverrides { get; set; }
+
+    /// <summary>
+    /// Additional sensitivity mappings for fields not covered by the built-in registry.
+    /// Merged into the <see cref="SensitivityRegistry"/> at construction, overwriting
+    /// any existing mapping for the same field name.
+    /// </summary>
+    public IDictionary<string, OtelEventsSensitivity>? SensitivityMappings { get; set; }
+
+    /// <summary>
     /// Lock timeout for stream writes. Default: 100ms.
     /// </summary>
     public TimeSpan LockTimeout { get; set; } = TimeSpan.FromMilliseconds(100);

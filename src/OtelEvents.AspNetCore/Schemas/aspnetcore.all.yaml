@@ -80,7 +80,7 @@ fields:
   identityHint:
     type: string
     description: "First 8 characters of SHA-256 hash of the credential — NEVER raw credential"
-    sensitivity: pii_hash
+    sensitivity: pii
 
   retryAfterMs:
     type: long

@@ -42,6 +42,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
     private readonly StreamWriter _writer;
     private readonly object _lock = new();
     private readonly Regex[] _userRedactPatterns;
+    private readonly SensitivityRegistry _sensitivityRegistry;
 
     private long _seq;
 
@@ -55,6 +56,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
             new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
             StreamWriterBufferSize, leaveOpen: true);
         _userRedactPatterns = CompileRedactPatterns(options.RedactPatterns);
+        _sensitivityRegistry = BuildSensitivityRegistry(options);
     }
 
     /// <summary>
@@ -332,6 +334,12 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
             return; // Omit null values per envelope rules
         }
 
+        // Sensitivity-based redaction: check field classification before writing
+        if (TryApplySensitivityRedaction(writer, key))
+        {
+            return;
+        }
+
         // Write typed values directly — redaction/truncation only applies to strings
         switch (value)
         {
@@ -360,6 +368,56 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
         stringValue = ApplyRedaction(stringValue);
         stringValue = ApplyTruncation(stringValue);
         writer.WriteString(key, stringValue);
+    }
+
+    /// <summary>
+    /// Checks if the attribute should be redacted based on sensitivity classification
+    /// and writes the redacted value if so. Returns true if redaction was applied.
+    /// </summary>
+    private bool TryApplySensitivityRedaction(Utf8JsonWriter writer, string key)
+    {
+        // Check explicit overrides first
+        if (_options.SensitivityOverrides is not null
+            && _options.SensitivityOverrides.TryGetValue(key, out var allowed))
+        {
+            if (allowed)
+            {
+                // Credential fields cannot be overridden — always redacted per §16.2
+                if (_sensitivityRegistry.TryGetSensitivity(key, out var s)
+                    && s == OtelEventsSensitivity.Credential)
+                {
+                    writer.WriteString(key, SensitivityRegistry.GetRedactedValue(OtelEventsSensitivity.Credential));
+                    ExporterMetrics.SensitivityRedacted.Add(1);
+                    return true;
+                }
+
+                return false; // Override: allow despite classification
+            }
+
+            // Override: force-redact — use sensitivity from registry for the marker
+            if (_sensitivityRegistry.TryGetSensitivity(key, out var overrideSensitivity))
+            {
+                writer.WriteString(key, SensitivityRegistry.GetRedactedValue(overrideSensitivity));
+            }
+            else
+            {
+                writer.WriteString(key, "[REDACTED]");
+            }
+
+            ExporterMetrics.SensitivityRedacted.Add(1);
+            return true;
+        }
+
+        // Check registry + profile matrix
+        if (_sensitivityRegistry.TryGetSensitivity(key, out var sensitivity)
+            && SensitivityRegistry.ShouldRedact(sensitivity, _options.EnvironmentProfile))
+        {
+            writer.WriteString(key, SensitivityRegistry.GetRedactedValue(sensitivity));
+            ExporterMetrics.SensitivityRedacted.Add(1);
+            return true;
+        }
+
+        return false;
     }
 
     private string ApplyRedaction(string value)
@@ -602,6 +660,21 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
         }
 
         return compiled;
+    }
+
+    private static SensitivityRegistry BuildSensitivityRegistry(OtelEventsJsonExporterOptions options)
+    {
+        var registry = new SensitivityRegistry();
+
+        if (options.SensitivityMappings is not null)
+        {
+            foreach (var kvp in options.SensitivityMappings)
+            {
+                registry.Register(kvp.Key, kvp.Value);
+            }
+        }
+
+        return registry;
     }
 
     private static void ProcessScope(LogRecordScope scope, List<KeyValuePair<string, object?>> attrs)
