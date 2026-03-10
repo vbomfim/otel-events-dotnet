@@ -47,17 +47,17 @@ public sealed class OtelEventsCausalityProcessor : BaseProcessor<LogRecord>
         }
 
         // Add causal linking attributes
-        attributes.Add(new KeyValuePair<string, object?>("all.event_id", eventId));
+        attributes.Add(new KeyValuePair<string, object?>("otel_events.event_id", eventId));
 
         if (parentEventId is not null)
         {
-            attributes.Add(new KeyValuePair<string, object?>("all.parent_event_id", parentEventId));
+            attributes.Add(new KeyValuePair<string, object?>("otel_events.parent_event_id", parentEventId));
         }
 
         // Auto-stamp elapsed time from current scope
         if (currentScope is not null)
         {
-            attributes.Add(new KeyValuePair<string, object?>("all.elapsed_ms", Math.Round(currentScope.ElapsedMilliseconds, 2)));
+            attributes.Add(new KeyValuePair<string, object?>("otel_events.elapsed_ms", Math.Round(currentScope.ElapsedMilliseconds, 2)));
         }
 
         logRecord.Attributes = attributes;

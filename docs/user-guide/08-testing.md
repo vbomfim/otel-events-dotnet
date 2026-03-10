@@ -85,7 +85,7 @@ factory.Dispose();
 
 ### With Causality
 
-`CreateWithCausality()` adds the `OtelEventsCausalityProcessor` to the pipeline, so `all.event_id` and `all.parent_event_id` attributes are populated:
+`CreateWithCausality()` adds the `OtelEventsCausalityProcessor` to the pipeline, so `otel_events.event_id` and `otel_events.parent_event_id` attributes are populated:
 
 ```csharp
 var (factory, exporter) = OtelEventsTestHost.CreateWithCausality();
@@ -94,7 +94,7 @@ var logger = factory.CreateLogger("TestCategory");
 logger.LogInformation(new EventId(1, "order.placed"), "Order placed");
 
 var record = exporter.LogRecords[0];
-var eventId = record.Attributes["all.event_id"] as string;
+var eventId = record.Attributes["otel_events.event_id"] as string;
 Assert.NotNull(eventId);
 Assert.StartsWith("evt_", eventId);
 ```

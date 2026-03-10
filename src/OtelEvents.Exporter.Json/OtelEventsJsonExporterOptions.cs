@@ -11,7 +11,7 @@ public sealed class OtelEventsJsonExporterOptions
     /// </summary>
     public string? FilePath { get; set; }
 
-    /// <summary>Schema version stamped into every envelope as "all.v".</summary>
+    /// <summary>Schema version stamped into every envelope as "otel_events.v".</summary>
     public string SchemaVersion { get; set; } = "1.0.0";
 
     /// <summary>
@@ -28,7 +28,7 @@ public sealed class OtelEventsJsonExporterOptions
     public ExceptionDetailLevel? ExceptionDetailLevel { get; set; }
 
     /// <summary>
-    /// Emit "all.host" and "all.pid" in the envelope.
+    /// Emit "otel_events.host" and "otel_events.pid" in the envelope.
     /// Default: false. These fields may expose internal infrastructure details.
     /// </summary>
     public bool EmitHostInfo { get; set; }

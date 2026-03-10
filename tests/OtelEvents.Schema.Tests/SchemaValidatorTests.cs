@@ -414,7 +414,7 @@ public class SchemaValidatorTests
     {
         var doc = CreateMinimalDoc(events:
         [
-            CreateEvent("all.internal.event", 1),
+            CreateEvent("otel_events.internal.event", 1),
         ]);
 
         var result = _validator.Validate(doc);
@@ -437,7 +437,7 @@ public class SchemaValidatorTests
                 severity: INFO
                 message: "Test"
                 fields:
-                  all.reserved:
+                  otel_events.reserved:
                     type: string
             """;
 

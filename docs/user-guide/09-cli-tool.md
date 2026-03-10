@@ -233,7 +233,7 @@ When `validate` or `generate` reports errors, each error includes a structured c
 | `ALL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
 | `ALL_SCHEMA_009` | Empty enum definition |
 | `ALL_SCHEMA_010` | Invalid semver version |
-| `ALL_SCHEMA_011` | Reserved `all.` prefix used in event or field name |
+| `ALL_SCHEMA_011` | Reserved `otel_events.` prefix used in event or field name |
 | `ALL_SCHEMA_012` | Duplicate numeric event ID |
 | `ALL_SCHEMA_013` | Invalid meter name |
 | `ALL_SCHEMA_014` | Invalid sensitivity value |

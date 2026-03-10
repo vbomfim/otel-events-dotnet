@@ -37,7 +37,7 @@ otel-events improves logging quality and reliability:
 
 - **Schema-driven events** — YAML-defined event schemas enforce consistent, structured logging across the application, reducing the risk of missing or malformed log entries.
 - **Export failure signaling** — the exporter returns `ExportResult.Failure` on I/O errors, enabling the OTEL SDK pipeline to trigger retry or alerting mechanisms.
-- **Self-telemetry** — otel-events emits metrics about its own operation (e.g., `all.exporter.json.reserved_prefix_stripped`), providing observability into the logging pipeline itself.
+- **Self-telemetry** — otel-events emits metrics about its own operation (e.g., `otel_events.exporter.json.reserved_prefix_stripped`), providing observability into the logging pipeline itself.
 
 ## Related
 

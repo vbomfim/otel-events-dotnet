@@ -17,14 +17,14 @@ public sealed class ReservedPrefixTests
             eventName: "test.event",
             attributes:
             [
-                new("all.custom_field", "should be stripped"),
+                new("otel_events.custom_field", "should be stripped"),
                 new("method", "GET"),
             ]);
 
         var doc = harness.ExportSingle(lr);
 
         var attr = doc.RootElement.GetProperty("attr");
-        Assert.False(attr.TryGetProperty("all.custom_field", out _));
+        Assert.False(attr.TryGetProperty("otel_events.custom_field", out _));
         Assert.Equal("GET", attr.GetProperty("method").GetString());
     }
 
@@ -36,7 +36,7 @@ public sealed class ReservedPrefixTests
             eventName: "test.event",
             attributes:
             [
-                new("all.event_id", "evt_abc123"),
+                new("otel_events.event_id", "evt_abc123"),
                 new("method", "GET"),
             ]);
 
@@ -54,7 +54,7 @@ public sealed class ReservedPrefixTests
             eventName: "test.event",
             attributes:
             [
-                new("all.parent_event_id", "evt_parent123"),
+                new("otel_events.parent_event_id", "evt_parent123"),
                 new("method", "GET"),
             ]);
 
@@ -71,7 +71,7 @@ public sealed class ReservedPrefixTests
             eventName: "test.event",
             attributes:
             [
-                new("all.tags", new[] { "api" }),
+                new("otel_events.tags", new[] { "api" }),
                 new("method", "GET"),
             ]);
 
@@ -88,18 +88,18 @@ public sealed class ReservedPrefixTests
             eventName: "test.event",
             attributes:
             [
-                new("all.spoofed_version", "1.0.0"),
-                new("all.spoofed_host", "evil-host"),
-                new("all.spoofed_seq", "999"),
+                new("otel_events.spoofed_version", "1.0.0"),
+                new("otel_events.spoofed_host", "evil-host"),
+                new("otel_events.spoofed_seq", "999"),
                 new("method", "GET"),
             ]);
 
         var doc = harness.ExportSingle(lr);
 
         var attr = doc.RootElement.GetProperty("attr");
-        Assert.False(attr.TryGetProperty("all.spoofed_version", out _));
-        Assert.False(attr.TryGetProperty("all.spoofed_host", out _));
-        Assert.False(attr.TryGetProperty("all.spoofed_seq", out _));
+        Assert.False(attr.TryGetProperty("otel_events.spoofed_version", out _));
+        Assert.False(attr.TryGetProperty("otel_events.spoofed_host", out _));
+        Assert.False(attr.TryGetProperty("otel_events.spoofed_seq", out _));
         Assert.Equal("GET", attr.GetProperty("method").GetString());
     }
 

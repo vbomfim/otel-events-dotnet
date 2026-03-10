@@ -18,7 +18,7 @@ namespace OtelEvents.Exporter.Json;
 /// </remarks>
 public sealed class OtelEventsRateLimitProcessor : BaseProcessor<LogRecord>
 {
-    private static readonly Meter SelfMeter = new("all.processor.rate_limit");
+    private static readonly Meter SelfMeter = new("otel_events.processor.rate_limit");
 
     private readonly OtelEventsRateLimitOptions _options;
     private readonly BaseProcessor<LogRecord> _innerProcessor;
@@ -75,11 +75,11 @@ public sealed class OtelEventsRateLimitProcessor : BaseProcessor<LogRecord>
         _timeProvider = timeProvider;
 
         _eventsDropped = SelfMeter.CreateCounter<long>(
-            "all.processor.rate_limit.events_dropped",
+            "otel_events.processor.rate_limit.events_dropped",
             description: "Total events dropped by rate limiter");
 
         _eventsPassed = SelfMeter.CreateCounter<long>(
-            "all.processor.rate_limit.events_passed",
+            "otel_events.processor.rate_limit.events_passed",
             description: "Total events passed by rate limiter");
 
         // Pre-partition limits into exact and wildcard for fast lookup

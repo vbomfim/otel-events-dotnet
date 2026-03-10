@@ -181,7 +181,7 @@ public class OrderController : ControllerBase
     public async Task<IActionResult> CreateOrder(CreateOrderRequest request)
     {
         // Causal scope — auto-generates eventId, tracks elapsed time.
-        // all.elapsed_ms is automatically stamped on every event inside this scope.
+        // otel_events.elapsed_ms is automatically stamped on every event inside this scope.
         using var scope = OtelEventsCausalScope.Begin();
 
         var order = await _orderService.CreateAsync(request);
@@ -207,14 +207,14 @@ That's it. The generated `EmitOrderPlaced` extension method:
 - Enforces types at compile time (`string orderId`, not `object`)
 
 The `OtelEventsCausalityProcessor` automatically adds:
-- `all.event_id` — unique UUID v7 for this event
-- `all.parent_event_id` — links to the scope's parent event
-- `all.elapsed_ms` — milliseconds since the scope was created (automatic duration tracking)
+- `otel_events.event_id` — unique UUID v7 for this event
+- `otel_events.parent_event_id` — links to the scope's parent event
+- `otel_events.elapsed_ms` — milliseconds since the scope was created (automatic duration tracking)
 
 ### otel-events JSON output (OtelEventsJsonExporter)
 
 ```json
-{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order ORD-789 placed by CUST-001 for 99.99","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","parentEventId":"evt_019470a0-a1b2-7c3d-8e4f-5a6b7c8d9e0f","attr":{"orderId":"ORD-789","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"all.v":"1.0.0","all.seq":42,"all.elapsed_ms":42.7}
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order ORD-789 placed by CUST-001 for 99.99","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","parentEventId":"evt_019470a0-a1b2-7c3d-8e4f-5a6b7c8d9e0f","attr":{"orderId":"ORD-789","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":42,"otel_events.elapsed_ms":42.7}
 ```
 
 Single line. No nulls. UTC microsecond timestamps. Causal event ID. Service name from OTEL resource. Schema version stamp. Monotonic sequence number.

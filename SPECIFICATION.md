@@ -1036,8 +1036,8 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
   // ─── Correlation (from OTEL context) ─────────────────────────
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736", // LogRecord.TraceId (from Activity.Current)
   "spanId": "00f067aa0ba902b7",                   // LogRecord.SpanId (from Activity.Current)
-  "eventId": "evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",       // From attribute "all.event_id" (set by OtelEventsCausalityProcessor)
-  "parentEventId": "evt_1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", // From attribute "all.parent_event_id" (optional)
+  "eventId": "evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",       // From attribute "otel_events.event_id" (set by OtelEventsCausalityProcessor)
+  "parentEventId": "evt_1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", // From attribute "otel_events.parent_event_id" (optional)
 
   // ─── Typed Payload (from LogRecord.Attributes) ───────────────
   "attr": {
@@ -1048,15 +1048,15 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
     "userId": "usr_abc123"
   },
 
-  // ─── Tags (from LogRecord.Attributes["all.tags"]) ───────────
+  // ─── Tags (from LogRecord.Attributes["otel_events.tags"]) ───────────
   "tags": ["api", "http"],
 
   // ─── Metadata ────────────────────────────────────────────────
   // ─── Metadata ────────────────────────────────────────────────
-  "all.v": "1.0.0",                              // Schema version (from exporter config)
-  "all.seq": 42                                   // Monotonic sequence number (per-process, assigned by exporter)
-  // NOTE: "all.host" and "all.pid" are OMITTED by default (EmitHostInfo = false).
-  // When opted in: "all.host": "web-server-01", "all.pid": 12345
+  "otel_events.v": "1.0.0",                              // Schema version (from exporter config)
+  "otel_events.seq": 42                                   // Monotonic sequence number (per-process, assigned by exporter)
+  // NOTE: "otel_events.host" and "otel_events.pid" are OMITTED by default (EmitHostInfo = false).
+  // When opted in: "otel_events.host": "web-server-01", "otel_events.pid": 12345
 }
 ```
 
@@ -1100,10 +1100,10 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
     }
   },
 
-  "all.v": "1.0.0",
-  "all.seq": 43,
-  "all.host": "web-server-01",
-  "all.pid": 12345
+  "otel_events.v": "1.0.0",
+  "otel_events.seq": 43,
+  "otel_events.host": "web-server-01",
+  "otel_events.pid": 12345
 }
 ```
 
@@ -1155,9 +1155,9 @@ The `OtelEventsJsonExporter` maps `LogRecord` fields to envelope fields as follo
 | `SpanId` | `spanId` | From `Activity.Current` (OTEL captures automatically) |
 | `Exception` | `exception` | Serialized by otel-events' structured exception serializer |
 | `Attributes` (state) | `attr` | Key-value pairs from `[LoggerMessage]` parameters |
-| `Attributes["all.event_id"]` | `eventId` | Set by `OtelEventsCausalityProcessor` |
-| `Attributes["all.parent_event_id"]` | `parentEventId` | Set by `OtelEventsCausalityProcessor` |
-| `Attributes["all.tags"]` | `tags` | Set by generated code as log scope or attribute |
+| `Attributes["otel_events.event_id"]` | `eventId` | Set by `OtelEventsCausalityProcessor` |
+| `Attributes["otel_events.parent_event_id"]` | `parentEventId` | Set by `OtelEventsCausalityProcessor` |
+| `Attributes["otel_events.tags"]` | `tags` | Set by generated code as log scope or attribute |
 | Resource `service.name` | `service` | OTEL resource (set at startup) |
 | Resource `deployment.environment` | `environment` | OTEL resource (set at startup) |
 
@@ -1262,7 +1262,7 @@ public sealed class OtelEventsJsonExporterOptions
     /// <summary>Output target: Stdout, Stderr, or File.</summary>
     public OtelEventsJsonOutput Output { get; set; } = OtelEventsJsonOutput.Stdout;
 
-    /// <summary>Schema version stamped into every envelope as "all.v".</summary>
+    /// <summary>Schema version stamped into every envelope as "otel_events.v".</summary>
     public string SchemaVersion { get; set; } = "1.0.0";
 
     /// <summary>
@@ -1279,7 +1279,7 @@ public sealed class OtelEventsJsonExporterOptions
     public ExceptionDetailLevel? ExceptionDetailLevel { get; set; }
 
     /// <summary>
-    /// Emit "all.host" and "all.pid" in the envelope.
+    /// Emit "otel_events.host" and "otel_events.pid" in the envelope.
     /// Default: false. These fields may expose internal infrastructure details.
     /// </summary>
     public bool EmitHostInfo { get; set; } = false;
@@ -1379,14 +1379,14 @@ public sealed class OtelEventsCausalityProcessor : BaseProcessor<LogRecord>
         // Generate unique event ID (UUID v7 — time-sortable)
         var eventId = $"evt_{Uuid7.NewUuid7()}";
         logRecord.Attributes = AppendAttribute(
-            logRecord.Attributes, "all.event_id", eventId);
+            logRecord.Attributes, "otel_events.event_id", eventId);
 
         // Read parent event ID from ambient context
         var parentEventId = OtelEventsCausalityContext.CurrentParentEventId;
         if (parentEventId is not null)
         {
             logRecord.Attributes = AppendAttribute(
-                logRecord.Attributes, "all.parent_event_id", parentEventId);
+                logRecord.Attributes, "otel_events.parent_event_id", parentEventId);
         }
     }
 }
@@ -1679,7 +1679,7 @@ public void CausalityProcessor_AddsEventId()
 
     var record = exporter.FindByEventName("http.request.completed");
     Assert.NotNull(record);
-    var eventId = record.Attributes["all.event_id"] as string;
+    var eventId = record.Attributes["otel_events.event_id"] as string;
     Assert.NotNull(eventId);
     Assert.StartsWith("evt_", eventId);
 }
@@ -3212,17 +3212,17 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
 
 **Event: `http.request.received`**
 ```json
-{"timestamp":"2025-07-15T14:30:00.123456Z","event":"http.request.received","severity":"INFO","severityNumber":9,"message":"HTTP POST /api/orders received from 10.0.0.42","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"httpMethod":"POST","httpPath":"/api/orders","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)","clientIp":"10.0.0.42","contentLength":256,"requestId":"0HN8PQRS:00000001"},"tags":["http","aspnetcore"],"all.v":"1.0.0","all.seq":101,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:00.123456Z","event":"http.request.received","severity":"INFO","severityNumber":9,"message":"HTTP POST /api/orders received from 10.0.0.42","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"httpMethod":"POST","httpPath":"/api/orders","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)","clientIp":"10.0.0.42","contentLength":256,"requestId":"0HN8PQRS:00000001"},"tags":["http","aspnetcore"],"otel_events.v":"1.0.0","otel_events.seq":101,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `http.request.completed`**
 ```json
-{"timestamp":"2025-07-15T14:30:00.168912Z","event":"http.request.completed","severity":"INFO","severityNumber":9,"message":"HTTP POST /api/orders completed with 201 in 45.5ms","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a2b-4d5e-7f6a-9b0c-1d2e3f4a5b6c","parentEventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"httpMethod":"POST","httpPath":"/api/orders","httpRoute":"/api/orders","httpStatusCode":201,"durationMs":45.5,"contentLength":512,"requestId":"0HN8PQRS:00000001"},"tags":["http","aspnetcore"],"all.v":"1.0.0","all.seq":104,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:00.168912Z","event":"http.request.completed","severity":"INFO","severityNumber":9,"message":"HTTP POST /api/orders completed with 201 in 45.5ms","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a2b-4d5e-7f6a-9b0c-1d2e3f4a5b6c","parentEventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"httpMethod":"POST","httpPath":"/api/orders","httpRoute":"/api/orders","httpStatusCode":201,"durationMs":45.5,"contentLength":512,"requestId":"0HN8PQRS:00000001"},"tags":["http","aspnetcore"],"otel_events.v":"1.0.0","otel_events.seq":104,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `http.request.failed`**
 ```json
-{"timestamp":"2025-07-15T14:30:01.234567Z","event":"http.request.failed","severity":"ERROR","severityNumber":17,"message":"HTTP GET /api/orders/999 failed with SqlException after 2034.7ms","service":"order-service","environment":"production","traceId":"5cf93f4688c45eb7b4df030a1f1f5847","spanId":"11g178bb1cb013c8","eventId":"evt_01914a2c-5e6f-7a8b-0c1d-2e3f4a5b6c7d","parentEventId":"evt_01914a2c-4d5e-7f6a-9b0c-1d2e3f4a5b6c","attr":{"httpMethod":"GET","httpPath":"/api/orders/{id}","httpRoute":"/api/orders/{id}","durationMs":2034.7,"errorType":"SqlException","requestId":"0HN8PQRS:00000002"},"exception":{"type":"System.Data.SqlClient.SqlException","message":"Connection timeout expired","stackTrace":[{"method":"SqlConnection.Open()","file":"SqlConnection.cs","line":142}]},"tags":["http","aspnetcore","error"],"all.v":"1.0.0","all.seq":105,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:01.234567Z","event":"http.request.failed","severity":"ERROR","severityNumber":17,"message":"HTTP GET /api/orders/999 failed with SqlException after 2034.7ms","service":"order-service","environment":"production","traceId":"5cf93f4688c45eb7b4df030a1f1f5847","spanId":"11g178bb1cb013c8","eventId":"evt_01914a2c-5e6f-7a8b-0c1d-2e3f4a5b6c7d","parentEventId":"evt_01914a2c-4d5e-7f6a-9b0c-1d2e3f4a5b6c","attr":{"httpMethod":"GET","httpPath":"/api/orders/{id}","httpRoute":"/api/orders/{id}","durationMs":2034.7,"errorType":"SqlException","requestId":"0HN8PQRS:00000002"},"exception":{"type":"System.Data.SqlClient.SqlException","message":"Connection timeout expired","stackTrace":[{"method":"SqlConnection.Open()","file":"SqlConnection.cs","line":142}]},"tags":["http","aspnetcore","error"],"otel_events.v":"1.0.0","otel_events.seq":105,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 #### Configuration
@@ -3529,12 +3529,12 @@ builder.Services.AddGrpcClient<Greeter.GreeterClient>(options =>
 
 **Event: `grpc.call.completed` (server-side)**
 ```json
-{"timestamp":"2025-07-15T14:30:00.234567Z","event":"grpc.call.completed","severity":"INFO","severityNumber":9,"message":"gRPC Server greet.Greeter/SayHello completed with status 0 in 12.3ms","service":"greeting-service","environment":"production","traceId":"6df04g5799d56fc8c5ef141b2g2g6958","spanId":"22h289cc2dc124d9","eventId":"evt_01914a2d-6f7a-8b9c-0d1e-3f4a5b6c7d8e","attr":{"grpcService":"greet.Greeter","grpcMethod":"SayHello","grpcSide":"Server","grpcStatusCode":0,"durationMs":12.3,"requestSize":42,"responseSize":128},"tags":["grpc"],"all.v":"1.0.0","all.seq":201,"all.host":"grpc-01","all.pid":5932}
+{"timestamp":"2025-07-15T14:30:00.234567Z","event":"grpc.call.completed","severity":"INFO","severityNumber":9,"message":"gRPC Server greet.Greeter/SayHello completed with status 0 in 12.3ms","service":"greeting-service","environment":"production","traceId":"6df04g5799d56fc8c5ef141b2g2g6958","spanId":"22h289cc2dc124d9","eventId":"evt_01914a2d-6f7a-8b9c-0d1e-3f4a5b6c7d8e","attr":{"grpcService":"greet.Greeter","grpcMethod":"SayHello","grpcSide":"Server","grpcStatusCode":0,"durationMs":12.3,"requestSize":42,"responseSize":128},"tags":["grpc"],"otel_events.v":"1.0.0","otel_events.seq":201,"otel_events.host":"grpc-01","otel_events.pid":5932}
 ```
 
 **Event: `grpc.call.failed` (client-side)**
 ```json
-{"timestamp":"2025-07-15T14:30:01.345678Z","event":"grpc.call.failed","severity":"ERROR","severityNumber":17,"message":"gRPC Client inventory.InventoryService/ReserveStock failed with RpcException after 5023.1ms","service":"order-service","environment":"production","traceId":"7eg15h6800e67gd9d6fg252c3h3h7069","spanId":"33i390dd3ed235e0","eventId":"evt_01914a2e-7a8b-9c0d-1e2f-4a5b6c7d8e9f","attr":{"grpcService":"inventory.InventoryService","grpcMethod":"ReserveStock","grpcSide":"Client","grpcStatusCode":14,"grpcStatusDetail":"failed to connect to all addresses","durationMs":5023.1,"errorType":"RpcException"},"exception":{"type":"Grpc.Core.RpcException","message":"Status(StatusCode=\"Unavailable\", Detail=\"failed to connect to all addresses\")","stackTrace":[{"method":"GrpcChannel.ConnectAsync()","file":"GrpcChannel.cs","line":89}]},"tags":["grpc","error"],"all.v":"1.0.0","all.seq":202,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:01.345678Z","event":"grpc.call.failed","severity":"ERROR","severityNumber":17,"message":"gRPC Client inventory.InventoryService/ReserveStock failed with RpcException after 5023.1ms","service":"order-service","environment":"production","traceId":"7eg15h6800e67gd9d6fg252c3h3h7069","spanId":"33i390dd3ed235e0","eventId":"evt_01914a2e-7a8b-9c0d-1e2f-4a5b6c7d8e9f","attr":{"grpcService":"inventory.InventoryService","grpcMethod":"ReserveStock","grpcSide":"Client","grpcStatusCode":14,"grpcStatusDetail":"failed to connect to all addresses","durationMs":5023.1,"errorType":"RpcException"},"exception":{"type":"Grpc.Core.RpcException","message":"Status(StatusCode=\"Unavailable\", Detail=\"failed to connect to all addresses\")","stackTrace":[{"method":"GrpcChannel.ConnectAsync()","file":"GrpcChannel.cs","line":89}]},"tags":["grpc","error"],"otel_events.v":"1.0.0","otel_events.seq":202,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 ---
@@ -3884,17 +3884,17 @@ var cosmosClient = new CosmosClient(connectionString, new CosmosClientOptions
 
 **Event: `cosmosdb.query.executed`**
 ```json
-{"timestamp":"2025-07-15T14:30:00.345678Z","event":"cosmosdb.query.executed","severity":"DEBUG","severityNumber":5,"message":"CosmosDB query on OrderDb/Orders returned 15 items in 23.4ms (42.5 RU)","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a2f-8b9c-0d1e-2f3a-5b6c7d8e9f0a","parentEventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"cosmosDatabase":"OrderDb","cosmosContainer":"Orders","cosmosRequestCharge":42.5,"cosmosItemCount":15,"durationMs":23.4,"cosmosStatusCode":200,"cosmosRegion":"East US"},"tags":["cosmosdb","query"],"all.v":"1.0.0","all.seq":301,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:00.345678Z","event":"cosmosdb.query.executed","severity":"DEBUG","severityNumber":5,"message":"CosmosDB query on OrderDb/Orders returned 15 items in 23.4ms (42.5 RU)","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a2f-8b9c-0d1e-2f3a-5b6c7d8e9f0a","parentEventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"cosmosDatabase":"OrderDb","cosmosContainer":"Orders","cosmosRequestCharge":42.5,"cosmosItemCount":15,"durationMs":23.4,"cosmosStatusCode":200,"cosmosRegion":"East US"},"tags":["cosmosdb","query"],"otel_events.v":"1.0.0","otel_events.seq":301,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `cosmosdb.point.read`**
 ```json
-{"timestamp":"2025-07-15T14:30:00.456789Z","event":"cosmosdb.point.read","severity":"DEBUG","severityNumber":5,"message":"CosmosDB point read on OrderDb/Orders [customer-42] in 3.2ms (1.0 RU)","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a30-9c0d-1e2f-3a4b-6c7d8e9f0a1b","parentEventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"cosmosDatabase":"OrderDb","cosmosContainer":"Orders","cosmosPartitionKey":"customer-42","cosmosRequestCharge":1.0,"durationMs":3.2,"cosmosStatusCode":200,"cosmosRegion":"East US"},"tags":["cosmosdb","point"],"all.v":"1.0.0","all.seq":302,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:00.456789Z","event":"cosmosdb.point.read","severity":"DEBUG","severityNumber":5,"message":"CosmosDB point read on OrderDb/Orders [customer-42] in 3.2ms (1.0 RU)","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a30-9c0d-1e2f-3a4b-6c7d8e9f0a1b","parentEventId":"evt_01914a2b-3c4d-7e5f-8a9b-0c1d2e3f4a5b","attr":{"cosmosDatabase":"OrderDb","cosmosContainer":"Orders","cosmosPartitionKey":"customer-42","cosmosRequestCharge":1.0,"durationMs":3.2,"cosmosStatusCode":200,"cosmosRegion":"East US"},"tags":["cosmosdb","point"],"otel_events.v":"1.0.0","otel_events.seq":302,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `cosmosdb.query.failed` (429 throttling)**
 ```json
-{"timestamp":"2025-07-15T14:30:02.567890Z","event":"cosmosdb.query.failed","severity":"ERROR","severityNumber":17,"message":"CosmosDB query on OrderDb/Orders failed with 429 after 102.5ms (0.0 RU)","service":"order-service","environment":"production","traceId":"8fh26i7911f78he0e7gh363d4i4i8170","spanId":"44j401ee4fe346f1","eventId":"evt_01914a31-0d1e-2f3a-4b5c-7d8e9f0a1b2c","attr":{"cosmosDatabase":"OrderDb","cosmosContainer":"Orders","cosmosRequestCharge":0.0,"durationMs":102.5,"cosmosStatusCode":429,"cosmosSubStatusCode":3200,"errorType":"CosmosException"},"exception":{"type":"Microsoft.Azure.Cosmos.CosmosException","message":"Response status code does not indicate success: TooManyRequests (429); Substatus: 3200","stackTrace":[{"method":"CosmosClient.ExecuteQueryAsync()","file":"CosmosClient.cs","line":456}]},"tags":["cosmosdb","query","error"],"all.v":"1.0.0","all.seq":303,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:02.567890Z","event":"cosmosdb.query.failed","severity":"ERROR","severityNumber":17,"message":"CosmosDB query on OrderDb/Orders failed with 429 after 102.5ms (0.0 RU)","service":"order-service","environment":"production","traceId":"8fh26i7911f78he0e7gh363d4i4i8170","spanId":"44j401ee4fe346f1","eventId":"evt_01914a31-0d1e-2f3a-4b5c-7d8e9f0a1b2c","attr":{"cosmosDatabase":"OrderDb","cosmosContainer":"Orders","cosmosRequestCharge":0.0,"durationMs":102.5,"cosmosStatusCode":429,"cosmosSubStatusCode":3200,"errorType":"CosmosException"},"exception":{"type":"Microsoft.Azure.Cosmos.CosmosException","message":"Response status code does not indicate success: TooManyRequests (429); Substatus: 3200","stackTrace":[{"method":"CosmosClient.ExecuteQueryAsync()","file":"CosmosClient.cs","line":456}]},"tags":["cosmosdb","query","error"],"otel_events.v":"1.0.0","otel_events.seq":303,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 ---
@@ -4317,12 +4317,12 @@ var blobClient = new BlobServiceClient(connectionString, blobOptions);
 
 **Event: `storage.blob.uploaded`**
 ```json
-{"timestamp":"2025-07-15T14:30:00.567890Z","event":"storage.blob.uploaded","severity":"INFO","severityNumber":9,"message":"Blob uploaded to invoices/INV-2025-001.pdf (245760 bytes) in 134.2ms","service":"invoice-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a32-1e2f-3a4b-5c6d-8e9f0a1b2c3d","attr":{"storageAccountName":"prodstore01","storageContainerName":"invoices","storageBlobName":"INV-2025-001.pdf","storageBlobSize":245760,"storageContentType":"application/pdf","durationMs":134.2,"storageStatusCode":201},"tags":["storage","blob"],"all.v":"1.0.0","all.seq":401,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:00.567890Z","event":"storage.blob.uploaded","severity":"INFO","severityNumber":9,"message":"Blob uploaded to invoices/INV-2025-001.pdf (245760 bytes) in 134.2ms","service":"invoice-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a32-1e2f-3a4b-5c6d-8e9f0a1b2c3d","attr":{"storageAccountName":"prodstore01","storageContainerName":"invoices","storageBlobName":"INV-2025-001.pdf","storageBlobSize":245760,"storageContentType":"application/pdf","durationMs":134.2,"storageStatusCode":201},"tags":["storage","blob"],"otel_events.v":"1.0.0","otel_events.seq":401,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `storage.queue.sent`**
 ```json
-{"timestamp":"2025-07-15T14:30:00.678901Z","event":"storage.queue.sent","severity":"INFO","severityNumber":9,"message":"Message sent to queue order-processing in 8.3ms","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a33-2f3a-4b5c-6d7e-9f0a1b2c3d4e","attr":{"storageAccountName":"prodstore01","storageQueueName":"order-processing","durationMs":8.3,"storageStatusCode":201},"tags":["storage","queue"],"all.v":"1.0.0","all.seq":402,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:00.678901Z","event":"storage.queue.sent","severity":"INFO","severityNumber":9,"message":"Message sent to queue order-processing in 8.3ms","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_01914a33-2f3a-4b5c-6d7e-9f0a1b2c3d4e","attr":{"storageAccountName":"prodstore01","storageQueueName":"order-processing","durationMs":8.3,"storageStatusCode":201},"tags":["storage","queue"],"otel_events.v":"1.0.0","otel_events.seq":402,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 ---
@@ -4593,17 +4593,17 @@ internal sealed class OtelEventsHealthCheckPublisher : IHealthCheckPublisher
 
 **Event: `health.check.executed`**
 ```json
-{"timestamp":"2025-07-15T14:30:30.000000Z","event":"health.check.executed","severity":"DEBUG","severityNumber":5,"message":"Health check CosmosDb completed with Healthy in 12.4ms","service":"order-service","environment":"production","eventId":"evt_01914a34-3a4b-5c6d-7e8f-0a1b2c3d4e5f","attr":{"healthComponent":"CosmosDb","healthStatus":"Healthy","healthDurationMs":12.4},"tags":["health"],"all.v":"1.0.0","all.seq":501,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:30:30.000000Z","event":"health.check.executed","severity":"DEBUG","severityNumber":5,"message":"Health check CosmosDb completed with Healthy in 12.4ms","service":"order-service","environment":"production","eventId":"evt_01914a34-3a4b-5c6d-7e8f-0a1b2c3d4e5f","attr":{"healthComponent":"CosmosDb","healthStatus":"Healthy","healthDurationMs":12.4},"tags":["health"],"otel_events.v":"1.0.0","otel_events.seq":501,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `health.state.changed`**
 ```json
-{"timestamp":"2025-07-15T14:31:00.000000Z","event":"health.state.changed","severity":"WARN","severityNumber":13,"message":"Health state changed: Redis Healthy → Degraded: Connection pool exhausted (23/25 connections in use)","service":"order-service","environment":"production","eventId":"evt_01914a35-4b5c-6d7e-8f9a-1b2c3d4e5f6a","attr":{"healthComponent":"Redis","healthPreviousStatus":"Healthy","healthStatus":"Degraded","healthDurationMs":5023.1,"healthDescription":"Connection pool exhausted (23/25 connections in use)"},"tags":["health","state-change"],"all.v":"1.0.0","all.seq":510,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:31:00.000000Z","event":"health.state.changed","severity":"WARN","severityNumber":13,"message":"Health state changed: Redis Healthy → Degraded: Connection pool exhausted (23/25 connections in use)","service":"order-service","environment":"production","eventId":"evt_01914a35-4b5c-6d7e-8f9a-1b2c3d4e5f6a","attr":{"healthComponent":"Redis","healthPreviousStatus":"Healthy","healthStatus":"Degraded","healthDurationMs":5023.1,"healthDescription":"Connection pool exhausted (23/25 connections in use)"},"tags":["health","state-change"],"otel_events.v":"1.0.0","otel_events.seq":510,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 **Event: `health.report.completed`**
 ```json
-{"timestamp":"2025-07-15T14:31:00.050000Z","event":"health.report.completed","severity":"DEBUG","severityNumber":5,"message":"Health report completed: Degraded (3 checks) in 5045.2ms","service":"order-service","environment":"production","eventId":"evt_01914a36-5c6d-7e8f-9a0b-2c3d4e5f6a7b","attr":{"healthOverallStatus":"Degraded","healthTotalChecks":3,"healthDurationMs":5045.2},"tags":["health"],"all.v":"1.0.0","all.seq":513,"all.host":"web-01","all.pid":4821}
+{"timestamp":"2025-07-15T14:31:00.050000Z","event":"health.report.completed","severity":"DEBUG","severityNumber":5,"message":"Health report completed: Degraded (3 checks) in 5045.2ms","service":"order-service","environment":"production","eventId":"evt_01914a36-5c6d-7e8f-9a0b-2c3d4e5f6a7b","attr":{"healthOverallStatus":"Degraded","healthTotalChecks":3,"healthDurationMs":5045.2},"tags":["health"],"otel_events.v":"1.0.0","otel_events.seq":513,"otel_events.host":"web-01","otel_events.pid":4821}
 ```
 
 ---

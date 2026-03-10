@@ -44,7 +44,7 @@ otel-events extends the standard OpenTelemetry pipeline with exactly four compon
 |---------------|---------------------|-------------|
 | **OtelEvents.Schema** (build-time) | N/A — build-time only | Parses YAML → generates C# code that uses `[LoggerMessage]` + `Meter` + `Counter<T>` + `Histogram<T>` |
 | **OtelEventsJsonExporter** | `BaseExporter<LogRecord>` | Formats `LogRecord`s as AI-optimized single-line JSONL to stdout/file |
-| **OtelEventsCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `all.event_id` (UUID v7) and `all.parent_event_id` to each `LogRecord` |
+| **OtelEventsCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `otel_events.event_id` (UUID v7) and `otel_events.parent_event_id` to each `LogRecord` |
 | **OtelEvents.Analyzers** | Roslyn `DiagnosticAnalyzer` | Compile-time enforcement — detects `Console.Write`, validates schema usage |
 
 ### Core Thesis

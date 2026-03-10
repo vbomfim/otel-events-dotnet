@@ -19,7 +19,7 @@ namespace OtelEvents.Exporter.Json;
 /// </remarks>
 public sealed class OtelEventsSamplingProcessor : BaseProcessor<LogRecord>
 {
-    private static readonly Meter SelfMeter = new("all.processor.sampling");
+    private static readonly Meter SelfMeter = new("otel_events.processor.sampling");
 
     private readonly OtelEventsSamplingOptions _options;
     private readonly BaseProcessor<LogRecord> _innerProcessor;
@@ -66,11 +66,11 @@ public sealed class OtelEventsSamplingProcessor : BaseProcessor<LogRecord>
         _innerProcessor = innerProcessor;
 
         _eventsSampled = SelfMeter.CreateCounter<long>(
-            "all.processor.sampling.events_sampled",
+            "otel_events.processor.sampling.events_sampled",
             description: "Total events sampled (forwarded) by sampling processor");
 
         _eventsDropped = SelfMeter.CreateCounter<long>(
-            "all.processor.sampling.events_dropped",
+            "otel_events.processor.sampling.events_dropped",
             description: "Total events dropped by sampling processor");
 
         // Pre-partition rates into exact and wildcard for fast lookup

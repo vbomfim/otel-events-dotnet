@@ -131,7 +131,7 @@ public class LifecycleSchemaTests
         Assert.Equal("Lifecycle", header.Name);
         Assert.Equal("1.0.0", header.Version);
         Assert.Equal("OtelEvents.Events.Lifecycle", header.Namespace);
-        Assert.Equal("all.lifecycle", header.MeterName);
+        Assert.Equal("otel_events.lifecycle", header.MeterName);
         Assert.Equal("Built-in schema for application lifecycle and health events", header.Description);
     }
 
@@ -539,7 +539,7 @@ public class LifecycleSchemaTests
         var files = _generator.GenerateFromSchema(doc);
         var content = files.First(f => f.FileName.Contains("Events")).Content;
 
-        Assert.Contains("new Meter(\"all.lifecycle\"", content);
+        Assert.Contains("new Meter(\"otel_events.lifecycle\"", content);
     }
 
     [Fact]

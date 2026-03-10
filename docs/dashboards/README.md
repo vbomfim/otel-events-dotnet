@@ -110,7 +110,7 @@ builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics =>
     {
         metrics.AddMeter("OtelEvents.AspNetCore");  // ASP.NET Core schema meter
-        metrics.AddMeter("all.lifecycle");           // Lifecycle schema meter
+        metrics.AddMeter("otel_events.lifecycle");           // Lifecycle schema meter
         metrics.AddOtlpExporter(o =>
         {
             o.Endpoint = new Uri("http://localhost:4317");

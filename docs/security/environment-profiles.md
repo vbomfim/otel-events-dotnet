@@ -25,7 +25,7 @@ The most permissive profile. Designed for local development and debugging.
 
 - Full exception details including stack traces and file paths
 - PII and internal fields are visible for debugging
-- Host information (`all.host`, `all.pid`) emitted by default (overridable)
+- Host information (`otel_events.host`, `otel_events.pid`) emitted by default (overridable)
 - **Credentials are still redacted** — even in Development
 
 ### Staging

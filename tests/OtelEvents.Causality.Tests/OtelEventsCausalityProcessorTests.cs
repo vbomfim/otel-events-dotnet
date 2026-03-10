@@ -45,7 +45,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         var records = _exporter.GetRecords();
         Assert.Single(records);
         Assert.True(
-            records[0].Attributes.ContainsKey("all.event_id"),
+            records[0].Attributes.ContainsKey("otel_events.event_id"),
             "LogRecord should have 'all.event_id' attribute");
     }
 
@@ -56,7 +56,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         _logger.LogInformation("Test message");
 
         // Assert
-        var eventId = _exporter.GetRecords()[0].Attributes["all.event_id"] as string;
+        var eventId = _exporter.GetRecords()[0].Attributes["otel_events.event_id"] as string;
         Assert.NotNull(eventId);
         Assert.StartsWith("evt_", eventId);
     }
@@ -68,7 +68,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         _logger.LogInformation("Test message");
 
         // Assert
-        var eventId = _exporter.GetRecords()[0].Attributes["all.event_id"] as string;
+        var eventId = _exporter.GetRecords()[0].Attributes["otel_events.event_id"] as string;
         Assert.NotNull(eventId);
         Assert.Matches(
             @"^evt_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
@@ -86,7 +86,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
 
         // Assert
         var eventIds = _exporter.GetRecords()
-            .Select(r => r.Attributes["all.event_id"] as string)
+            .Select(r => r.Attributes["otel_events.event_id"] as string)
             .ToHashSet();
 
         Assert.Equal(100, eventIds.Count);
@@ -101,7 +101,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         // Assert
         var record = _exporter.GetRecords()[0];
         Assert.False(
-            record.Attributes.ContainsKey("all.parent_event_id"),
+            record.Attributes.ContainsKey("otel_events.parent_event_id"),
             "Should NOT have parent_event_id when no scope is active");
     }
 
@@ -119,7 +119,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
 
         // Assert
         var record = _exporter.GetRecords()[0];
-        Assert.Equal(parentId, record.Attributes["all.parent_event_id"]);
+        Assert.Equal(parentId, record.Attributes["otel_events.parent_event_id"]);
     }
 
     [Fact]
@@ -140,13 +140,13 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         Assert.Equal(3, records.Count);
 
         // Before scope — no parent
-        Assert.False(records[0].Attributes.ContainsKey("all.parent_event_id"));
+        Assert.False(records[0].Attributes.ContainsKey("otel_events.parent_event_id"));
 
         // Inside scope — has parent
-        Assert.Equal("evt_parent-1", records[1].Attributes["all.parent_event_id"]);
+        Assert.Equal("evt_parent-1", records[1].Attributes["otel_events.parent_event_id"]);
 
         // After scope — no parent
-        Assert.False(records[2].Attributes.ContainsKey("all.parent_event_id"));
+        Assert.False(records[2].Attributes.ContainsKey("otel_events.parent_event_id"));
     }
 
     [Fact]
@@ -169,9 +169,9 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         var records = _exporter.GetRecords();
         Assert.Equal(3, records.Count);
 
-        Assert.Equal("evt_outer", records[0].Attributes["all.parent_event_id"]);
-        Assert.Equal("evt_inner", records[1].Attributes["all.parent_event_id"]);
-        Assert.Equal("evt_outer", records[2].Attributes["all.parent_event_id"]);
+        Assert.Equal("evt_outer", records[0].Attributes["otel_events.parent_event_id"]);
+        Assert.Equal("evt_inner", records[1].Attributes["otel_events.parent_event_id"]);
+        Assert.Equal("evt_outer", records[2].Attributes["otel_events.parent_event_id"]);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
 
         // Assert — the all.event_id is added alongside existing structured attributes
         var record = _exporter.GetRecords()[0];
-        Assert.True(record.Attributes.ContainsKey("all.event_id"));
+        Assert.True(record.Attributes.ContainsKey("otel_events.event_id"));
         // Existing structured params should still be there
         Assert.True(
             record.Attributes.ContainsKey("OrderId") || record.Attributes.ContainsKey("{OriginalFormat}"),
@@ -206,7 +206,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
 
         foreach (var record in records)
         {
-            var eventId = record.Attributes["all.event_id"] as string;
+            var eventId = record.Attributes["otel_events.event_id"] as string;
             Assert.NotNull(eventId);
             Assert.StartsWith("evt_", eventId);
         }
@@ -248,7 +248,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
 
         foreach (var record in records)
         {
-            var parentId = record.Attributes["all.parent_event_id"] as string;
+            var parentId = record.Attributes["otel_events.parent_event_id"] as string;
             Assert.NotNull(parentId);
             Assert.True(
                 parentId == "evt_request-1" || parentId == "evt_request-2",

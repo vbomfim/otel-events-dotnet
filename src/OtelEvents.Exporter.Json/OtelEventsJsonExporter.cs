@@ -24,9 +24,9 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
     /// <summary>Known otel-events component attribute keys that are NOT stripped.</summary>
     private static readonly HashSet<string> AllowedAllPrefixKeys = new(StringComparer.Ordinal)
     {
-        "all.event_id",
-        "all.parent_event_id",
-        "all.tags",
+        "otel_events.event_id",
+        "otel_events.parent_event_id",
+        "otel_events.tags",
     };
 
     /// <summary>Defense-in-depth patterns (always active, non-configurable).</summary>
@@ -245,26 +245,26 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
         {
             foreach (var attr in logRecord.Attributes)
             {
-                if (attr.Key == "all.event_id")
+                if (attr.Key == "otel_events.event_id")
                 {
                     eventId = attr.Value?.ToString();
                     continue;
                 }
 
-                if (attr.Key == "all.parent_event_id")
+                if (attr.Key == "otel_events.parent_event_id")
                 {
                     parentEventId = attr.Value?.ToString();
                     continue;
                 }
 
-                if (attr.Key == "all.tags")
+                if (attr.Key == "otel_events.tags")
                 {
                     tagsValue = attr.Value;
                     continue;
                 }
 
                 // Strip reserved all.* prefix from non-ALL attributes
-                if (attr.Key.StartsWith("all.", StringComparison.Ordinal)
+                if (attr.Key.StartsWith("otel_events.", StringComparison.Ordinal)
                     && !AllowedAllPrefixKeys.Contains(attr.Key))
                 {
                     strippedCount++;
@@ -597,13 +597,13 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
 
     private void WriteMetadata(Utf8JsonWriter writer, long seq)
     {
-        writer.WriteString("all.v", _options.SchemaVersion);
-        writer.WriteNumber("all.seq", seq);
+        writer.WriteString("otel_events.v", _options.SchemaVersion);
+        writer.WriteNumber("otel_events.seq", seq);
 
         if (_options.EmitHostInfo)
         {
-            writer.WriteString("all.host", Environment.MachineName);
-            writer.WriteNumber("all.pid", Environment.ProcessId);
+            writer.WriteString("otel_events.host", Environment.MachineName);
+            writer.WriteNumber("otel_events.pid", Environment.ProcessId);
         }
     }
 

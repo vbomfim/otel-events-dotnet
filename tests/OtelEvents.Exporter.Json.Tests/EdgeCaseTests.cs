@@ -128,7 +128,7 @@ public sealed class EdgeCaseTests
         var tags = new string[] { "tag1", "tag2", "tag3" };
         var lr = TestExporterHarness.CreateLogRecord(
             eventName: "test.event",
-            attributes: [new("all.tags", tags)]);
+            attributes: [new("otel_events.tags", tags)]);
 
         var doc = harness.ExportSingle(lr);
 
@@ -148,7 +148,7 @@ public sealed class EdgeCaseTests
         var tags = new List<string> { "alpha", "beta" };
         var lr = TestExporterHarness.CreateLogRecord(
             eventName: "test.event",
-            attributes: [new("all.tags", tags)]);
+            attributes: [new("otel_events.tags", tags)]);
 
         var doc = harness.ExportSingle(lr);
 

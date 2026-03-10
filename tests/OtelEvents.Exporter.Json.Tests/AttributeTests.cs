@@ -17,7 +17,7 @@ public sealed class AttributeTests
             eventName: "test.event",
             attributes:
             [
-                new("all.event_id", "evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"),
+                new("otel_events.event_id", "evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"),
                 new("method", "GET"),
             ]);
 
@@ -25,7 +25,7 @@ public sealed class AttributeTests
 
         Assert.Equal("evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c", doc.RootElement.GetProperty("eventId").GetString());
         // Should NOT appear in attr
-        Assert.False(doc.RootElement.GetProperty("attr").TryGetProperty("all.event_id", out _));
+        Assert.False(doc.RootElement.GetProperty("attr").TryGetProperty("otel_events.event_id", out _));
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class AttributeTests
             eventName: "test.event",
             attributes:
             [
-                new("all.parent_event_id", "evt_1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"),
+                new("otel_events.parent_event_id", "evt_1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"),
                 new("method", "POST"),
             ]);
 
@@ -54,7 +54,7 @@ public sealed class AttributeTests
             eventName: "test.event",
             attributes:
             [
-                new("all.tags", tags),
+                new("otel_events.tags", tags),
                 new("method", "GET"),
             ]);
 

@@ -227,12 +227,12 @@ public sealed partial class SchemaValidator
 
     private static void ValidateReservedPrefix(string name, string context, List<SchemaError> errors)
     {
-        if (name.StartsWith("all.", StringComparison.OrdinalIgnoreCase))
+        if (name.StartsWith("otel_events.", StringComparison.OrdinalIgnoreCase))
         {
             errors.Add(new SchemaError
             {
                 Code = ErrorCodes.ReservedPrefix,
-                Message = $"{context} '{name}' must not start with the reserved 'all.' prefix."
+                Message = $"{context} '{name}' must not start with the reserved 'otel_events.' prefix."
             });
         }
     }
@@ -268,12 +268,12 @@ public sealed partial class SchemaValidator
         List<SchemaError> errors)
     {
         // ALL_SCHEMA_011: Reserved prefix on field name
-        if (field.Name.StartsWith("all.", StringComparison.OrdinalIgnoreCase))
+        if (field.Name.StartsWith("otel_events.", StringComparison.OrdinalIgnoreCase))
         {
             errors.Add(new SchemaError
             {
                 Code = ErrorCodes.ReservedPrefix,
-                Message = $"Field name '{field.Name}' in event '{eventName}' must not start with the reserved 'all.' prefix."
+                Message = $"Field name '{field.Name}' in event '{eventName}' must not start with the reserved 'otel_events.' prefix."
             });
         }
 

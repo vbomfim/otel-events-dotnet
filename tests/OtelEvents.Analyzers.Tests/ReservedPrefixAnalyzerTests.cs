@@ -6,8 +6,8 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL008 — Reserved "all." prefix detection.
-/// Validates that string literals with "all." prefix in field name contexts are flagged as Error.
+/// Tests for ALL008 — Reserved "otel_events." prefix detection.
+/// Validates that string literals with "otel_events." prefix in field name contexts are flagged as Error.
 /// </summary>
 public class ReservedPrefixAnalyzerTests
 {
@@ -27,14 +27,14 @@ class Test
     void M()
     {
         var activity = new Activity();
-        activity.SetTag({|#0:""all.version""|}, ""1.0"");
+        activity.SetTag({|#0:""otel_events.version""|}, ""1.0"");
     }
 }",
         };
         test.ExpectedDiagnostics.Add(
             new DiagnosticResult("ALL008", DiagnosticSeverity.Error)
                 .WithLocation(0)
-                .WithArguments("all.version"));
+                .WithArguments("otel_events.version"));
         await test.RunAsync();
     }
 
@@ -54,14 +54,14 @@ class Test
     void M()
     {
         var tags = new Tags();
-        tags.Add({|#0:""ALL.event_id""|}, ""123"");
+        tags.Add({|#0:""otel_events.event_id""|}, ""123"");
     }
 }",
         };
         test.ExpectedDiagnostics.Add(
             new DiagnosticResult("ALL008", DiagnosticSeverity.Error)
                 .WithLocation(0)
-                .WithArguments("ALL.event_id"));
+                .WithArguments("otel_events.event_id"));
         await test.RunAsync();
     }
 
@@ -100,7 +100,7 @@ class Test
     void Log(string message) { }
     void M()
     {
-        Log(""all. students should attend"");
+        Log(""otel_events. students should attend"");
     }
 }",
         };
@@ -118,7 +118,7 @@ class Test
     void M()
     {
         // Just a string assignment, not a field name context
-        var comment = ""all.version is a reserved prefix"";
+        var comment = ""otel_events.version is a reserved prefix"";
         _ = comment;
     }
 }",

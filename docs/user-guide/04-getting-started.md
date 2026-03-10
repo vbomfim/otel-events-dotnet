@@ -279,7 +279,7 @@ curl -X POST http://localhost:5000/orders \
 You'll see a single JSONL line on stdout:
 
 ```json
-{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"all.v":"1.0.0","all.seq":1}
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":1}
 ```
 
 Use `jq` to pretty-print for readability:

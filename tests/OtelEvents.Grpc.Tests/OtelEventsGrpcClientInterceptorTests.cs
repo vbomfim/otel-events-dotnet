@@ -409,7 +409,7 @@ public class OtelEventsGrpcClientInterceptorTests
 
         // Assert
         var completed = exporter.AssertSingle("grpc.call.completed");
-        Assert.True(completed.Attributes.ContainsKey("all.parent_event_id"),
+        Assert.True(completed.Attributes.ContainsKey("otel_events.parent_event_id"),
             "Completed event should have all.parent_event_id when causal scope is enabled");
     }
 
@@ -430,7 +430,7 @@ public class OtelEventsGrpcClientInterceptorTests
 
         // Assert
         var completed = exporter.AssertSingle("grpc.call.completed");
-        Assert.False(completed.Attributes.ContainsKey("all.parent_event_id"),
+        Assert.False(completed.Attributes.ContainsKey("otel_events.parent_event_id"),
             "Completed event should not have all.parent_event_id when causal scope is disabled");
     }
 

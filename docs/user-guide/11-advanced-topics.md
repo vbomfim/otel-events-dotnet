@@ -39,7 +39,7 @@ builder.Services.AddOpenTelemetry()
 | Aspect | Details |
 |--------|---------|
 | **Drop policy** | Events exceeding the limit are silently dropped (not queued) |
-| **Self-telemetry** | `all.ratelimiter.events_dropped` (Counter) and `all.ratelimiter.events_passed` (Counter) track rate limiter activity |
+| **Self-telemetry** | `otel_events.ratelimiter.events_dropped` (Counter) and `otel_events.ratelimiter.events_passed` (Counter) track rate limiter activity |
 | **Wildcard matching** | `"health.check.*"` matches `health.check.executed`, `health.state.changed`, etc. |
 | **No per-event state** | Rate limiting uses event name as the grouping key — all events with the same name share a counter |
 | **Severity bypass** | ERROR and FATAL events are never rate-limited (configurable via `options.MinBypassSeverity`) |
@@ -107,7 +107,7 @@ logging.AddAllSampler(options =>
 
 ## Schema Versioning
 
-Schemas use [semver](https://semver.org/) versioning. The schema `version` field is stamped into every JSON envelope as `all.v`.
+Schemas use [semver](https://semver.org/) versioning. The schema `version` field is stamped into every JSON envelope as `otel_events.v`.
 
 ### Compatibility rules
 
@@ -320,7 +320,7 @@ Analyzers activate automatically when the package is referenced.
 | **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
 | **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an otel-events event with the caught exception. |
 | **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
-| **ALL008** | Error | Reserved prefix usage | Code uses `all.` prefix in field names — reserved for library metadata. |
+| **ALL008** | Error | Reserved prefix usage | Code uses `otel_events.` prefix in field names — reserved for library metadata. |
 | **ALL009** | Warning | PII field without redaction | Schema field with `sensitivity: pii` or `sensitivity: credential` used but no redaction policy configured. |
 
 ### Severity overrides

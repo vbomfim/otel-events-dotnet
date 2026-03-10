@@ -74,7 +74,7 @@ The `OtelEventsEnvironmentProfile` controls which sensitivity levels are redacte
 |---|---|---|---|
 | `ExceptionDetailLevel` | `Full` (type, message, stack trace, inner exceptions) | `TypeAndMessage` | `TypeAndMessage` |
 | Stack trace file paths | Included | Omitted | Omitted |
-| `EmitHostInfo` (`all.host`, `all.pid`) | `true` | `false` | `false` |
+| `EmitHostInfo` (`otel_events.host`, `otel_events.pid`) | `true` | `false` | `false` |
 
 ### Key Design Decision
 
@@ -192,7 +192,7 @@ When set, only the listed attributes pass through. When `null` (default), all at
 
 The exporter applies security controls in this order:
 
-1. **Reserved prefix stripping** — remove unauthorized `all.*` attributes
+1. **Reserved prefix stripping** — remove unauthorized `otel_events.*` attributes
 2. **AttributeDenylist** — exclude denied attribute names entirely
 3. **AttributeAllowlist** — filter non-otel-events attributes to allowed names
 4. **Built-in defense patterns** — hard-coded credential detection (always active)
@@ -269,7 +269,7 @@ dotnet_diagnostic.ALL009.severity = none
 | **GDPR** | `sensitivity: pii` → Production redaction. `CaptureClientIp` and `CaptureUserAgent` default to `false` |
 | **CCPA** | Same as GDPR — PII classification covers California consumer data |
 | **HIPAA** | Use `sensitivity: credential` for PHI. Configure `EnvironmentProfile.Production`. Document all `SensitivityOverrides` |
-| **SOC 2** | Audit trail via `all.event_id`, monotonic `seq`, `traceId`. Opt-in host/PID attribution via `EmitHostInfo` |
+| **SOC 2** | Audit trail via `otel_events.event_id`, monotonic `seq`, `traceId`. Opt-in host/PID attribution via `EmitHostInfo` |
 
 ---
 

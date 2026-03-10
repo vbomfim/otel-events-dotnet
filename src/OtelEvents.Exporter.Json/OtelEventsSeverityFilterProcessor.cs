@@ -19,7 +19,7 @@ namespace OtelEvents.Exporter.Json;
 /// </remarks>
 public sealed class OtelEventsSeverityFilterProcessor : BaseProcessor<LogRecord>
 {
-    private static readonly Meter SelfMeter = new("all.processor.severity_filter");
+    private static readonly Meter SelfMeter = new("otel_events.processor.severity_filter");
 
     private readonly OtelEventsSeverityFilterOptions _options;
     private readonly BaseProcessor<LogRecord> _innerProcessor;
@@ -60,11 +60,11 @@ public sealed class OtelEventsSeverityFilterProcessor : BaseProcessor<LogRecord>
         _innerProcessor = innerProcessor;
 
         _eventsDropped = SelfMeter.CreateCounter<long>(
-            "all.processor.severity_filter.events_dropped",
+            "otel_events.processor.severity_filter.events_dropped",
             description: "Total events dropped by severity filter");
 
         _eventsPassed = SelfMeter.CreateCounter<long>(
-            "all.processor.severity_filter.events_passed",
+            "otel_events.processor.severity_filter.events_passed",
             description: "Total events passed by severity filter");
 
         // Pre-partition overrides into exact and wildcard for fast lookup

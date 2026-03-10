@@ -176,8 +176,8 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
     "amount": 99.99
   },
   "tags": ["commerce", "orders"],
-  "all.v": "1.0.0",
-  "all.seq": 42
+  "otel_events.v": "1.0.0",
+  "otel_events.seq": 42
 }
 ```
 
@@ -194,12 +194,12 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
 | `environment` | OTEL Resource `deployment.environment` | Deployment environment |
 | `traceId` | `Activity.Current.TraceId` | W3C trace ID (from OTEL) |
 | `spanId` | `Activity.Current.SpanId` | W3C span ID (from OTEL) |
-| `eventId` | `all.event_id` attribute | UUID v7 with `evt_` prefix (from `OtelEventsCausalityProcessor`) |
-| `parentEventId` | `all.parent_event_id` attribute | Parent event's ID (from `OtelEventsCausalityContext`) |
+| `eventId` | `otel_events.event_id` attribute | UUID v7 with `evt_` prefix (from `OtelEventsCausalityProcessor`) |
+| `parentEventId` | `otel_events.parent_event_id` attribute | Parent event's ID (from `OtelEventsCausalityContext`) |
 | `attr` | `LogRecord.Attributes` | Typed key-value payload from event fields |
-| `tags` | `all.tags` attribute | Schema-defined tags |
-| `all.v` | Exporter config | Schema version stamp |
-| `all.seq` | Exporter counter | Monotonic per-process sequence number |
+| `tags` | `otel_events.tags` attribute | Schema-defined tags |
+| `otel_events.v` | Exporter config | Schema version stamp |
+| `otel_events.seq` | Exporter counter | Monotonic per-process sequence number |
 
 ### Envelope Rules
 
@@ -207,7 +207,7 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
 - **Single line** — Every event is exactly one JSON line terminated by `\n`. No pretty-printing.
 - **UTC timestamps** — ISO 8601 UTC: `yyyy-MM-ddTHH:mm:ss.ffffffZ`
 - **UTF-8 encoding** throughout
-- **Reserved prefix** — All keys starting with `all.` are reserved for library metadata
+- **Reserved prefix** — All keys starting with `otel_events.` are reserved for library metadata
 
 ### Severity Mapping
 
@@ -350,7 +350,7 @@ For the complete redaction matrix by environment, see [Environment Profiles](#en
 |---------|-------------|---------|------------|
 | `ExceptionDetailLevel` | `Full` | `TypeAndMessage` | `TypeAndMessage` |
 | Stack trace file paths | Included | Omitted | Omitted |
-| `EmitHostInfo` (`all.host`, `all.pid`) | `true` | `false` | `false` |
+| `EmitHostInfo` (`otel_events.host`, `otel_events.pid`) | `true` | `false` | `false` |
 
 ### Auto-Detection
 

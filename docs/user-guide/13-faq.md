@@ -163,8 +163,8 @@ private readonly ILogger<OrderEventSource> _logger;
 
 If you've configured `OtelEventsRateLimitProcessor` or `OtelEventsSamplingProcessor`, events may be intentionally dropped. Check the self-telemetry counters:
 
-- `all.ratelimiter.events_dropped`
-- `all.sampler.events_dropped`
+- `otel_events.ratelimiter.events_dropped`
+- `otel_events.sampler.events_dropped`
 
 ### How do I see pretty-printed JSON?
 

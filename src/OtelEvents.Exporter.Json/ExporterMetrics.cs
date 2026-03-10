@@ -12,36 +12,36 @@ internal static class ExporterMetrics
 
     internal static readonly Counter<long> ExportErrors =
         Meter.CreateCounter<long>(
-            "all.exporter.json.export_errors",
+            "otel_events.exporter.json.export_errors",
             description: "Errors during JSON export");
 
     internal static readonly Counter<long> BatchesDropped =
         Meter.CreateCounter<long>(
-            "all.exporter.json.batches_dropped",
+            "otel_events.exporter.json.batches_dropped",
             description: "Batches dropped due to lock timeout");
 
     internal static readonly Counter<long> ValuesTruncated =
         Meter.CreateCounter<long>(
-            "all.exporter.json.values_truncated",
+            "otel_events.exporter.json.values_truncated",
             description: "Attribute values truncated to MaxAttributeValueLength");
 
     internal static readonly Counter<long> AttributesRedacted =
         Meter.CreateCounter<long>(
-            "all.exporter.json.attributes_redacted",
+            "otel_events.exporter.json.attributes_redacted",
             description: "Attribute values redacted by pattern matching");
 
     internal static readonly Counter<long> RegexTimeouts =
         Meter.CreateCounter<long>(
-            "all.exporter.json.regex_timeouts",
+            "otel_events.exporter.json.regex_timeouts",
             description: "Regex pattern matches that timed out (value redacted as fail-closed)");
 
     internal static readonly Counter<long> ReservedPrefixStripped =
         Meter.CreateCounter<long>(
-            "all.exporter.json.reserved_prefix_stripped",
+            "otel_events.exporter.json.reserved_prefix_stripped",
             description: "Attributes with reserved all.* prefix stripped");
 
     internal static readonly Counter<long> SensitivityRedacted =
         Meter.CreateCounter<long>(
-            "all.exporter.json.sensitivity_redacted",
+            "otel_events.exporter.json.sensitivity_redacted",
             description: "Attribute values redacted by sensitivity classification");
 }

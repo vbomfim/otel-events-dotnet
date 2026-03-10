@@ -126,10 +126,10 @@ if (section["EnvironmentProfile"] is null)
 |---|---|---|---|
 | `Output` | `OtelEventsJsonOutput` | `Stdout` | Output target: `Stdout`, `Stderr`, or `File` |
 | `FilePath` | `string?` | `null` | File path when `Output` is `File` |
-| `SchemaVersion` | `string` | `"1.0.0"` | Schema version stamped into every envelope as `all.v` |
+| `SchemaVersion` | `string` | `"1.0.0"` | Schema version stamped into every envelope as `otel_events.v` |
 | `EnvironmentProfile` | `OtelEventsEnvironmentProfile` | `Production` | Security-sensitive defaults preset. Auto-detected from `ASPNETCORE_ENVIRONMENT` or `DOTNET_ENVIRONMENT` if not explicitly set |
 | `ExceptionDetailLevel` | `ExceptionDetailLevel?` | `null` | Exception detail in JSON. When `null`, resolved from `EnvironmentProfile` |
-| `EmitHostInfo` | `bool` | `false` | Emit `all.host` and `all.pid` in the envelope. May expose infrastructure details |
+| `EmitHostInfo` | `bool` | `false` | Emit `otel_events.host` and `otel_events.pid` in the envelope. May expose infrastructure details |
 | `MaxAttributeValueLength` | `int` | `4096` | Maximum length for any single string attribute value. Values exceeding this are truncated with `"…[truncated]"` |
 | `AttributeAllowlist` | `ISet<string>?` | `null` | When set, only listed attributes pass through for non-otel-events LogRecords. `null` = all pass |
 | `AttributeDenylist` | `ISet<string>` | `[]` | Attributes to never emit. Takes precedence over allowlist |

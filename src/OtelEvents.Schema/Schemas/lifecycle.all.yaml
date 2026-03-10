@@ -8,7 +8,7 @@ schema:
   version: "1.0.0"
   namespace: All.Events.Lifecycle
   description: "Built-in schema for application lifecycle and health events"
-  meterName: all.lifecycle
+  meterName: otel_events.lifecycle
 
 enums:
   HealthStatus:

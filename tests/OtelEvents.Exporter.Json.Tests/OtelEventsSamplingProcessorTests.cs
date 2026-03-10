@@ -21,19 +21,19 @@ public sealed class OtelEventsSamplingProcessorTests : IDisposable
     {
         _meterListener.InstrumentPublished = (instrument, listener) =>
         {
-            if (instrument.Name == "all.processor.sampling.events_sampled"
-                || instrument.Name == "all.processor.sampling.events_dropped")
+            if (instrument.Name == "otel_events.processor.sampling.events_sampled"
+                || instrument.Name == "otel_events.processor.sampling.events_dropped")
             {
                 listener.EnableMeasurementEvents(instrument);
             }
         };
         _meterListener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
         {
-            if (instrument.Name == "all.processor.sampling.events_sampled")
+            if (instrument.Name == "otel_events.processor.sampling.events_sampled")
             {
                 Interlocked.Add(ref _sampledCount, measurement);
             }
-            else if (instrument.Name == "all.processor.sampling.events_dropped")
+            else if (instrument.Name == "otel_events.processor.sampling.events_dropped")
             {
                 Interlocked.Add(ref _droppedCount, measurement);
             }

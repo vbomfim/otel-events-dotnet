@@ -323,7 +323,7 @@ Event names must be:
 - **Lowercase**
 - **Dot-namespaced**: `category.subcategory.action`
 - **Alphanumeric + dots only**
-- **Must not start with `all.`** (reserved prefix)
+- **Must not start with `otel_events.`** (reserved prefix)
 
 Examples:
 
@@ -395,7 +395,7 @@ The schema parser validates at build time. Violations produce clear build errors
 | `ALL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
 | `ALL_SCHEMA_009` | Empty enum definition (must have at least one value) |
 | `ALL_SCHEMA_010` | Invalid semver version |
-| `ALL_SCHEMA_011` | Reserved `all.` prefix used in event or field name |
+| `ALL_SCHEMA_011` | Reserved `otel_events.` prefix used in event or field name |
 | `ALL_SCHEMA_012` | Duplicate numeric event ID |
 | `ALL_SCHEMA_013` | Invalid meter name (must be valid .NET dot-separated identifier) |
 | `ALL_SCHEMA_014` | Invalid sensitivity value |

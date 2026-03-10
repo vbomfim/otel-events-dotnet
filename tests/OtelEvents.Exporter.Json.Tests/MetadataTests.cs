@@ -16,7 +16,7 @@ public sealed class MetadataTests
 
         var doc = harness.ExportSingle(lr);
 
-        Assert.Equal("2.0.0", doc.RootElement.GetProperty("all.v").GetString());
+        Assert.Equal("2.0.0", doc.RootElement.GetProperty("otel_events.v").GetString());
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public sealed class MetadataTests
 
         var doc = harness.ExportSingle(lr);
 
-        Assert.Equal("1.0.0", doc.RootElement.GetProperty("all.v").GetString());
+        Assert.Equal("1.0.0", doc.RootElement.GetProperty("otel_events.v").GetString());
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public sealed class MetadataTests
 
         var doc = harness.ExportSingle(lr);
 
-        Assert.Equal(1, doc.RootElement.GetProperty("all.seq").GetInt64());
+        Assert.Equal(1, doc.RootElement.GetProperty("otel_events.seq").GetInt64());
     }
 
     [Fact]
@@ -51,9 +51,9 @@ public sealed class MetadataTests
 
         var docs = harness.ExportBatch([lr1, lr2, lr3]);
 
-        Assert.Equal(1, docs[0].RootElement.GetProperty("all.seq").GetInt64());
-        Assert.Equal(2, docs[1].RootElement.GetProperty("all.seq").GetInt64());
-        Assert.Equal(3, docs[2].RootElement.GetProperty("all.seq").GetInt64());
+        Assert.Equal(1, docs[0].RootElement.GetProperty("otel_events.seq").GetInt64());
+        Assert.Equal(2, docs[1].RootElement.GetProperty("otel_events.seq").GetInt64());
+        Assert.Equal(3, docs[2].RootElement.GetProperty("otel_events.seq").GetInt64());
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public sealed class MetadataTests
 
         var doc = harness.ExportSingle(lr);
 
-        Assert.False(doc.RootElement.TryGetProperty("all.host", out _));
-        Assert.False(doc.RootElement.TryGetProperty("all.pid", out _));
+        Assert.False(doc.RootElement.TryGetProperty("otel_events.host", out _));
+        Assert.False(doc.RootElement.TryGetProperty("otel_events.pid", out _));
     }
 
     [Fact]
@@ -76,10 +76,10 @@ public sealed class MetadataTests
 
         var doc = harness.ExportSingle(lr);
 
-        Assert.True(doc.RootElement.TryGetProperty("all.host", out var host));
+        Assert.True(doc.RootElement.TryGetProperty("otel_events.host", out var host));
         Assert.False(string.IsNullOrEmpty(host.GetString()));
 
-        Assert.True(doc.RootElement.TryGetProperty("all.pid", out var pid));
+        Assert.True(doc.RootElement.TryGetProperty("otel_events.pid", out var pid));
         Assert.True(pid.GetInt32() > 0);
     }
 }

@@ -20,19 +20,19 @@ public sealed class OtelEventsSeverityFilterProcessorTests : IDisposable
     {
         _meterListener.InstrumentPublished = (instrument, listener) =>
         {
-            if (instrument.Name == "all.processor.severity_filter.events_dropped"
-                || instrument.Name == "all.processor.severity_filter.events_passed")
+            if (instrument.Name == "otel_events.processor.severity_filter.events_dropped"
+                || instrument.Name == "otel_events.processor.severity_filter.events_passed")
             {
                 listener.EnableMeasurementEvents(instrument);
             }
         };
         _meterListener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
         {
-            if (instrument.Name == "all.processor.severity_filter.events_dropped")
+            if (instrument.Name == "otel_events.processor.severity_filter.events_dropped")
             {
                 Interlocked.Add(ref _droppedCount, measurement);
             }
-            else if (instrument.Name == "all.processor.severity_filter.events_passed")
+            else if (instrument.Name == "otel_events.processor.severity_filter.events_passed")
             {
                 Interlocked.Add(ref _passedCount, measurement);
             }

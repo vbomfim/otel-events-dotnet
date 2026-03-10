@@ -618,7 +618,7 @@ public class OtelEventsAspNetCoreMiddlewareTests : IAsyncDisposable
 
         // Assert — completed event should have parentEventId
         var completed = exporter.AssertSingle("http.request.completed");
-        Assert.True(completed.Attributes.ContainsKey("all.parent_event_id"),
+        Assert.True(completed.Attributes.ContainsKey("otel_events.parent_event_id"),
             "Completed event should have all.parent_event_id when causal scope is enabled");
     }
 
@@ -636,7 +636,7 @@ public class OtelEventsAspNetCoreMiddlewareTests : IAsyncDisposable
 
         // Assert — completed event should NOT have parentEventId from middleware
         var completed = exporter.AssertSingle("http.request.completed");
-        Assert.False(completed.Attributes.ContainsKey("all.parent_event_id"),
+        Assert.False(completed.Attributes.ContainsKey("otel_events.parent_event_id"),
             "Completed event should not have all.parent_event_id when causal scope is disabled");
     }
 
@@ -651,9 +651,9 @@ public class OtelEventsAspNetCoreMiddlewareTests : IAsyncDisposable
 
         // Assert — received event should have all.event_id (from OtelEventsCausalityProcessor)
         var received = exporter.AssertSingle("http.request.received");
-        Assert.True(received.Attributes.ContainsKey("all.event_id"),
+        Assert.True(received.Attributes.ContainsKey("otel_events.event_id"),
             "Received event should have all.event_id");
-        var eventId = received.Attributes["all.event_id"] as string;
+        var eventId = received.Attributes["otel_events.event_id"] as string;
         Assert.NotNull(eventId);
         Assert.StartsWith("evt_", eventId);
     }
