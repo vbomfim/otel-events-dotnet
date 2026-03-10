@@ -1,6 +1,6 @@
 # TLS Configuration for OTLP Endpoints
 
-Guide for configuring TLS and mTLS between .NET services using ALL and the
+Guide for configuring TLS and mTLS between .NET services using otel-events and the
 OTEL Collector.
 
 > **Source:** [SPECIFICATION.md §17.2](../../SPECIFICATION.md)

@@ -1,10 +1,10 @@
 # Container & Kubernetes Deployment Guide
 
-This guide covers deploying .NET services that use [ALL (Another Logging Library)](../../README.md)
+This guide covers deploying .NET services that use [otel-events](../../README.md)
 in containerized and Kubernetes environments. It includes OTEL Collector configuration,
 sample Kubernetes manifests, resource sizing, TLS setup, and network policies.
 
-> **Note:** ALL publishes documentation and sample manifests only — not a reference
+> **Note:** otel-events publishes documentation and sample manifests only — not a reference
 > Helm chart. Helm charts are highly organization-specific (naming conventions, label
 > standards, ingress controllers). The sample manifests here serve as a starting point.
 > See [SPECIFICATION.md §17.7, Decision OQ-PG-04](../../SPECIFICATION.md).
@@ -13,7 +13,7 @@ sample Kubernetes manifests, resource sizing, TLS setup, and network policies.
 
 | Document | Description |
 |----------|-------------|
-| [otel-collector-config.yaml](otel-collector-config.yaml) | OTEL Collector configuration with `filelog` receiver for ALL envelope |
+| [otel-collector-config.yaml](otel-collector-config.yaml) | OTEL Collector configuration with `filelog` receiver for otel-events envelope |
 | [dockerfile](dockerfile) | Multi-stage Dockerfile (distroless, non-root, SBOM) |
 | [k8s/deployment.yaml](k8s/deployment.yaml) | Kubernetes Deployment manifest |
 | [k8s/pdb.yaml](k8s/pdb.yaml) | PodDisruptionBudget |
@@ -46,7 +46,7 @@ a **Gateway** Collector deployment for OTLP metrics and traces.
                       │                                         │
                       │  filelog receiver                        │
                       │  → reads /var/log/pods/**/*.log          │
-                      │  → parses JSONL (ALL envelope format)   │
+                      │  → parses JSONL (otel-events envelope format)   │
                       │                                         │
                       │  Exporters:                              │
                       │  → OTLP (to central Collector/backend)  │
@@ -105,7 +105,7 @@ kubectl apply -f docs/deployment/k8s/
 # Check pods
 kubectl get pods -n production -l app=my-service
 
-# Check logs (should see ALL JSONL output)
+# Check logs (should see otel-events JSONL output)
 kubectl logs -n production -l app=my-service --tail=10
 
 # Check OTEL Collector is receiving logs
@@ -115,5 +115,5 @@ kubectl logs -n monitoring -l app=otel-collector --tail=10
 ## Further Reading
 
 - [SPECIFICATION.md §17](../../SPECIFICATION.md) — Full specification for container and Kubernetes deployment
-- [Observability Dashboards](../dashboards/README.md) — Grafana dashboards for ALL metrics
+- [Observability Dashboards](../dashboards/README.md) — Grafana dashboards for otel-events metrics
 - [OpenTelemetry Collector Documentation](https://opentelemetry.io/docs/collector/)

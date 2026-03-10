@@ -90,7 +90,7 @@ See the [otel-events User Guide](docs/user-guide/README.md) for comprehensive do
 - [Schema Reference](docs/user-guide/05-schema-reference.md) — Complete YAML grammar
 - [Integration Packs](docs/user-guide/06-integration-packs.md) — ASP.NET Core, gRPC, CosmosDB, Azure Storage, HealthChecks
 - [Configuration](docs/user-guide/07-configuration.md) — All configuration options
-- [Migration Guide](docs/user-guide/12-migration-guide.md) — Migrate from plain `ILogger` to ALL
+- [Migration Guide](docs/user-guide/12-migration-guide.md) — Migrate from plain `ILogger` to otel-events
 - [FAQ](docs/user-guide/13-faq.md) — Common questions
 
 ## Specification
@@ -101,7 +101,7 @@ See [SPECIFICATION.md](SPECIFICATION.md) for the full project specification, inc
 
 See the [Container & Kubernetes Deployment Guide](docs/deployment/README.md) for:
 
-- OTEL Collector configuration for ALL envelope parsing
+- OTEL Collector configuration for otel-events envelope parsing
 - Sample Dockerfile (distroless, non-root, SBOM)
 - Kubernetes manifests (Deployment, PDB, HPA, NetworkPolicy)
 - Resource sizing recommendations

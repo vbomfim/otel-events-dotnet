@@ -11,7 +11,7 @@ This document describes the trust boundaries, threat vectors, and mitigations fo
 │  TRUST BOUNDARY: Application Process                             │
 │                                                                  │
 │  ┌──────────────┐     ┌─────────────────┐     ┌──────────────┐  │
-│  │ Application   │────▶│ ALL Generated   │────▶│ OTEL SDK     │  │
+│  │ Application   │────▶│ otel-events Generated   │────▶│ OTEL SDK     │  │
 │  │ Code          │     │ Code            │     │ Pipeline     │  │
 │  │ (trusted)     │     │ (trusted)       │     │ (trusted)    │  │
 │  └──────────────┘     └─────────────────┘     └──────┬───────┘  │
@@ -41,7 +41,7 @@ This document describes the trust boundaries, threat vectors, and mitigations fo
 
 ### Key Trust Assumptions
 
-- **Application code** and **ALL-generated code** run within the same process and are fully trusted.
+- **Application code** and **otel-events generated code** run within the same process and are fully trusted.
 - **Third-party libraries** are semi-trusted — they access `ILogger` through the OTEL SDK bridge and may emit PII unintentionally.
 - **YAML schema files** are untrusted input parsed at build time with enforced resource limits (1 MB max size, 500 events, 50 fields per event, depth 20).
 - **Log collectors** and **OTEL Collector** are trusted infrastructure components outside the application process boundary.
@@ -92,7 +92,7 @@ At build time, the schema validator rejects field names starting with `all.` (ru
 1. During `Export()`, iterate over `LogRecord.Attributes`.
 2. Any attribute with key starting with `all.` that was **not** set by `OtelEventsCausalityProcessor` or `OtelEventsJsonExporter` itself is **stripped**.
 3. Increment `all.exporter.json.reserved_prefix_stripped` counter for each occurrence.
-4. This prevents application code or third-party libraries from spoofing ALL metadata fields.
+4. This prevents application code or third-party libraries from spoofing otel-events metadata fields.
 
 ## Related
 

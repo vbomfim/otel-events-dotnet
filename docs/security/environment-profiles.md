@@ -2,7 +2,7 @@
 
 > Source: [SPECIFICATION.md §16.3](../../SPECIFICATION.md)
 
-ALL defines three environment profiles that control security-sensitive defaults. Each profile progressively restricts information disclosure as the environment moves closer to production.
+otel-events defines three environment profiles that control security-sensitive defaults. Each profile progressively restricts information disclosure as the environment moves closer to production.
 
 ## Defaults Summary
 

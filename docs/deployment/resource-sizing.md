@@ -1,6 +1,6 @@
 # Resource Sizing Recommendations
 
-Resource sizing guide for .NET services using ALL (Another Logging Library).
+Resource sizing guide for .NET services using otel-events.
 Use these recommendations as a starting point and adjust based on load testing.
 
 > **Source:** [SPECIFICATION.md §17.5](../../SPECIFICATION.md)
@@ -17,7 +17,7 @@ Use these recommendations as a starting point and adjust based on load testing.
 
 ## Performance Characteristics
 
-- **ALL overhead:** ~500ns per event (log + metrics). At 100K events/s, otel-events consumes
+- **otel-events overhead:** ~500ns per event (log + metrics). At 100K events/s, otel-events consumes
   ~50ms of CPU per second.
 - **Memory overhead:** Dominated by OTEL SDK batching buffers, not otel-events components.
 - **Allocation rate at 100K events/s:** ~24.4 MB/s (256 bytes/event). Monitor Gen2 GC

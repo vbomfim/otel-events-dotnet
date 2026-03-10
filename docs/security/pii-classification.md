@@ -78,14 +78,14 @@ logging.AddOtelEventsJsonExporter(options =>
 
 otel-events provides the classification and redaction mechanisms. Specific regulatory compliance configuration is the responsibility of the deploying organization.
 
-| Regulation | ALL Mechanism |
+| Regulation | otel-events Mechanism |
 |------------|---------------|
 | **GDPR** (EU) | `sensitivity: pii` classification → redaction in Production; `CaptureClientIp`/`CaptureUserAgent` default `false`; data retention is the responsibility of the log storage backend |
 | **CCPA** (California) | Same PII controls as GDPR apply |
-| **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; ALL does not provide encryption at rest (log storage responsibility) |
+| **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; otel-events does not provide encryption at rest (log storage responsibility) |
 | **SOC 2** | Audit trail via `all.event_id`, `all.seq`, `traceId`; `all.host`/`all.pid` opt-in for attribution; SBOM generation in CI |
 
-> **Decision (OQ-PG-03):** otel-events provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. ALL's defaults are privacy-preserving (PII redacted in Production).
+> **Decision (OQ-PG-03):** otel-events provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. otel-events' defaults are privacy-preserving (PII redacted in Production).
 
 ## Related
 

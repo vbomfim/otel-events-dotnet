@@ -1,6 +1,6 @@
 # Security & Privacy Documentation
 
-This directory contains standalone security and privacy documentation for the ALL project, extracted from [SPECIFICATION.md §16](../../SPECIFICATION.md).
+This directory contains standalone security and privacy documentation for the otel-events project, extracted from [SPECIFICATION.md §16](../../SPECIFICATION.md).
 
 ## Documents
 
@@ -9,7 +9,7 @@ This directory contains standalone security and privacy documentation for the AL
 | [Threat Model](threat-model.md) | Trust boundary diagram, threat vectors, and mitigations | §16.1 |
 | [PII Classification](pii-classification.md) | Sensitivity levels, redaction matrix, and override configuration | §16.2 |
 | [Environment Profiles](environment-profiles.md) | Development, Staging, and Production default settings | §16.3 |
-| [OWASP Mapping](owasp-mapping.md) | OWASP Top 10 (2021) reference mapping to ALL mitigations | §16.7 |
+| [OWASP Mapping](owasp-mapping.md) | OWASP Top 10 (2021) reference mapping to otel-events mitigations | §16.7 |
 
 ## Quick Reference
 
