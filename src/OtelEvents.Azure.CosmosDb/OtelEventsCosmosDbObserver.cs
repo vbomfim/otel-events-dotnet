@@ -210,6 +210,8 @@ public sealed class OtelEventsCosmosDbObserver :
     /// <summary>
     /// Processes a failed CosmosDB operation event.
     /// All failures emit <c>cosmosdb.query.failed</c> regardless of operation type.
+    /// When <see cref="OtelEventsCosmosDbOptions.EmitInfrastructureEvents"/> is enabled,
+    /// supplemental infrastructure events are emitted based on the HTTP status code.
     /// </summary>
     private void ProcessOperationFailed(object? payload)
     {
@@ -228,6 +230,7 @@ public sealed class OtelEventsCosmosDbObserver :
         var partitionKey = ReadProperty<string>(payload, "PartitionKey");
         var exception = ReadProperty<Exception>(payload, "Exception");
 
+        // Always emit the standard query.failed event (backward-compatible)
         _logger.CosmosDbQueryFailed(
             cosmosDatabase: database,
             cosmosContainer: container,
@@ -238,6 +241,133 @@ public sealed class OtelEventsCosmosDbObserver :
             errorType: errorType,
             cosmosPartitionKey: partitionKey,
             exception: exception);
+
+        // Supplemental infrastructure events — gated by option
+        if (!_options.EmitInfrastructureEvents)
+        {
+            return;
+        }
+
+        EmitInfrastructureEvent(
+            payload, database, container, statusCode,
+            requestCharge, durationMs, errorType, exception);
+    }
+
+    /// <summary>
+    /// Classifies the failure by HTTP status code and emits the appropriate
+    /// infrastructure event (connection, auth, or throttled).
+    /// </summary>
+    private void EmitInfrastructureEvent(
+        object payload,
+        string database,
+        string container,
+        int statusCode,
+        double requestCharge,
+        double durationMs,
+        string errorType,
+        Exception? exception)
+    {
+        switch (statusCode)
+        {
+            case 401 or 403:
+                EmitAuthFailed(payload, database, statusCode, exception);
+                break;
+
+            case 429:
+                EmitThrottled(payload, database, container, statusCode, requestCharge, exception);
+                break;
+
+            default:
+                EmitConnectionFailed(payload, database, durationMs, errorType, exception);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Emits a <c>cosmosdb.connection.failed</c> event for connection-level errors
+    /// (any status code not classified as auth or throttle).
+    /// </summary>
+    private void EmitConnectionFailed(
+        object payload,
+        string database,
+        double durationMs,
+        string errorType,
+        Exception? exception)
+    {
+        var endpoint = ReadProperty<string>(payload, "Endpoint") ?? "unknown";
+        var errorMessage = exception?.Message ?? "Unknown error";
+        var failureReason = ReadProperty<string>(payload, "FailureReason") ?? "ConnectionError";
+
+        _logger.CosmosDbConnectionFailed(
+            endpoint: endpoint,
+            cosmosDatabase: database,
+            durationMs: durationMs,
+            errorType: errorType,
+            errorMessage: errorMessage,
+            failureReason: failureReason,
+            exception: exception);
+    }
+
+    /// <summary>
+    /// Emits a <c>cosmosdb.auth.failed</c> event for HTTP 401/403 responses.
+    /// The identity hint is a SHA-256 hash prefix of the error message to aid
+    /// correlation without leaking credentials.
+    /// </summary>
+    private void EmitAuthFailed(
+        object payload,
+        string database,
+        int statusCode,
+        Exception? exception)
+    {
+        var authScheme = ReadProperty<string>(payload, "AuthScheme") ?? "unknown";
+        var rawIdentity = ReadProperty<string>(payload, "IdentitySource") ?? exception?.Message ?? "";
+        var identityHint = ComputeIdentityHint(rawIdentity);
+
+        _logger.CosmosDbAuthFailed(
+            httpStatusCode: statusCode,
+            cosmosDatabase: database,
+            authScheme: authScheme,
+            identityHint: identityHint,
+            exception: exception);
+    }
+
+    /// <summary>
+    /// Emits a <c>cosmosdb.throttled</c> event for HTTP 429 responses.
+    /// Extracts RetryAfter from the payload (in milliseconds).
+    /// </summary>
+    private void EmitThrottled(
+        object payload,
+        string database,
+        string container,
+        int statusCode,
+        double requestCharge,
+        Exception? exception)
+    {
+        var retryAfterMs = ReadProperty<double>(payload, "RetryAfterMs");
+
+        _logger.CosmosDbThrottled(
+            httpStatusCode: statusCode,
+            cosmosDatabase: database,
+            cosmosContainer: container,
+            retryAfterMs: retryAfterMs,
+            cosmosRequestCharge: requestCharge,
+            exception: exception);
+    }
+
+    /// <summary>
+    /// Computes a SHA-256 hash prefix (first 8 hex chars) of the raw identity
+    /// string for safe logging. Never logs raw credentials or identity values.
+    /// </summary>
+    private static string ComputeIdentityHint(string rawIdentity)
+    {
+        if (string.IsNullOrEmpty(rawIdentity))
+        {
+            return "unknown";
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(rawIdentity);
+        var hash = System.Security.Cryptography.SHA256.HashData(bytes);
+        return Convert.ToHexString(hash)[..8].ToUpperInvariant();
     }
 
     // ─── Event emission helpers ─────────────────────────────────────────

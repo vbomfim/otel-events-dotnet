@@ -56,4 +56,14 @@ public sealed class OtelEventsCosmosDbOptions
     /// Default: <c>0</c> — emit for all operations.
     /// </summary>
     public double LatencyThresholdMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to emit infrastructure events
+    /// (<c>cosmosdb.connection.failed</c>, <c>cosmosdb.auth.failed</c>,
+    /// <c>cosmosdb.throttled</c>) in addition to the standard operation events.
+    /// Infrastructure events fire supplementally — the existing
+    /// <c>cosmosdb.query.failed</c> event still fires for all failures.
+    /// Default: <c>false</c> — opt-in only (backward-compatible).
+    /// </summary>
+    public bool EmitInfrastructureEvents { get; set; }
 }

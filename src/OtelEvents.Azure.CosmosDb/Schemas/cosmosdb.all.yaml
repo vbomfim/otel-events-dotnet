@@ -172,3 +172,92 @@ events:
         description: "CosmosDB point operation RU consumption"
         buckets: [1, 2, 5, 10, 25, 50, 100]
     tags: [cosmosdb, point]
+
+  cosmosdb.connection.failed:
+    id: 10205
+    severity: ERROR
+    description: "A CosmosDB connection-level error occurred (non-auth, non-throttle failures)."
+    message: "CosmosDB connection failed to {endpoint} database={cosmosDatabase} after {durationMs}ms error={errorType}"
+    exception: true
+    supplemental: true
+    fields:
+      endpoint:
+        type: string
+        description: "CosmosDB account endpoint URL"
+        required: true
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      durationMs: { ref: durationMs, required: true }
+      errorType: { ref: errorType, required: true }
+      errorMessage:
+        type: string
+        description: "Exception message describing the failure"
+        required: true
+      failureReason:
+        type: string
+        description: "Classified failure reason (e.g., ConnectionError, Timeout)"
+        required: true
+    metrics:
+      otel.cosmosdb.connection.failure.count:
+        type: counter
+        unit: "errors"
+        description: "Total CosmosDB connection failures"
+        labels: [cosmosDatabase, failureReason]
+    tags: [cosmosdb, infrastructure, connection]
+
+  cosmosdb.auth.failed:
+    id: 10206
+    severity: ERROR
+    description: "A CosmosDB authentication or authorization failure occurred (HTTP 401/403)."
+    message: "CosmosDB auth failed on database={cosmosDatabase} status={httpStatusCode} scheme={authScheme}"
+    exception: true
+    supplemental: true
+    fields:
+      httpStatusCode:
+        type: int
+        description: "HTTP status code (401 or 403)"
+        required: true
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      authScheme:
+        type: string
+        description: "Authentication scheme used (e.g., MasterKey, AAD)"
+        required: true
+      identityHint:
+        type: string
+        description: "SHA-256 hash prefix (8 chars) of identity source for correlation"
+        sensitivity: internal
+        required: true
+    metrics:
+      otel.cosmosdb.auth.failure.count:
+        type: counter
+        unit: "errors"
+        description: "Total CosmosDB authentication failures"
+        labels: [cosmosDatabase, httpStatusCode]
+    tags: [cosmosdb, infrastructure, auth]
+
+  cosmosdb.throttled:
+    id: 10207
+    severity: WARN
+    description: "A CosmosDB request was throttled (HTTP 429 — Request Rate Too Large)."
+    message: "CosmosDB throttled on {cosmosDatabase}/{cosmosContainer} retryAfter={retryAfterMs}ms charge={cosmosRequestCharge} RU"
+    exception: true
+    supplemental: true
+    fields:
+      httpStatusCode:
+        type: int
+        description: "HTTP status code (429)"
+        required: true
+      cosmosDatabase: { ref: cosmosDatabase, required: true }
+      cosmosContainer: { ref: cosmosContainer, required: true }
+      retryAfterMs:
+        type: double
+        description: "Retry-after delay from CosmosDB response (milliseconds)"
+        unit: "ms"
+        required: true
+      cosmosRequestCharge: { ref: cosmosRequestCharge, required: true }
+    metrics:
+      otel.cosmosdb.throttled.count:
+        type: counter
+        unit: "requests"
+        description: "Total CosmosDB throttled requests"
+        labels: [cosmosDatabase, cosmosContainer]
+    tags: [cosmosdb, infrastructure, throttle]
