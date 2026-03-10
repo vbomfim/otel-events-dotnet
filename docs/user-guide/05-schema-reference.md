@@ -6,7 +6,7 @@ This chapter is the complete reference for the `.otel.yaml` schema format. Every
 
 ## Schema File Conventions
 
-- Extension: `.otel.yaml` or `.all.yml`
+- Extension: `.otel.yaml` or `.otel.yml`
 - A project can have **multiple schema files** — they are merged by the code generator
 - Event names must be globally unique across all merged schemas
 - Event numeric IDs must be globally unique across all merged schemas
