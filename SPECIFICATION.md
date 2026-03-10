@@ -215,7 +215,7 @@ Advanced features for large-scale adoption.
 │  │              OTEL SDK LOG PIPELINE                       │        │
 │  │                                                         │        │
 │  │  ┌─────────────────────┐                                │        │
-│  │  │ AllCausalityProc.   │  Adds otel_events.event_id (UUID v7)   │        │
+│  │  │ OtelEventsCausalityProc.   │  Adds otel_events.event_id (UUID v7)   │        │
 │  │  │ (BaseProcessor      │  Adds otel_events.parent_event_id      │        │
 │  │  │  <LogRecord>)       │  (from AsyncLocal context)     │        │
 │  │  └──────────┬──────────┘                                │        │
@@ -892,10 +892,10 @@ namespace MyCompany.MyService.Events;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(AllJsonEnvelope))]
+[JsonSerializable(typeof(OtelEventsJsonEnvelope))]
 [JsonSerializable(typeof(ExceptionData))]
 [JsonSerializable(typeof(StackFrameData))]
-internal partial class AllJsonContext : JsonSerializerContext
+internal partial class OtelEventsJsonContext : JsonSerializerContext
 {
 }
 ```
@@ -1614,7 +1614,7 @@ public sealed class InMemoryLogExporter : BaseExporter<LogRecord>
 
     public IReadOnlyList<ExportedLogRecord> GetRecords() => _records.ToList();
     public ExportedLogRecord? FindByEventName(string eventName);
-    public IEnumerable<ExportedLogRecord> FindAllByEventName(string eventName);
+    public IEnumerable<ExportedLogRecord> FindByEventName(string eventName);
     public void AssertEventEmitted(string eventName);
     public void AssertNoEventEmitted(string eventName);
     public void Clear();
@@ -1690,7 +1690,7 @@ public void CausalityProcessor_AddsEventId()
 | Benchmark | Target | What It Measures |
 |-----------|--------|-----------------|
 | `EmitLoggerMessageEvent` | < 200ns | Time for `[LoggerMessage]` call (OTEL SDK baseline) |
-| `EmitAllExtensionMethod` | < 500ns | Time for otel-events extension method (log + metrics recording) |
+| `EmitOtelEventsExtensionMethod` | < 500ns | Time for otel-events extension method (log + metrics recording) |
 | `OtelEventsJsonExporterWrite` | < 1μs | Time to serialize one LogRecord → JSONL in exporter |
 | `CausalityProcessorOnEnd` | < 200ns | Time for UUID v7 generation + attribute append |
 | `ExceptionSerialization` | < 3μs | Serialize exception with 3 levels of nesting |
@@ -1935,7 +1935,7 @@ otel-events-dotnet/
 │   │   ├── Merging/
 │   │   │   └── SchemaMerger.cs
 │   │   ├── CodeGen/
-│   │   │   ├── AllSourceGenerator.cs         # Incremental source generator
+│   │   │   ├── OtelEventsSourceGenerator.cs         # Incremental source generator
 │   │   │   ├── Emitters/
 │   │   │   │   ├── LoggerMessageEmitter.cs   # Generates [LoggerMessage] partial methods
 │   │   │   │   ├── ExtensionMethodEmitter.cs # Generates ILogger<T> extension methods
@@ -1944,7 +1944,7 @@ otel-events-dotnet/
 │   │   │   │   ├── EventSourceTypeEmitter.cs # Generates category marker types
 │   │   │   │   └── JsonContextEmitter.cs     # Generates STJ serialization context
 │   │   │   └── MSBuild/
-│   │   │       └── AllGenerateTask.cs        # MSBuild task alternative
+│   │   │       └── OtelEventsGenerateTask.cs        # MSBuild task alternative
 │   │   └── Cli/
 │   │       └── ValidateCommand.cs            # dotnet otel-events validate (Phase 3)
 │   │
@@ -1952,10 +1952,10 @@ otel-events-dotnet/
 │   │   ├── OtelEvents.Exporter.Json.csproj
 │   │   ├── OtelEventsJsonExporter.cs                # BaseExporter<LogRecord>
 │   │   ├── OtelEventsJsonExporterOptions.cs         # Configuration (output target, schema version)
-│   │   ├── AllJsonEnvelope.cs                # Envelope model for serialization
+│   │   ├── OtelEventsJsonEnvelope.cs                # Envelope model for serialization
 │   │   ├── ExceptionData.cs                  # Structured exception model
 │   │   ├── ExceptionSerializer.cs            # Exception → structured JSON
-│   │   ├── AllJsonSerializerContext.cs        # STJ source generator context
+│   │   ├── OtelEventsJsonSerializerContext.cs        # STJ source generator context
 │   │   ├── SequenceCounter.cs                # Monotonic per-process seq counter
 │   │   └── OtelEventsJsonExporterExtensions.cs      # .AddOtelEventsJsonExporter() extension method
 │   │
