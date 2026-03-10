@@ -236,7 +236,7 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
     private static string? GetLastEmittedEventId(HttpContext context)
     {
         // The received event was just logged via the OTEL pipeline.
-        // The OtelEventsCausalityProcessor adds all.event_id to each LogRecord.
+        // The OtelEventsCausalityProcessor adds otel_events.event_id to each LogRecord.
         // We need a stable event ID for the causal scope root.
         // Generate a new UUID v7 event ID for the causal scope.
         return Uuid7.FormatEventId();

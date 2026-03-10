@@ -38,7 +38,7 @@ internal static class ExporterMetrics
     internal static readonly Counter<long> ReservedPrefixStripped =
         Meter.CreateCounter<long>(
             "otel_events.exporter.json.reserved_prefix_stripped",
-            description: "Attributes with reserved all.* prefix stripped");
+            description: "Attributes with reserved otel_events.* prefix stripped");
 
     internal static readonly Counter<long> SensitivityRedacted =
         Meter.CreateCounter<long>(

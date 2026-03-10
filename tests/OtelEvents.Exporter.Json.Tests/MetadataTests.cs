@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace OtelEvents.Exporter.Json.Tests;
 
 /// <summary>
-/// Tests for the metadata fields: all.v, all.seq, all.host, all.pid.
+/// Tests for the metadata fields: otel_events.v, otel_events.seq, otel_events.host, otel_events.pid.
 /// </summary>
 public sealed class MetadataTests
 {

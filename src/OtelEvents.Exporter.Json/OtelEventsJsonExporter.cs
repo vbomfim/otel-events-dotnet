@@ -162,7 +162,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
             // exception
             WriteException(writer, logRecord);
 
-            // metadata: all.v, all.seq, all.host, all.pid
+            // metadata: otel_events.v, otel_events.seq, otel_events.host, otel_events.pid
             WriteMetadata(writer, seq);
 
             writer.WriteEndObject();
@@ -263,7 +263,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
                     continue;
                 }
 
-                // Strip reserved all.* prefix from non-ALL attributes
+                // Strip reserved otel_events.* prefix from non-ALL attributes
                 if (attr.Key.StartsWith("otel_events.", StringComparison.Ordinal)
                     && !AllowedAllPrefixKeys.Contains(attr.Key))
                 {

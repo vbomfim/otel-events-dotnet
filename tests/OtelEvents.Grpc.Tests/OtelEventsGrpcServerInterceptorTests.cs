@@ -459,7 +459,7 @@ public class OtelEventsGrpcServerInterceptorTests
         // Assert
         var completed = exporter.AssertSingle("grpc.call.completed");
         Assert.True(completed.Attributes.ContainsKey("otel_events.parent_event_id"),
-            "Completed event should have all.parent_event_id when causal scope is enabled");
+            "Completed event should have otel_events.parent_event_id when causal scope is enabled");
     }
 
     [Fact]
@@ -479,7 +479,7 @@ public class OtelEventsGrpcServerInterceptorTests
         // Assert
         var completed = exporter.AssertSingle("grpc.call.completed");
         Assert.False(completed.Attributes.ContainsKey("otel_events.parent_event_id"),
-            "Completed event should not have all.parent_event_id when causal scope is disabled");
+            "Completed event should not have otel_events.parent_event_id when causal scope is disabled");
     }
 
     [Fact]
@@ -493,10 +493,10 @@ public class OtelEventsGrpcServerInterceptorTests
         await interceptor.UnaryServerHandler<string, string>(
             "request", context, (_, _) => Task.FromResult("response"));
 
-        // Assert — started event should have all.event_id (from OtelEventsCausalityProcessor)
+        // Assert — started event should have otel_events.event_id (from OtelEventsCausalityProcessor)
         var started = exporter.AssertSingle("grpc.call.started");
         Assert.True(started.Attributes.ContainsKey("otel_events.event_id"),
-            "Started event should have all.event_id");
+            "Started event should have otel_events.event_id");
         var eventId = started.Attributes["otel_events.event_id"] as string;
         Assert.NotNull(eventId);
         Assert.StartsWith("evt_", eventId);

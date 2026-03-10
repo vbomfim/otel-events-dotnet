@@ -27,7 +27,7 @@ public class LifecycleSchemaTests
           version: "1.0.0"
           namespace: OtelEvents.Events.Lifecycle
           description: "Built-in schema for application lifecycle and health events"
-          meterName: all.lifecycle
+          meterName: otel_events.lifecycle
 
         enums:
           HealthStatus:

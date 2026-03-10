@@ -110,7 +110,7 @@ The minimum viable product that proves the concept and is usable in a real proje
 | 1.1 | **Event schema parser** | Parse YAML schema files into an in-memory model (`EventDefinition`, `FieldDefinition`, etc.) with safe loading: max file size 1 MB, max 500 events, max 50 fields per event |
 | 1.2 | **C# code generator** | MSBuild-integrated source generator that produces `[LoggerMessage]` partial methods + `Meter`/`Counter`/`Histogram` instances + typed extension methods from YAML schemas |
 | 1.3 | **JSON log exporter** | Custom OTEL `BaseExporter<LogRecord>` that formats `LogRecord`s as AI-optimized single-line JSONL (the otel-events envelope) to stdout or file. Includes environment-aware defaults (see §16). |
-| 1.4 | **Causality processor** | Custom OTEL `BaseProcessor<LogRecord>` that adds `all.event_id` and `all.parent_event_id` attributes to `LogRecord`s for causal tree construction |
+| 1.4 | **Causality processor** | Custom OTEL `BaseProcessor<LogRecord>` that adds `otel_events.event_id` and `otel_events.parent_event_id` attributes to `LogRecord`s for causal tree construction |
 | 1.5 | **Exception serialization** | Structured exception → `exception` object in JSON exporter with configurable `ExceptionDetailLevel` (`Full`, `TypeAndMessage`, `TypeOnly`), depth cap at 5 |
 | 1.6 | **DI integration** | Extension methods on `OpenTelemetryBuilder` to register otel-events components: `.AddOtelEventsJsonExporter()`, `.AddProcessor<OtelEventsCausalityProcessor>()`, `.AddMeter("MyApp.Events.*")` |
 | 1.7 | **Basic schema validation** | Validate YAML schemas at build time — duplicate IDs, missing fields, type mismatches, PII sensitivity annotations |
@@ -125,7 +125,7 @@ Features required for production use and team adoption.
 |---|---------|-------------|
 | 2.1 | **Roslyn analyzers** | Detect `Console.Write*`, direct untyped `ILogger` usage, string interpolation in event messages, PII sensitivity warnings (ALL009) |
 | 2.2 | **Configuration** | `appsettings.json` / env-var configuration for JSON exporter output target, severity filtering, metric batching, `EnvironmentProfile` |
-| 2.3 | **Schema versioning** | `all.v` field, compatibility validation between schema versions |
+| 2.3 | **Schema versioning** | `otel_events.v` field, compatibility validation between schema versions |
 | 2.4 | **Health/readiness events** | Built-in schema for application lifecycle events: startup, ready, degraded, shutdown |
 | 2.5 | **Testing utilities** | `OtelEvents.Testing` package with in-memory `LogRecord` collector and assertion extensions |
 | 2.6 | **OtelEvents.AspNetCore integration pack** | Pre-built ASP.NET Core middleware that auto-emits schema-defined `http.request.received`, `http.request.completed`, `http.request.failed` events with causal scope per request |
@@ -215,8 +215,8 @@ Advanced features for large-scale adoption.
 │  │              OTEL SDK LOG PIPELINE                       │        │
 │  │                                                         │        │
 │  │  ┌─────────────────────┐                                │        │
-│  │  │ AllCausalityProc.   │  Adds all.event_id (UUID v7)   │        │
-│  │  │ (BaseProcessor      │  Adds all.parent_event_id      │        │
+│  │  │ AllCausalityProc.   │  Adds otel_events.event_id (UUID v7)   │        │
+│  │  │ (BaseProcessor      │  Adds otel_events.parent_event_id      │        │
 │  │  │  <LogRecord>)       │  (from AsyncLocal context)     │        │
 │  │  └──────────┬──────────┘                                │        │
 │  │             │                                           │        │
@@ -255,7 +255,7 @@ otel-events adds exactly **four components** to an existing OTEL setup. Everythi
 |---------------|---------------------|-------------|
 | **OtelEvents.Schema** (build-time) | N/A — build-time only | Parses YAML → generates C# code that uses `[LoggerMessage]` + `Meter` + `Counter<T>` + `Histogram<T>` |
 | **OtelEventsJsonExporter** | `BaseExporter<LogRecord>` | Formats `LogRecord`s as AI-optimized single-line JSONL to stdout/file |
-| **OtelEventsCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `all.event_id` (UUID v7) and `all.parent_event_id` attributes to each `LogRecord` |
+| **OtelEventsCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `otel_events.event_id` (UUID v7) and `otel_events.parent_event_id` attributes to each `LogRecord` |
 | **OtelEvents.Analyzers** | Roslyn `DiagnosticAnalyzer` | Compile-time enforcement of schema usage, detects `Console.Write`, validates patterns |
 
 ### What otel-events Does NOT Provide (OTEL Handles It)
@@ -661,7 +661,7 @@ When a value exceeds `maxLength`, it is truncated with the suffix `"…[truncate
 | Metric type validity | `ALL_SCHEMA_008` | Metric types must be: counter, histogram, gauge |
 | Enum non-empty | `ALL_SCHEMA_009` | Enum definitions must have at least one value |
 | Semver version | `ALL_SCHEMA_010` | Schema version must be valid semver |
-| Reserved prefix | `ALL_SCHEMA_011` | Event names and field names must not start with `all.` |
+| Reserved prefix | `ALL_SCHEMA_011` | Event names and field names must not start with `otel_events.` |
 | Unique numeric IDs | `ALL_SCHEMA_012` | Each event `id` must be a unique integer (used as `[LoggerMessage]` EventId) |
 | Meter name valid | `ALL_SCHEMA_013` | Meter name must be a valid .NET identifier (dot-separated) |
 | Sensitivity validity | `ALL_SCHEMA_014` | `sensitivity` must be one of: `public`, `internal`, `pii`, `credential` |
@@ -1114,7 +1114,7 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
 | **No null fields** | If a value is null/absent, the key is **omitted entirely** from the JSON object. No `"field": null`. |
 | **Single line** | Every event is exactly one JSON line terminated by `\n`. No pretty-printing, ever. |
 | **UTC timestamps** | All timestamps are ISO 8601 UTC with microsecond precision: `yyyy-MM-ddTHH:mm:ss.ffffffZ` |
-| **Reserved prefix** | All keys starting with `all.` are reserved for library metadata. User schemas must not use this prefix. At runtime, the exporter strips/renames any incoming `all.*` attributes not set by otel-events components (see §16.4). |
+| **Reserved prefix** | All keys starting with `otel_events.` are reserved for library metadata. User schemas must not use this prefix. At runtime, the exporter strips/renames any incoming `otel_events.*` attributes not set by otel-events components (see §16.4). |
 | **eventId format** | `evt_` prefix + UUID v7 (time-sortable): `evt_{uuid}` |
 | **Event name format** | Lowercase, dot-namespaced: `category.subcategory.action` (e.g., `http.request.completed`) |
 | **Severity string** | Exactly one of: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` — always uppercase |
@@ -1123,8 +1123,8 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
 | **Exception detail level** | Controlled by `ExceptionDetailLevel`: `Full` (method names only — file paths always omitted unless `EnvironmentProfile = Development`), `TypeAndMessage` (Production default), `TypeOnly` (minimal) |
 | **Stack trace** | Array of frame objects: `{ "method": string }`. `file` and `line` fields included **only** when `EnvironmentProfile = Development`. In `Staging`/`Production`, file paths are always omitted to prevent information disclosure (OWASP-A04). |
 | **Encoding** | UTF-8 throughout |
-| **Monotonic sequence** | `all.seq` is a 64-bit integer, monotonically increasing per process lifetime, starting at 1 |
-| **Host/PID metadata** | `all.host` and `all.pid` are **opt-in** (`EmitHostInfo = false` by default). When omitted, these fields do not appear in the envelope. |
+| **Monotonic sequence** | `otel_events.seq` is a 64-bit integer, monotonically increasing per process lifetime, starting at 1 |
+| **Host/PID metadata** | `otel_events.host` and `otel_events.pid` are **opt-in** (`EmitHostInfo = false` by default). When omitted, these fields do not appear in the envelope. |
 | **Attribute value length** | Values exceeding `MaxAttributeValueLength` (default: 4096) are truncated with `"…[truncated]"` suffix |
 | **Message template safety** | Message templates must never interpolate user-controlled PII. The `[LoggerMessage]` source generator handles interpolation — schema authors define field references, not user input. |
 
@@ -1227,7 +1227,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
 
             foreach (var logRecord in batch)
             {
-                // Strip/rename any incoming all.* attributes not set by otel-events components
+                // Strip/rename any incoming otel_events.* attributes not set by otel-events components
                 SanitizeReservedPrefix(logRecord);
 
                 var seq = Interlocked.Increment(ref _seq);
@@ -1362,7 +1362,7 @@ See §17 for OTEL Collector configuration matching the otel-events envelope form
 
 ### Purpose
 
-OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. otel-events' `OtelEventsCausalityProcessor` adds `all.event_id` and `all.parent_event_id` attributes to every `LogRecord`, enabling construction of **causal event trees** within and across services.
+OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. otel-events' `OtelEventsCausalityProcessor` adds `otel_events.event_id` and `otel_events.parent_event_id` attributes to every `LogRecord`, enabling construction of **causal event trees** within and across services.
 
 ### Design
 
@@ -1468,7 +1468,7 @@ All analyzers are delivered as a NuGet analyzer package. They activate automatic
 | **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
 | **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an ALL event with the caught exception. |
 | **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
-| **ALL008** | Error | Reserved prefix usage | Code uses `all.` prefix in field names — this prefix is reserved for library metadata. |
+| **ALL008** | Error | Reserved prefix usage | Code uses `otel_events.` prefix in field names — this prefix is reserved for library metadata. |
 | **ALL009** | Warning | PII field without redaction policy | Schema field with `sensitivity: pii` or `sensitivity: credential` is used in code but no redaction policy is configured in `OtelEventsJsonExporterOptions`. Configure `EnvironmentProfile` or explicit `RedactPatterns`. |
 
 ### Analyzer Configuration
@@ -1553,7 +1553,7 @@ Console.WriteLine(capturedOutput);
 | Event ID generation | UUID v7 format, `evt_` prefix, unique across calls, time-sortable |
 | Parent event ID | `OtelEventsCausalityContext` sets/reads `parentEventId` via `AsyncLocal` |
 | Scope disposal | `CausalityScope` restores previous parent on dispose |
-| Processor behavior | `OtelEventsCausalityProcessor.OnEnd` adds `all.event_id` attribute to `LogRecord` |
+| Processor behavior | `OtelEventsCausalityProcessor.OnEnd` adds `otel_events.event_id` attribute to `LogRecord` |
 | Thread safety | Concurrent event ID generation produces no duplicates |
 
 #### Unit Tests (OtelEvents.Schema — Code Generation)
@@ -1782,10 +1782,10 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `all.exporter.json.records_exported` | Counter | Total LogRecords exported by OtelEventsJsonExporter |
-| `all.exporter.json.export_errors` | Counter | Errors during JSON export |
-| `all.exporter.json.export_duration` | Histogram | Time to export a batch of LogRecords |
-| `all.causality.events_processed` | Counter | Total LogRecords processed by OtelEventsCausalityProcessor |
+| `otel_events.exporter.json.records_exported` | Counter | Total LogRecords exported by OtelEventsJsonExporter |
+| `otel_events.exporter.json.export_errors` | Counter | Errors during JSON export |
+| `otel_events.exporter.json.export_duration` | Histogram | Time to export a batch of LogRecords |
+| `otel_events.causality.events_processed` | Counter | Total LogRecords processed by OtelEventsCausalityProcessor |
 
 ---
 
@@ -1869,7 +1869,7 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 | **Codegen** | Source generator that creates C# code from YAML schemas — generates `[LoggerMessage]` methods + `Meter` instruments |
 | **LogRecord** | OTEL's native log data type (`OpenTelemetry.Logs.LogRecord`). otel-events generates code that emits `LogRecord`s via `ILogger`. |
 | **JSONL** | JSON Lines — one JSON object per line, newline-delimited |
-| **Causal tree** | Directed graph of events linked by `all.parent_event_id` → `all.event_id` relationships |
+| **Causal tree** | Directed graph of events linked by `otel_events.parent_event_id` → `otel_events.event_id` relationships |
 | **`[LoggerMessage]`** | .NET source generator attribute that creates high-performance, zero-alloc `ILogger` extension methods |
 
 ## Appendix B: Decision Record Summary
@@ -2190,10 +2190,10 @@ This section addresses security findings from the Security Guardian review and e
 |--------|--------|------------|
 | **PII leakage in logs** | User-Agent, Client IP, user IDs emitted to log storage | Sensitivity classification (§6), default `false` for PII capture, `EnvironmentProfile` redaction |
 | **Information disclosure via exceptions** | Stack traces expose file paths, internal class names, line numbers | `ExceptionDetailLevel` — `TypeAndMessage` in Production (no stack traces) |
-| **Information disclosure via metadata** | `all.host` and `all.pid` expose infrastructure details | Opt-in only (`EmitHostInfo = false` default) |
+| **Information disclosure via metadata** | `otel_events.host` and `otel_events.pid` expose infrastructure details | Opt-in only (`EmitHostInfo = false` default) |
 | **Third-party library PII leakage** | Non-otel-events `ILogger` calls may include connection strings, tokens, PII | `AttributeAllowlist`/`AttributeDenylist`, `RedactPatterns` regex filtering |
 | **Schema injection / DoS** | Malicious YAML files with excessive size, nesting, or YAML bombs | Safe YAML loading, resource limits (1 MB, 500 events, 50 fields, depth 20) |
-| **Reserved prefix hijacking** | Application code setting `all.*` attributes to spoof metadata | Runtime stripping of non-otel-events `all.*` attributes in exporter |
+| **Reserved prefix hijacking** | Application code setting `otel_events.*` attributes to spoof metadata | Runtime stripping of non-otel-events `otel_events.*` attributes in exporter |
 | **Credential exposure in field values** | Connection strings, API keys, bearer tokens in attribute values | `sensitivity: credential` classification, regex-based `RedactPatterns`, defense-in-depth value sanitization |
 | **Unbounded attribute values** | Extremely long string values causing memory pressure or log bloat | `MaxAttributeValueLength` (default: 4096), per-field `maxLength` |
 | **AsyncLocal trust in causality** | `OtelEventsCausalityContext` uses `AsyncLocal` — any code in the async flow can set `parentEventId` | Documented trust assumption: causal context is set by trusted code within the process. Cross-process causality requires trace context (OTEL propagation), not `AsyncLocal`. |
@@ -2240,11 +2240,11 @@ logging.AddOtelEventsJsonExporter(options =>
 
 ### 16.4 Reserved Prefix Runtime Enforcement
 
-At build time, the schema validator rejects field names starting with `all.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
+At build time, the schema validator rejects field names starting with `otel_events.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
 
 1. During `Export()`, iterate over `LogRecord.Attributes`.
-2. Any attribute with key starting with `all.` that was NOT set by `OtelEventsCausalityProcessor` or `OtelEventsJsonExporter` itself is **stripped** (removed from the exported envelope).
-3. Increment `all.exporter.json.reserved_prefix_stripped` counter for each occurrence.
+2. Any attribute with key starting with `otel_events.` that was NOT set by `OtelEventsCausalityProcessor` or `OtelEventsJsonExporter` itself is **stripped** (removed from the exported envelope).
+3. Increment `otel_events.exporter.json.reserved_prefix_stripped` counter for each occurrence.
 4. This prevents application code or third-party libraries from spoofing otel-events metadata fields.
 
 ### 16.5 Defense-in-Depth Value Sanitization
@@ -2276,7 +2276,7 @@ otel-events does not enforce specific regulatory requirements but provides the m
 | **GDPR** (EU) | `sensitivity: pii` classification → redaction in Production; `CaptureClientIp`/`CaptureUserAgent` default `false`; documented data retention is the responsibility of the log storage backend |
 | **CCPA** (California) | Same PII controls as GDPR apply |
 | **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; otel-events does not provide encryption at rest (log storage responsibility) |
-| **SOC 2** | Audit trail via `all.event_id`, `all.seq`, `traceId`; `all.host`/`all.pid` opt-in for attribution; SBOM generation in CI |
+| **SOC 2** | Audit trail via `otel_events.event_id`, `otel_events.seq`, `traceId`; `otel_events.host`/`otel_events.pid` opt-in for attribution; SBOM generation in CI |
 
 **Decision (OQ-PG-03):** otel-events provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. otel-events' defaults are privacy-preserving (PII redacted in Production).
 

@@ -7,7 +7,7 @@ namespace OtelEvents.Causality.Tests;
 
 /// <summary>
 /// Tests for OtelEventsCausalityProcessor — BaseProcessor that enriches LogRecords
-/// with all.event_id and all.parent_event_id attributes.
+/// with otel_events.event_id and otel_events.parent_event_id attributes.
 /// </summary>
 public class OtelEventsCausalityProcessorTests : IDisposable
 {
@@ -46,7 +46,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         Assert.Single(records);
         Assert.True(
             records[0].Attributes.ContainsKey("otel_events.event_id"),
-            "LogRecord should have 'all.event_id' attribute");
+            "LogRecord should have 'otel_events.event_id' attribute");
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class OtelEventsCausalityProcessorTests : IDisposable
         // Act — emit a structured log with parameters
         _logger.LogInformation("Order {OrderId} processed for {Amount}", "ORD-123", 42.50);
 
-        // Assert — the all.event_id is added alongside existing structured attributes
+        // Assert — the otel_events.event_id is added alongside existing structured attributes
         var record = _exporter.GetRecords()[0];
         Assert.True(record.Attributes.ContainsKey("otel_events.event_id"));
         // Existing structured params should still be there

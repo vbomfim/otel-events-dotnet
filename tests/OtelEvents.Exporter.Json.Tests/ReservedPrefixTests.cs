@@ -42,7 +42,7 @@ public sealed class ReservedPrefixTests
 
         var doc = harness.ExportSingle(lr);
 
-        // all.event_id is an allowed prefix — extracted to top-level eventId
+        // otel_events.event_id is an allowed prefix — extracted to top-level eventId
         Assert.Equal("evt_abc123", doc.RootElement.GetProperty("eventId").GetString());
     }
 
