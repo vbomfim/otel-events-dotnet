@@ -87,6 +87,12 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
                 durationMs: sw.Elapsed.TotalMilliseconds,
                 contentLength: context.Response.ContentLength,
                 requestId: context.TraceIdentifier);
+
+            // Emit supplemental infrastructure events based on response status code
+            if (_options.EmitInfrastructureEvents)
+            {
+                EmitResponseInfrastructureEvents(context);
+            }
         }
         catch (Exception ex)
         {
@@ -105,6 +111,12 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
                 errorType: ex.GetType().Name,
                 requestId: context.TraceIdentifier,
                 exception: ex);
+
+            // Emit supplemental infrastructure events for exceptions
+            if (_options.EmitInfrastructureEvents)
+            {
+                EmitExceptionInfrastructureEvents(context, ex, sw.Elapsed.TotalMilliseconds);
+            }
 
             throw; // Re-throw — middleware observes, never swallows
         }
@@ -228,5 +240,66 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
         // We need a stable event ID for the causal scope root.
         // Generate a new UUID v7 event ID for the causal scope.
         return Uuid7.FormatEventId();
+    }
+
+    // ─── Infrastructure Event Helpers ───────────────────────────────────
+
+    /// <summary>
+    /// Emits supplemental infrastructure events based on the HTTP response status code.
+    /// Handles 401/403 (auth failed) and 429 (throttled) responses.
+    /// Defensive: never throws — wrapped in try-catch.
+    /// </summary>
+    private void EmitResponseInfrastructureEvents(HttpContext context)
+    {
+        try
+        {
+            var statusCode = context.Response.StatusCode;
+
+            if (statusCode is 401 or 403)
+            {
+                HttpInfrastructureEvents.EmitAuthFailed(
+                    _logger,
+                    httpStatusCode: statusCode,
+                    wwwAuthenticateHeader: context.Response.Headers["WWW-Authenticate"].ToString(),
+                    authorizationHeader: context.Request.Headers.Authorization.ToString());
+            }
+            else if (statusCode == 429)
+            {
+                HttpInfrastructureEvents.EmitThrottled(
+                    _logger,
+                    httpStatusCode: statusCode,
+                    retryAfterHeader: context.Response.Headers["Retry-After"].ToString(),
+                    rateLimitHeader: context.Response.Headers["X-RateLimit-Limit"].ToString());
+            }
+        }
+        catch
+        {
+            // Defensive: infrastructure event emission must NEVER throw
+        }
+    }
+
+    /// <summary>
+    /// Emits supplemental infrastructure events for exceptions.
+    /// Only emits http.connection.failed for HttpRequestException.
+    /// Defensive: never throws — wrapped in try-catch.
+    /// </summary>
+    private void EmitExceptionInfrastructureEvents(HttpContext context, Exception exception, double durationMs)
+    {
+        try
+        {
+            if (exception is HttpRequestException httpEx)
+            {
+                var endpoint = GetRawPath(context);
+                HttpInfrastructureEvents.EmitConnectionFailed(
+                    _logger,
+                    endpoint: endpoint,
+                    durationMs: durationMs,
+                    exception: httpEx);
+            }
+        }
+        catch
+        {
+            // Defensive: infrastructure event emission must NEVER throw
+        }
     }
 }

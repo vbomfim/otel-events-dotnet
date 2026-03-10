@@ -59,6 +59,38 @@ fields:
     description: "Exception type name for failed requests"
     index: true
 
+  failureReason:
+    type: string
+    description: "Connection failure reason (ConnectionRefused, DnsResolutionFailed, TlsHandshakeFailed, Timeout, Unknown)"
+    index: true
+
+  errorMessage:
+    type: string
+    description: "Error message from the exception"
+
+  port:
+    type: int
+    description: "Target port number, when available"
+
+  authScheme:
+    type: string
+    description: "Authentication scheme (Bearer, SAS, SharedKey, Anonymous, Unknown)"
+    index: true
+
+  identityHint:
+    type: string
+    description: "First 8 characters of SHA-256 hash of the credential — NEVER raw credential"
+    sensitivity: pii_hash
+
+  retryAfterMs:
+    type: long
+    description: "Retry-After value in milliseconds, parsed from header, clamped to [0, 3600000]"
+    unit: "ms"
+
+  currentLimit:
+    type: string
+    description: "Current rate limit value from X-RateLimit-Limit header"
+
 events:
   http.request.received:
     id: 10001
@@ -184,3 +216,95 @@ events:
       - http
       - aspnetcore
       - error
+
+  http.connection.failed:
+    id: 10004
+    severity: ERROR
+    description: "An HTTP connection failed (connection refused, DNS resolution failed, TLS handshake failed, or timeout)."
+    message: "HTTP connection to {endpoint} failed after {durationMs}ms: {failureReason}"
+    fields:
+      endpoint:
+        type: string
+        description: "Target endpoint URL or path"
+        required: true
+      durationMs:
+        ref: durationMs
+        required: true
+      errorType:
+        ref: errorType
+        required: true
+      errorMessage:
+        ref: errorMessage
+        required: true
+      failureReason:
+        ref: failureReason
+        required: true
+      port:
+        ref: port
+        required: false
+    metrics:
+      otel.http.connection.failed.count:
+        type: counter
+        unit: "errors"
+        description: "Total HTTP connection failures"
+        labels:
+          - failureReason
+    tags:
+      - http
+      - aspnetcore
+      - infrastructure
+      - error
+
+  http.auth.failed:
+    id: 10005
+    severity: ERROR
+    description: "An HTTP request failed authentication or authorization (401/403 response)."
+    message: "HTTP authentication failed with {httpStatusCode} using {authScheme}"
+    fields:
+      httpStatusCode:
+        ref: httpStatusCode
+        required: true
+      authScheme:
+        ref: authScheme
+        required: true
+      identityHint:
+        ref: identityHint
+        required: false
+    metrics:
+      otel.http.auth.failed.count:
+        type: counter
+        unit: "errors"
+        description: "Total HTTP authentication failures"
+        labels:
+          - authScheme
+          - httpStatusCode
+    tags:
+      - http
+      - aspnetcore
+      - infrastructure
+      - security
+
+  http.throttled:
+    id: 10006
+    severity: WARN
+    description: "An HTTP request was throttled (429 Too Many Requests response)."
+    message: "HTTP request throttled with {httpStatusCode}, retry after {retryAfterMs}ms"
+    fields:
+      httpStatusCode:
+        ref: httpStatusCode
+        required: true
+      retryAfterMs:
+        ref: retryAfterMs
+        required: false
+      currentLimit:
+        ref: currentLimit
+        required: false
+    metrics:
+      otel.http.throttled.count:
+        type: counter
+        unit: "responses"
+        description: "Total HTTP throttle responses"
+    tags:
+      - http
+      - aspnetcore
+      - infrastructure
