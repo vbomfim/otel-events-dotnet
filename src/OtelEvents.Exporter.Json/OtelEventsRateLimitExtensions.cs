@@ -32,7 +32,7 @@ public static class OtelEventsRateLimitExtensions
     /// // Wrapping an export processor with rate limiting:
     /// var exporter = new OtelEventsJsonExporter(exporterOptions);
     /// var exportProcessor = new SimpleExportProcessor&lt;LogRecord&gt;(exporter);
-    /// builder.AddAllRateLimiter(
+    /// builder.AddOtelEventsRateLimiter(
     ///     configure: opts =>
     ///     {
     ///         opts.DefaultMaxEventsPerWindow = 1000;
@@ -41,7 +41,7 @@ public static class OtelEventsRateLimitExtensions
     ///     innerProcessor: exportProcessor);
     /// </code>
     /// </example>
-    public static LoggerProviderBuilder AddAllRateLimiter(
+    public static LoggerProviderBuilder AddOtelEventsRateLimiter(
         this LoggerProviderBuilder builder,
         Action<OtelEventsRateLimitOptions>? configure,
         BaseProcessor<LogRecord> innerProcessor)

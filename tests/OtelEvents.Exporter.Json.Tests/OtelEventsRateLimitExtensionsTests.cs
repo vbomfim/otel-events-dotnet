@@ -12,10 +12,10 @@ namespace OtelEvents.Exporter.Json.Tests;
 /// </summary>
 public sealed class OtelEventsRateLimitExtensionsTests
 {
-    // ─── AddAllRateLimiter with inner processor ─────────────────────
+    // ─── AddOtelEventsRateLimiter with inner processor ─────────────────────
 
     [Fact]
-    public void AddAllRateLimiter_WithInnerProcessor_RateLimitsCorrectly()
+    public void AddOtelEventsRateLimiter_WithInnerProcessor_RateLimitsCorrectly()
     {
         // Arrange — full OTEL pipeline with rate limiter wrapping the exporter
         var exportedRecords = new List<LogLevel>();
@@ -28,7 +28,7 @@ public sealed class OtelEventsRateLimitExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllRateLimiter(
+                builder.AddOtelEventsRateLimiter(
                     configure: opts =>
                     {
                         opts.DefaultMaxEventsPerWindow = 2;
@@ -54,7 +54,7 @@ public sealed class OtelEventsRateLimitExtensionsTests
     }
 
     [Fact]
-    public void AddAllRateLimiter_DefaultConfig_NoRateLimiting()
+    public void AddOtelEventsRateLimiter_DefaultConfig_NoRateLimiting()
     {
         // Arrange — pipeline with default options (unlimited)
         var exportedRecords = new List<LogLevel>();
@@ -67,7 +67,7 @@ public sealed class OtelEventsRateLimitExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllRateLimiter(
+                builder.AddOtelEventsRateLimiter(
                     configure: null,
                     innerProcessor: exportProcessor);
             });
@@ -88,7 +88,7 @@ public sealed class OtelEventsRateLimitExtensionsTests
     }
 
     [Fact]
-    public void AddAllRateLimiter_WithEventLimits_RateLimitsPerEventName()
+    public void AddOtelEventsRateLimiter_WithEventLimits_RateLimitsPerEventName()
     {
         // Arrange — pipeline with per-event limits
         var exportedRecords = new List<LogLevel>();
@@ -101,7 +101,7 @@ public sealed class OtelEventsRateLimitExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllRateLimiter(
+                builder.AddOtelEventsRateLimiter(
                     configure: opts =>
                     {
                         opts.EventLimits["limited.event"] = 1;
@@ -127,18 +127,18 @@ public sealed class OtelEventsRateLimitExtensionsTests
     // ─── Null guard tests ────────────────────────────────────────────
 
     [Fact]
-    public void AddAllRateLimiter_NullBuilder_ThrowsArgumentNullException()
+    public void AddOtelEventsRateLimiter_NullBuilder_ThrowsArgumentNullException()
     {
         LoggerProviderBuilder? nullBuilder = null;
 
         Assert.Throws<ArgumentNullException>(() =>
-            nullBuilder!.AddAllRateLimiter(
+            nullBuilder!.AddOtelEventsRateLimiter(
                 configure: opts => opts.DefaultMaxEventsPerWindow = 10,
                 innerProcessor: new InMemoryLogRecordProcessor()));
     }
 
     [Fact]
-    public void AddAllRateLimiter_NullInnerProcessor_ThrowsArgumentNullException()
+    public void AddOtelEventsRateLimiter_NullInnerProcessor_ThrowsArgumentNullException()
     {
         // Verify via constructor — the extension delegates to it
         Assert.Throws<ArgumentNullException>(() =>

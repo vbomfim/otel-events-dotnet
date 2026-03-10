@@ -33,12 +33,12 @@ public static class OtelEventsSeverityFilterExtensions
     /// // Wrapping an export processor with severity filtering:
     /// var exporter = new OtelEventsJsonExporter(exporterOptions);
     /// var exportProcessor = new SimpleExportProcessor&lt;LogRecord&gt;(exporter);
-    /// builder.AddAllSeverityFilter(
+    /// builder.AddOtelEventsSeverityFilter(
     ///     configure: opts => opts.MinSeverity = LogLevel.Warning,
     ///     innerProcessor: exportProcessor);
     /// </code>
     /// </example>
-    public static LoggerProviderBuilder AddAllSeverityFilter(
+    public static LoggerProviderBuilder AddOtelEventsSeverityFilter(
         this LoggerProviderBuilder builder,
         Action<OtelEventsSeverityFilterOptions>? configure,
         BaseProcessor<LogRecord> innerProcessor)
@@ -86,10 +86,10 @@ public static class OtelEventsSeverityFilterExtensions
     /// //   }
     /// // }
     ///
-    /// builder.AddAllSeverityFilter(configuration, exportProcessor);
+    /// builder.AddOtelEventsSeverityFilter(configuration, exportProcessor);
     /// </code>
     /// </example>
-    public static LoggerProviderBuilder AddAllSeverityFilter(
+    public static LoggerProviderBuilder AddOtelEventsSeverityFilter(
         this LoggerProviderBuilder builder,
         IConfiguration configuration,
         BaseProcessor<LogRecord> innerProcessor)

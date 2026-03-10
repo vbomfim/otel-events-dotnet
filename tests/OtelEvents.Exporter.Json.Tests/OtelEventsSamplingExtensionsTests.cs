@@ -12,10 +12,10 @@ namespace OtelEvents.Exporter.Json.Tests;
 /// </summary>
 public sealed class OtelEventsSamplingExtensionsTests
 {
-    // ─── AddAllSampler with inner processor ──────────────────────────
+    // ─── AddOtelEventsSampler with inner processor ──────────────────────────
 
     [Fact]
-    public void AddAllSampler_Rate1_AllEventsPassThrough()
+    public void AddOtelEventsSampler_Rate1_AllEventsPassThrough()
     {
         // Arrange — full OTEL pipeline with sampler wrapping the exporter
         var exportedRecords = new List<LogLevel>();
@@ -28,7 +28,7 @@ public sealed class OtelEventsSamplingExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSampler(
+                builder.AddOtelEventsSampler(
                     configure: opts =>
                     {
                         opts.DefaultSamplingRate = 1.0;
@@ -52,7 +52,7 @@ public sealed class OtelEventsSamplingExtensionsTests
     }
 
     [Fact]
-    public void AddAllSampler_Rate0_AllEventsDropped()
+    public void AddOtelEventsSampler_Rate0_AllEventsDropped()
     {
         // Arrange
         var exportedRecords = new List<LogLevel>();
@@ -65,7 +65,7 @@ public sealed class OtelEventsSamplingExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSampler(
+                builder.AddOtelEventsSampler(
                     configure: opts =>
                     {
                         opts.DefaultSamplingRate = 0.0;
@@ -89,7 +89,7 @@ public sealed class OtelEventsSamplingExtensionsTests
     }
 
     [Fact]
-    public void AddAllSampler_DefaultConfig_AllEventsPass()
+    public void AddOtelEventsSampler_DefaultConfig_AllEventsPass()
     {
         // Arrange — pipeline with default options (rate = 1.0)
         var exportedRecords = new List<LogLevel>();
@@ -102,7 +102,7 @@ public sealed class OtelEventsSamplingExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSampler(
+                builder.AddOtelEventsSampler(
                     configure: null,
                     innerProcessor: exportProcessor);
             });
@@ -123,7 +123,7 @@ public sealed class OtelEventsSamplingExtensionsTests
     }
 
     [Fact]
-    public void AddAllSampler_TailSampling_ErrorsAlwaysPass()
+    public void AddOtelEventsSampler_TailSampling_ErrorsAlwaysPass()
     {
         // Arrange — tail sampling with rate=0 but errors always sampled
         var exportedRecords = new List<LogLevel>();
@@ -136,7 +136,7 @@ public sealed class OtelEventsSamplingExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSampler(
+                builder.AddOtelEventsSampler(
                     configure: opts =>
                     {
                         opts.Strategy = OtelEventsSamplingStrategy.Tail;
@@ -165,7 +165,7 @@ public sealed class OtelEventsSamplingExtensionsTests
     }
 
     [Fact]
-    public void AddAllSampler_WithPerEventRates_OverridesDefault()
+    public void AddOtelEventsSampler_WithPerEventRates_OverridesDefault()
     {
         // Arrange
         var exportedRecords = new List<LogLevel>();
@@ -178,7 +178,7 @@ public sealed class OtelEventsSamplingExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSampler(
+                builder.AddOtelEventsSampler(
                     configure: opts =>
                     {
                         opts.DefaultSamplingRate = 1.0; // pass by default
@@ -205,18 +205,18 @@ public sealed class OtelEventsSamplingExtensionsTests
     // ─── Null guard tests ────────────────────────────────────────────
 
     [Fact]
-    public void AddAllSampler_NullBuilder_ThrowsArgumentNullException()
+    public void AddOtelEventsSampler_NullBuilder_ThrowsArgumentNullException()
     {
         LoggerProviderBuilder? nullBuilder = null;
 
         Assert.Throws<ArgumentNullException>(() =>
-            nullBuilder!.AddAllSampler(
+            nullBuilder!.AddOtelEventsSampler(
                 configure: opts => opts.DefaultSamplingRate = 0.5,
                 innerProcessor: new InMemoryLogRecordProcessor()));
     }
 
     [Fact]
-    public void AddAllSampler_NullInnerProcessor_ThrowsArgumentNullException()
+    public void AddOtelEventsSampler_NullInnerProcessor_ThrowsArgumentNullException()
     {
         // Verify via constructor — the extension delegates to it
         Assert.Throws<ArgumentNullException>(() =>

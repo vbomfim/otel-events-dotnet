@@ -324,7 +324,7 @@ public sealed class ConfigurationBindingTests
     }
 
     [Fact]
-    public void AddAllSeverityFilter_WithConfiguration_RegistersPipeline()
+    public void AddOtelEventsSeverityFilter_WithConfiguration_RegistersPipeline()
     {
         // Arrange
         var config = BuildConfig(("OtelEvents:Filter:MinSeverity", "Warning"));
@@ -338,7 +338,7 @@ public sealed class ConfigurationBindingTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSeverityFilter(config, exportProcessor);
+                builder.AddOtelEventsSeverityFilter(config, exportProcessor);
             });
 
         using var sp = services.BuildServiceProvider();
@@ -370,14 +370,14 @@ public sealed class ConfigurationBindingTests
     }
 
     [Fact]
-    public void AddAllSeverityFilter_NullConfiguration_ThrowsArgumentNullException()
+    public void AddOtelEventsSeverityFilter_NullConfiguration_ThrowsArgumentNullException()
     {
         var services = new ServiceCollection();
         services.AddOpenTelemetry()
             .WithLogging(builder =>
             {
                 Assert.Throws<ArgumentNullException>(() =>
-                    builder.AddAllSeverityFilter(
+                    builder.AddOtelEventsSeverityFilter(
                         (IConfiguration)null!,
                         new InMemoryLogRecordProcessor()));
             });
@@ -394,13 +394,13 @@ public sealed class ConfigurationBindingTests
     }
 
     [Fact]
-    public void AddAllSeverityFilter_NullBuilder_WithConfiguration_ThrowsArgumentNullException()
+    public void AddOtelEventsSeverityFilter_NullBuilder_WithConfiguration_ThrowsArgumentNullException()
     {
         LoggerProviderBuilder? nullBuilder = null;
         var config = BuildConfig();
 
         Assert.Throws<ArgumentNullException>(() =>
-            nullBuilder!.AddAllSeverityFilter(config, new InMemoryLogRecordProcessor()));
+            nullBuilder!.AddOtelEventsSeverityFilter(config, new InMemoryLogRecordProcessor()));
     }
 
     // ─── Full Configuration Scenario ────────────────────────────────

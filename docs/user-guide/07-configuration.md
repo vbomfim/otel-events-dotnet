@@ -29,14 +29,14 @@ otel-events uses two primary configuration sections under the `All` root key:
 
 ### How Binding Works
 
-The `AddOtelEventsJsonExporter` and `AddAllSeverityFilter` extension methods accept an `IConfiguration` instance and call `.Bind()` on the appropriate section:
+The `AddOtelEventsJsonExporter` and `AddOtelEventsSeverityFilter` extension methods accept an `IConfiguration` instance and call `.Bind()` on the appropriate section:
 
 ```csharp
 // Exporter — binds "OtelEvents:Exporter" section
 builder.AddOtelEventsJsonExporter(configuration);
 
 // Filter — binds "OtelEvents:Filter" section
-builder.AddAllSeverityFilter(configuration, innerProcessor);
+builder.AddOtelEventsSeverityFilter(configuration, innerProcessor);
 ```
 
 Under the hood, this reads the section and maps JSON properties to the options class:
@@ -192,7 +192,7 @@ internal ExceptionDetailLevel ResolvedExceptionDetailLevel =>
 
 ```csharp
 // Programmatic: per-event overrides
-builder.AddAllSeverityFilter(
+builder.AddOtelEventsSeverityFilter(
     configure: opts =>
     {
         opts.MinSeverity = LogLevel.Warning;
@@ -230,7 +230,7 @@ builder.AddAllSeverityFilter(
 ### Example
 
 ```csharp
-builder.AddAllRateLimiter(
+builder.AddOtelEventsRateLimiter(
     configure: opts =>
     {
         opts.DefaultMaxEventsPerWindow = 1000;
@@ -267,7 +267,7 @@ builder.AddAllRateLimiter(
 ### Example: Tail Sampling with Per-Event Rates
 
 ```csharp
-builder.AddAllSampler(
+builder.AddOtelEventsSampler(
     configure: opts =>
     {
         opts.Strategy = OtelEventsSamplingStrategy.Tail;
@@ -321,10 +321,10 @@ builder.Services.AddOpenTelemetry()
         // Severity filter — bound from appsettings.json
         var exportProcessor = new SimpleLogRecordExportProcessor(
             new OtelEventsJsonExporter(new OtelEventsJsonExporterOptions()));
-        logging.AddAllSeverityFilter(builder.Configuration, exportProcessor);
+        logging.AddOtelEventsSeverityFilter(builder.Configuration, exportProcessor);
 
         // Rate limiting — programmatic only
-        logging.AddAllRateLimiter(
+        logging.AddOtelEventsRateLimiter(
             opts =>
             {
                 opts.DefaultMaxEventsPerWindow = 1000;
@@ -333,7 +333,7 @@ builder.Services.AddOpenTelemetry()
             exportProcessor);
 
         // Sampling — programmatic only
-        logging.AddAllSampler(
+        logging.AddOtelEventsSampler(
             opts =>
             {
                 opts.Strategy = OtelEventsSamplingStrategy.Tail;

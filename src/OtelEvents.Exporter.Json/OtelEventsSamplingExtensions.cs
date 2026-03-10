@@ -32,7 +32,7 @@ public static class OtelEventsSamplingExtensions
     /// // Head sampling at 10% rate:
     /// var exporter = new OtelEventsJsonExporter(exporterOptions);
     /// var exportProcessor = new SimpleExportProcessor&lt;LogRecord&gt;(exporter);
-    /// builder.AddAllSampler(
+    /// builder.AddOtelEventsSampler(
     ///     configure: opts =>
     ///     {
     ///         opts.Strategy = OtelEventsSamplingStrategy.Head;
@@ -41,7 +41,7 @@ public static class OtelEventsSamplingExtensions
     ///     innerProcessor: exportProcessor);
     ///
     /// // Tail sampling — always sample errors, 10% of successes:
-    /// builder.AddAllSampler(
+    /// builder.AddOtelEventsSampler(
     ///     configure: opts =>
     ///     {
     ///         opts.Strategy = OtelEventsSamplingStrategy.Tail;
@@ -51,7 +51,7 @@ public static class OtelEventsSamplingExtensions
     ///     innerProcessor: exportProcessor);
     /// </code>
     /// </example>
-    public static LoggerProviderBuilder AddAllSampler(
+    public static LoggerProviderBuilder AddOtelEventsSampler(
         this LoggerProviderBuilder builder,
         Action<OtelEventsSamplingOptions>? configure,
         BaseProcessor<LogRecord> innerProcessor)

@@ -14,7 +14,7 @@ At high throughput, some event categories can flood the pipeline. The `OtelEvent
 builder.Services.AddOpenTelemetry()
     .WithLogging(logging =>
     {
-        logging.AddAllRateLimiter(options =>
+        logging.AddOtelEventsRateLimiter(options =>
         {
             // Global default: max 1000 events per window across all categories
             options.DefaultMaxEventsPerWindow = 1000;
@@ -57,7 +57,7 @@ Probabilistic sampling reduces event volume while preserving statistical propert
 Decides **before processing** based on pure probability:
 
 ```csharp
-logging.AddAllSampler(options =>
+logging.AddOtelEventsSampler(options =>
 {
     options.Strategy = OtelEventsSamplingStrategy.Head;
     options.DefaultSamplingRate = 0.1;   // Sample 10% of all events
@@ -77,7 +77,7 @@ logging.AddAllSampler(options =>
 Error-aware sampling — **always keeps errors**, applies probability to non-errors:
 
 ```csharp
-logging.AddAllSampler(options =>
+logging.AddOtelEventsSampler(options =>
 {
     options.Strategy = OtelEventsSamplingStrategy.Tail;
     options.DefaultSamplingRate = 0.1;        // Sample 10% of non-error events

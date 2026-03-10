@@ -291,7 +291,7 @@ builder.Logging.AddFilter<OpenTelemetryLoggerProvider>(
     // ↑ Drops DEBUG-level DB events
 
 // Or use otel-events specific rate limiting:
-logging.AddAllRateLimiter(options =>
+logging.AddOtelEventsRateLimiter(options =>
 {
     options.EventLimits = new Dictionary<string, int>
     {

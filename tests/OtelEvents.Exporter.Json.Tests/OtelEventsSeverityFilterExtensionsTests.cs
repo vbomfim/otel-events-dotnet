@@ -12,10 +12,10 @@ namespace OtelEvents.Exporter.Json.Tests;
 /// </summary>
 public sealed class OtelEventsSeverityFilterExtensionsTests
 {
-    // ─── AddAllSeverityFilter with inner processor ───────────────────
+    // ─── AddOtelEventsSeverityFilter with inner processor ───────────────────
 
     [Fact]
-    public void AddAllSeverityFilter_WithInnerProcessor_FiltersCorrectly()
+    public void AddOtelEventsSeverityFilter_WithInnerProcessor_FiltersCorrectly()
     {
         // Arrange — full OTEL pipeline with filter wrapping the exporter
         var exportedRecords = new List<LogLevel>();
@@ -28,7 +28,7 @@ public sealed class OtelEventsSeverityFilterExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSeverityFilter(
+                builder.AddOtelEventsSeverityFilter(
                     configure: filterOpts =>
                     {
                         filterOpts.MinSeverity = LogLevel.Warning;
@@ -53,7 +53,7 @@ public sealed class OtelEventsSeverityFilterExtensionsTests
     }
 
     [Fact]
-    public void AddAllSeverityFilter_DefaultConfig_AppliesInformationThreshold()
+    public void AddOtelEventsSeverityFilter_DefaultConfig_AppliesInformationThreshold()
     {
         // Arrange — pipeline with default filter options wrapping exporter
         var exportedRecords = new List<LogLevel>();
@@ -66,7 +66,7 @@ public sealed class OtelEventsSeverityFilterExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSeverityFilter(
+                builder.AddOtelEventsSeverityFilter(
                     configure: null,
                     innerProcessor: exportProcessor);
             });
@@ -88,7 +88,7 @@ public sealed class OtelEventsSeverityFilterExtensionsTests
     }
 
     [Fact]
-    public void AddAllSeverityFilter_WithEventNameOverrides_FiltersPerEventName()
+    public void AddOtelEventsSeverityFilter_WithEventNameOverrides_FiltersPerEventName()
     {
         // Arrange — pipeline with event name overrides
         var exportedRecords = new List<LogLevel>();
@@ -101,7 +101,7 @@ public sealed class OtelEventsSeverityFilterExtensionsTests
                 var exporter = new InMemoryLogExporter(exportedRecords);
                 var exportProcessor = new SimpleLogRecordExportProcessor(exporter);
 
-                builder.AddAllSeverityFilter(
+                builder.AddOtelEventsSeverityFilter(
                     configure: filterOpts =>
                     {
                         filterOpts.MinSeverity = LogLevel.Warning;
@@ -128,18 +128,18 @@ public sealed class OtelEventsSeverityFilterExtensionsTests
     // ─── Null guard tests ────────────────────────────────────────────
 
     [Fact]
-    public void AddAllSeverityFilter_NullBuilder_ThrowsArgumentNullException()
+    public void AddOtelEventsSeverityFilter_NullBuilder_ThrowsArgumentNullException()
     {
         LoggerProviderBuilder? nullBuilder = null;
 
         Assert.Throws<ArgumentNullException>(() =>
-            nullBuilder!.AddAllSeverityFilter(
+            nullBuilder!.AddOtelEventsSeverityFilter(
                 configure: opts => opts.MinSeverity = LogLevel.Warning,
                 innerProcessor: new InMemoryLogRecordProcessor()));
     }
 
     [Fact]
-    public void AddAllSeverityFilter_NullInnerProcessor_ThrowsArgumentNullException()
+    public void AddOtelEventsSeverityFilter_NullInnerProcessor_ThrowsArgumentNullException()
     {
         // Verify via constructor — the extension delegates to it
         Assert.Throws<ArgumentNullException>(() =>

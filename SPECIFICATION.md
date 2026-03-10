@@ -45,8 +45,8 @@ Projects already using the OpenTelemetry .NET SDK can **adopt otel-events increm
 | v1 (Standalone) | v2 (OTEL Extension) |
 |-----------------|---------------------|
 | Custom `EventData` struct | OTEL `LogRecord` (via `[LoggerMessage]` source generator) |
-| Custom `IAllSink` pipeline | OTEL's native processor/exporter pipeline |
-| Custom `IAllEvents` interface | Extension methods on `ILogger<T>` |
+| Custom `IOtelEventsSink` pipeline | OTEL's native processor/exporter pipeline |
+| Custom `IOtelEvents` interface | Extension methods on `ILogger<T>` |
 | JSON sink (parallel to OTEL) | JSON exporter (plugs INTO OTEL pipeline) |
 | Custom OTEL mapping sink | No mapping needed — events ARE OTEL-native |
 | Custom ILogger bridge | Not needed — OTEL already bridges `ILogger` → `LogRecord` |
@@ -1827,7 +1827,7 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 
 | Non-Goal | Rationale |
 |----------|-----------|
-| **Standalone event model** | otel-events does NOT have its own `EventData`, `IAllSink`, or custom pipeline. It uses OTEL types natively. |
+| **Standalone event model** | otel-events does NOT have its own `EventData`, `IOtelEventsSink`, or custom pipeline. It uses OTEL types natively. |
 | **Replacing OTEL** | otel-events is an OTEL extension. It does not replace, wrap, or abstract OTEL. |
 | **Custom pipeline** | otel-events does NOT implement enrichment, fan-out, or routing. OTEL SDK handles all of this. |
 | **ILogger bridge** | OTEL already bridges `ILogger` → `LogRecord`. otel-events doesn't duplicate this. |
@@ -1892,7 +1892,7 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 | DR-014 | .NET version | .NET 8+ (LTS baseline) | .NET 6 support; netstandard2.0 runtime |
 | DR-015 | Null handling | Omit field entirely (no `null` values in JSON) | Include `null`; use sentinel values |
 | DR-016 | Code gen approach | MSBuild task + incremental source gen | T4 templates; runtime reflection; manual |
-| DR-017 | DI registration | Extends `AddOpenTelemetry()` fluent API | Custom `AddAll()` method; separate DI registration |
+| DR-017 | DI registration | Extends `AddOpenTelemetry()` fluent API | Custom `AddOtelEvents()` method; separate DI registration |
 | DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `OtelEvents.*`) | Same `OtelEvents.*` prefix; `OtelEvents.IntegrationPacks.*`; `OtelEvents.Events.*` |
 | DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `OtelEvents.Schema`); Ship as source package |
 | DR-020 | Integration pack meta-package inclusion | NOT included in `OtelEvents` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
