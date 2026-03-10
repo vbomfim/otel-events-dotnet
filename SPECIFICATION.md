@@ -1,4 +1,4 @@
-# otel-events — Another Logging Library
+# otel-events
 
 ## Project Specification v2.0
 
@@ -32,7 +32,7 @@
 
 ### What is otel-events?
 
-**otel-events (Another Logging Library)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it. It is a set of packages that **extend** the standard OpenTelemetry pipeline with schema-driven code generation, AI-optimized JSON export, causal event linking, and compile-time consistency enforcement.
+**otel-events** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it. It is a set of packages that **extend** the standard OpenTelemetry pipeline with schema-driven code generation, AI-optimized JSON export, causal event linking, and compile-time consistency enforcement.
 
 Projects already using the OpenTelemetry .NET SDK can **adopt otel-events incrementally** — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through their existing OTEL pipeline. No migration. No replacement. No parallel infrastructure.
 
