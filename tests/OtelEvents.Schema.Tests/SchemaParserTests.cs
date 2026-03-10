@@ -382,7 +382,7 @@ public class SchemaParserTests
               version: "1.0.0"
               namespace: "Test.Namespace"
             events:
-              test.all.types:
+              test.field.types:
                 id: 9999
                 severity: DEBUG
                 message: "Test"
