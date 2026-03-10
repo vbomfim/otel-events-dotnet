@@ -7,7 +7,7 @@ namespace OtelEvents.Analyzers
     /// <summary>
     /// ALL004: Detects string literals that look like event names but don't match
     /// any schema-defined event.
-    /// TODO: Requires schema context integration to validate against .all.yaml definitions.
+    /// TODO: Requires schema context integration to validate against .otel.yaml definitions.
     /// Currently registered but never fires — awaiting schema-aware infrastructure.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -18,7 +18,7 @@ namespace OtelEvents.Analyzers
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
             title: "Undefined event name",
-            messageFormat: "Event name '{0}' does not match any schema-defined event. Verify it is defined in .all.yaml.",
+            messageFormat: "Event name '{0}' does not match any schema-defined event. Verify it is defined in .otel.yaml.",
             category: "Design",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
@@ -33,7 +33,7 @@ namespace OtelEvents.Analyzers
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
             // TODO: Register syntax/semantic action once schema context is available.
-            // This analyzer requires loading .all.yaml schema definitions at analysis time
+            // This analyzer requires loading .otel.yaml schema definitions at analysis time
             // to compare event name literals against known schema events.
         }
     }

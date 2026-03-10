@@ -5,7 +5,7 @@ using OtelEvents.Schema.Validation;
 namespace OtelEvents.Schema.Tests;
 
 /// <summary>
-/// Tests for YAML schema parsing — validates that valid .all.yaml files
+/// Tests for YAML schema parsing — validates that valid .otel.yaml files
 /// are correctly parsed into strongly-typed SchemaDocument models.
 /// </summary>
 public class SchemaParserTests
@@ -63,16 +63,16 @@ public class SchemaParserTests
               version: "1.0.0"
               namespace: "Test.Namespace"
             imports:
-              - "shared/common.all.yaml"
-              - "shared/http.all.yaml"
+              - "shared/common.otel.yaml"
+              - "shared/http.otel.yaml"
             """;
 
         var result = _parser.Parse(yaml, yaml.Length);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Document!.Imports.Count);
-        Assert.Equal("shared/common.all.yaml", result.Document.Imports[0]);
-        Assert.Equal("shared/http.all.yaml", result.Document.Imports[1]);
+        Assert.Equal("shared/common.otel.yaml", result.Document.Imports[0]);
+        Assert.Equal("shared/http.otel.yaml", result.Document.Imports[1]);
     }
 
     [Fact]

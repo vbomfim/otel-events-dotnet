@@ -1,12 +1,12 @@
 # Chapter 5 — Schema Reference
 
-This chapter is the complete reference for the `.all.yaml` schema format. Every attribute, type, and validation rule is documented here.
+This chapter is the complete reference for the `.otel.yaml` schema format. Every attribute, type, and validation rule is documented here.
 
 ---
 
 ## Schema File Conventions
 
-- Extension: `.all.yaml` or `.all.yml`
+- Extension: `.otel.yaml` or `.all.yml`
 - A project can have **multiple schema files** — they are merged by the code generator
 - Event names must be globally unique across all merged schemas
 - Event numeric IDs must be globally unique across all merged schemas

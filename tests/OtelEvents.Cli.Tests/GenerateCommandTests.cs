@@ -3,7 +3,7 @@ using OtelEvents.Cli.Commands;
 namespace OtelEvents.Cli.Tests;
 
 /// <summary>
-/// Tests for the generate command — generates C# source files from .all.yaml schemas.
+/// Tests for the generate command — generates C# source files from .otel.yaml schemas.
 /// Exit code 0 = success, 1 = errors.
 /// </summary>
 public sealed class GenerateCommandTests : IDisposable
@@ -126,7 +126,7 @@ public sealed class GenerateCommandTests : IDisposable
 
     private string CreateTempYaml(string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.all.yaml");
+        var path = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.otel.yaml");
         File.WriteAllText(path, content);
         _tempPaths.Add(path);
         return path;

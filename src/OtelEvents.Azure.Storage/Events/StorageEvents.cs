@@ -5,7 +5,7 @@ namespace OtelEvents.Azure.Storage.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for Azure Storage events.
-/// Maps to the azure-storage.all.yaml schema (event IDs 10301–10307).
+/// Maps to the azure-storage.otel.yaml schema (event IDs 10301–10307).
 /// </summary>
 /// <remarks>
 /// This code is pre-compiled in the NuGet package — consumers do NOT need

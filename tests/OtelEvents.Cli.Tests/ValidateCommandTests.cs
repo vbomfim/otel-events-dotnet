@@ -3,7 +3,7 @@ using OtelEvents.Cli.Commands;
 namespace OtelEvents.Cli.Tests;
 
 /// <summary>
-/// Tests for the validate command — parses and validates .all.yaml schema files.
+/// Tests for the validate command — parses and validates .otel.yaml schema files.
 /// Exit code 0 = valid, 1 = errors found.
 /// </summary>
 public sealed class ValidateCommandTests : IDisposable
@@ -134,7 +134,7 @@ public sealed class ValidateCommandTests : IDisposable
     [Fact]
     public void Execute_NonExistentFile_ReturnsOneAndShowsError()
     {
-        var exitCode = ValidateCommand.Execute("/nonexistent/path.all.yaml", _stdout, _stderr);
+        var exitCode = ValidateCommand.Execute("/nonexistent/path.otel.yaml", _stdout, _stderr);
 
         Assert.Equal(1, exitCode);
         Assert.Contains("not found", _stderr.ToString(), StringComparison.OrdinalIgnoreCase);
@@ -173,7 +173,7 @@ public sealed class ValidateCommandTests : IDisposable
 
     private string CreateTempYaml(string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.all.yaml");
+        var path = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.otel.yaml");
         File.WriteAllText(path, content);
         _tempFiles.Add(path);
         return path;
@@ -191,7 +191,7 @@ public sealed class ValidateCommandTests : IDisposable
     }
 
     /// <summary>
-    /// Minimal valid .all.yaml schema used across tests.
+    /// Minimal valid .otel.yaml schema used across tests.
     /// </summary>
     internal const string ValidSchemaYaml = """
         schema:

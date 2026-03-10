@@ -18,12 +18,12 @@ public static class DiffCommand
     {
         var oldArg = new Argument<string>("old")
         {
-            Description = "Path to the old (baseline) .all.yaml schema file"
+            Description = "Path to the old (baseline) .otel.yaml schema file"
         };
 
         var newArg = new Argument<string>("new")
         {
-            Description = "Path to the new .all.yaml schema file"
+            Description = "Path to the new .otel.yaml schema file"
         };
 
         var cmd = new Command("diff", "Compare two schema versions and detect breaking changes");

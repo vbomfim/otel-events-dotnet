@@ -327,7 +327,7 @@ public class CodeGeneratorSecurityTests
 
         try
         {
-            var outsideFile = Path.Combine(outsideDir, "evil.all.yaml");
+            var outsideFile = Path.Combine(outsideDir, "evil.otel.yaml");
             File.WriteAllText(outsideFile, """
                 schema:
                   name: "Evil"
@@ -335,14 +335,14 @@ public class CodeGeneratorSecurityTests
                   namespace: "Evil.Namespace"
                 """);
 
-            var mainFile = Path.Combine(tempDir, "main.all.yaml");
+            var mainFile = Path.Combine(tempDir, "main.otel.yaml");
             File.WriteAllText(mainFile, $"""
                 schema:
                   name: "Main"
                   version: "1.0.0"
                   namespace: "Main.Namespace"
                 imports:
-                  - "../{Path.GetFileName(outsideDir)}/evil.all.yaml"
+                  - "../{Path.GetFileName(outsideDir)}/evil.otel.yaml"
                 """);
 
             var merger = new SchemaMerger(_parser, _validator);
@@ -365,7 +365,7 @@ public class CodeGeneratorSecurityTests
         Directory.CreateDirectory(tempDir);
         try
         {
-            var sharedFile = Path.Combine(tempDir, "shared.all.yaml");
+            var sharedFile = Path.Combine(tempDir, "shared.otel.yaml");
             File.WriteAllText(sharedFile, """
                 schema:
                   name: "Shared"
@@ -376,14 +376,14 @@ public class CodeGeneratorSecurityTests
                     type: string
                 """);
 
-            var mainFile = Path.Combine(tempDir, "main.all.yaml");
+            var mainFile = Path.Combine(tempDir, "main.otel.yaml");
             File.WriteAllText(mainFile, """
                 schema:
                   name: "Main"
                   version: "1.0.0"
                   namespace: "Test.Main"
                 imports:
-                  - "shared.all.yaml"
+                  - "shared.otel.yaml"
                 events:
                   test.event:
                     id: 1
@@ -410,7 +410,7 @@ public class CodeGeneratorSecurityTests
         Directory.CreateDirectory(subDir);
         try
         {
-            var sharedFile = Path.Combine(subDir, "shared.all.yaml");
+            var sharedFile = Path.Combine(subDir, "shared.otel.yaml");
             File.WriteAllText(sharedFile, """
                 schema:
                   name: "Shared"
@@ -421,14 +421,14 @@ public class CodeGeneratorSecurityTests
                     type: string
                 """);
 
-            var mainFile = Path.Combine(tempDir, "main.all.yaml");
+            var mainFile = Path.Combine(tempDir, "main.otel.yaml");
             File.WriteAllText(mainFile, """
                 schema:
                   name: "Main"
                   version: "1.0.0"
                   namespace: "Test.Main"
                 imports:
-                  - "sub/shared.all.yaml"
+                  - "sub/shared.otel.yaml"
                 events:
                   test.event:
                     id: 1

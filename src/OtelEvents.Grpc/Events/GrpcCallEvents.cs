@@ -5,7 +5,7 @@ namespace OtelEvents.Grpc.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for gRPC call lifecycle events.
-/// Maps to the grpc.all.yaml schema (event IDs 10101–10103).
+/// Maps to the grpc.otel.yaml schema (event IDs 10101–10103).
 /// </summary>
 /// <remarks>
 /// This code is pre-compiled in the NuGet package — consumers do NOT need

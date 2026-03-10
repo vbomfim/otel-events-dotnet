@@ -2,7 +2,7 @@ namespace OtelEvents.Schema.Models;
 
 /// <summary>
 /// Represents a fully parsed YAML schema document.
-/// One instance per .all.yaml file before merging.
+/// One instance per .otel.yaml file before merging.
 /// </summary>
 public sealed class SchemaDocument
 {

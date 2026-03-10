@@ -234,7 +234,7 @@ public sealed class DiffCommandTests : IDisposable
 
     private string CreateTempYaml(string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.all.yaml");
+        var path = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.otel.yaml");
         File.WriteAllText(path, content);
         _tempFiles.Add(path);
         return path;

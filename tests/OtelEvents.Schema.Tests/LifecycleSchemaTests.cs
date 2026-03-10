@@ -9,7 +9,7 @@ namespace OtelEvents.Schema.Tests;
 /// <summary>
 /// Tests for the built-in lifecycle schema (Feature 2.4).
 /// Validates parsing, validation, enum generation, LoggerMessage methods,
-/// metrics, and Roslyn-verified C# output from the lifecycle.all.yaml schema.
+/// metrics, and Roslyn-verified C# output from the lifecycle.otel.yaml schema.
 /// </summary>
 public class LifecycleSchemaTests
 {
@@ -18,7 +18,7 @@ public class LifecycleSchemaTests
     private readonly CodeGenerator _generator = new();
 
     // ═══════════════════════════════════════════════════════════════
-    // YAML CONTENT — matches src/OtelEvents.Schema/Schemas/lifecycle.all.yaml
+    // YAML CONTENT — matches src/OtelEvents.Schema/Schemas/lifecycle.otel.yaml
     // ═══════════════════════════════════════════════════════════════
 
     private const string LifecycleYaml = """
@@ -680,7 +680,7 @@ public class LifecycleSchemaTests
         var resourceNames = assembly.GetManifestResourceNames();
 
         Assert.Contains(resourceNames,
-            n => n.Contains("lifecycle.all.yaml", StringComparison.OrdinalIgnoreCase));
+            n => n.Contains("lifecycle.otel.yaml", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -688,7 +688,7 @@ public class LifecycleSchemaTests
     {
         var assembly = typeof(SchemaParser).Assembly;
         var resourceName = assembly.GetManifestResourceNames()
-            .First(n => n.Contains("lifecycle.all.yaml", StringComparison.OrdinalIgnoreCase));
+            .First(n => n.Contains("lifecycle.otel.yaml", StringComparison.OrdinalIgnoreCase));
 
         using var stream = assembly.GetManifestResourceStream(resourceName)!;
         using var reader = new StreamReader(stream);

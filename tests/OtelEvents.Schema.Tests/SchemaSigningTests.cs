@@ -47,7 +47,7 @@ public sealed class SchemaSigningTests : IDisposable
         }
     }
 
-    private string WriteTempSchema(string content, string fileName = "orders.all.yaml")
+    private string WriteTempSchema(string content, string fileName = "orders.otel.yaml")
     {
         var path = Path.Combine(_tempDir, fileName);
         File.WriteAllText(path, content);
@@ -164,7 +164,7 @@ public sealed class SchemaSigningTests : IDisposable
     public void SignFile_NonExistentFile_ThrowsFileNotFound()
     {
         Assert.Throws<FileNotFoundException>(
-            () => SchemaSigner.SignFile("/nonexistent/schema.all.yaml", TestKey));
+            () => SchemaSigner.SignFile("/nonexistent/schema.otel.yaml", TestKey));
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public sealed class SchemaSigningTests : IDisposable
     [Fact]
     public void VerifyFile_NonExistentSchema_ReturnsFailure()
     {
-        var result = SchemaVerifier.VerifyFile("/nonexistent/schema.all.yaml", TestKey);
+        var result = SchemaVerifier.VerifyFile("/nonexistent/schema.otel.yaml", TestKey);
 
         Assert.False(result.IsValid);
         Assert.Contains("not found", result.Error!);
@@ -325,8 +325,8 @@ public sealed class SchemaSigningTests : IDisposable
     [Fact]
     public void SignThenVerify_DifferentSchemaFiles_IndependentSignatures()
     {
-        var schema1 = WriteTempSchema(SampleSchema, "schema1.all.yaml");
-        var schema2 = WriteTempSchema(SampleSchema + "\n# different", "schema2.all.yaml");
+        var schema1 = WriteTempSchema(SampleSchema, "schema1.otel.yaml");
+        var schema2 = WriteTempSchema(SampleSchema + "\n# different", "schema2.otel.yaml");
 
         SchemaSigner.SignFile(schema1, TestKey);
         SchemaSigner.SignFile(schema2, TestKey);

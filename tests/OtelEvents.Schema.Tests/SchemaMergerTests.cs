@@ -204,7 +204,7 @@ public class SchemaMergerTests
         Directory.CreateDirectory(tempDir);
         try
         {
-            var filePath = Path.Combine(tempDir, "test.all.yaml");
+            var filePath = Path.Combine(tempDir, "test.otel.yaml");
             File.WriteAllText(filePath, """
                 schema:
                   name: "TestService"
@@ -235,8 +235,8 @@ public class SchemaMergerTests
         Directory.CreateDirectory(tempDir);
         try
         {
-            var mainPath = Path.Combine(tempDir, "main.all.yaml");
-            var importedPath = Path.Combine(tempDir, "shared.all.yaml");
+            var mainPath = Path.Combine(tempDir, "main.otel.yaml");
+            var importedPath = Path.Combine(tempDir, "shared.otel.yaml");
 
             File.WriteAllText(importedPath, """
                 schema:
@@ -255,7 +255,7 @@ public class SchemaMergerTests
                   version: "1.0.0"
                   namespace: "Test.Main"
                 imports:
-                  - "shared.all.yaml"
+                  - "shared.otel.yaml"
                 events:
                   user.login:
                     id: 1
@@ -286,8 +286,8 @@ public class SchemaMergerTests
         Directory.CreateDirectory(tempDir);
         try
         {
-            var fileA = Path.Combine(tempDir, "a.all.yaml");
-            var fileB = Path.Combine(tempDir, "b.all.yaml");
+            var fileA = Path.Combine(tempDir, "a.otel.yaml");
+            var fileB = Path.Combine(tempDir, "b.otel.yaml");
 
             File.WriteAllText(fileA, """
                 schema:
@@ -295,7 +295,7 @@ public class SchemaMergerTests
                   version: "1.0.0"
                   namespace: "Test.A"
                 imports:
-                  - "b.all.yaml"
+                  - "b.otel.yaml"
                 events:
                   test.a:
                     id: 1
@@ -309,7 +309,7 @@ public class SchemaMergerTests
                   version: "1.0.0"
                   namespace: "Test.B"
                 imports:
-                  - "a.all.yaml"
+                  - "a.otel.yaml"
                 events:
                   test.b:
                     id: 2
@@ -332,7 +332,7 @@ public class SchemaMergerTests
     [Fact]
     public void MergeFromFile_FileNotFound_ReturnsError()
     {
-        var result = _merger.MergeFromFile("/nonexistent/path/test.all.yaml");
+        var result = _merger.MergeFromFile("/nonexistent/path/test.otel.yaml");
 
         Assert.False(result.IsSuccess);
     }

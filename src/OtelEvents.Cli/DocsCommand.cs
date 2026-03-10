@@ -13,7 +13,7 @@ internal static class DocsCommand
     /// <summary>
     /// Executes the docs command: parses a YAML schema and generates Markdown documentation.
     /// </summary>
-    /// <param name="schemaPath">Path to the .all.yaml schema file.</param>
+    /// <param name="schemaPath">Path to the .otel.yaml schema file.</param>
     /// <param name="outputPath">Optional output file path. If null, writes to stdout.</param>
     /// <returns>0 on success, 1 on error.</returns>
     public static int Execute(string schemaPath, string? outputPath)

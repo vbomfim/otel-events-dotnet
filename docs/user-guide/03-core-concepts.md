@@ -34,7 +34,7 @@ Both happen in a single method call. You cannot emit the log without the metrics
 
 ---
 
-## Schemas (`.all.yaml`)
+## Schemas (`.otel.yaml`)
 
 A schema is a YAML file that defines your events. It is the **single source of truth** for what events your service emits, what fields they carry, and what metrics they record.
 
@@ -374,7 +374,7 @@ The `EnvironmentProfileDetector` reads the environment automatically:
 | Term | Definition |
 |------|-----------|
 | **Event** | A discrete, typed, schema-defined occurrence — emitted as an OTEL `LogRecord` with associated metrics |
-| **Schema** | YAML file (`.all.yaml`) defining events, fields, metrics, and metadata |
+| **Schema** | YAML file (`.otel.yaml`) defining events, fields, metrics, and metadata |
 | **Envelope** | The fixed JSON structure that `OtelEventsJsonExporter` writes for every `LogRecord` |
 | **Exporter** | An OTEL `BaseExporter<T>` that sends telemetry to a destination |
 | **Processor** | An OTEL `BaseProcessor<T>` that enriches or transforms telemetry in-flight |

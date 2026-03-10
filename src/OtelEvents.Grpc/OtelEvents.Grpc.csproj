@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Schemas\grpc.all.yaml">
-      <LogicalName>OtelEvents.Grpc.grpc.all.yaml</LogicalName>
+    <EmbeddedResource Include="Schemas\grpc.otel.yaml">
+      <LogicalName>OtelEvents.Grpc.grpc.otel.yaml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

@@ -1,12 +1,12 @@
 namespace OtelEvents.Schema.Packaging;
 
 /// <summary>
-/// Represents a discovered .all.yaml schema from a NuGet package content directory.
+/// Represents a discovered .otel.yaml schema from a NuGet package content directory.
 /// Immutable data class — carries the metadata about where a package schema was found.
 /// </summary>
 public sealed class PackageSchemaSource
 {
-    /// <summary>The file name of the schema (e.g., "common.all.yaml").</summary>
+    /// <summary>The file name of the schema (e.g., "common.otel.yaml").</summary>
     public required string SchemaFileName { get; init; }
 
     /// <summary>The full absolute path to the schema file on disk.</summary>

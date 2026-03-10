@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Schemas\azure-storage.all.yaml">
-      <LogicalName>OtelEvents.Azure.Storage.azure-storage.all.yaml</LogicalName>
+    <EmbeddedResource Include="Schemas\azure-storage.otel.yaml">
+      <LogicalName>OtelEvents.Azure.Storage.azure-storage.otel.yaml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

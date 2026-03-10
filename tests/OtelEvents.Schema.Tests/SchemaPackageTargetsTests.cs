@@ -4,7 +4,7 @@ namespace OtelEvents.Schema.Tests;
 
 /// <summary>
 /// Tests for <see cref="SchemaPackageTargets"/> — MSBuild integration helpers
-/// that generate NuGet package content metadata for .all.yaml files.
+/// that generate NuGet package content metadata for .otel.yaml files.
 /// </summary>
 public sealed class SchemaPackageTargetsTests : IDisposable
 {
@@ -27,14 +27,14 @@ public sealed class SchemaPackageTargetsTests : IDisposable
     [Fact]
     public void FindSchemaFiles_ReturnsAllYamlFiles()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "events.all.yaml"), "schema:");
-        File.WriteAllText(Path.Combine(_tempDir, "shared.all.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(_tempDir, "events.otel.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(_tempDir, "shared.otel.yaml"), "schema:");
         File.WriteAllText(Path.Combine(_tempDir, "readme.md"), "not a schema");
 
         var files = SchemaPackageTargets.FindSchemaFiles(_tempDir);
 
         Assert.Equal(2, files.Count);
-        Assert.All(files, f => Assert.EndsWith(".all.yaml", f));
+        Assert.All(files, f => Assert.EndsWith(".otel.yaml", f));
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class SchemaPackageTargetsTests : IDisposable
     {
         var subDir = Path.Combine(_tempDir, "schemas");
         Directory.CreateDirectory(subDir);
-        File.WriteAllText(Path.Combine(subDir, "nested.all.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(subDir, "nested.otel.yaml"), "schema:");
 
         var files = SchemaPackageTargets.FindSchemaFiles(_tempDir);
 
@@ -56,14 +56,14 @@ public sealed class SchemaPackageTargetsTests : IDisposable
         var objDir = Path.Combine(_tempDir, "obj");
         Directory.CreateDirectory(binDir);
         Directory.CreateDirectory(objDir);
-        File.WriteAllText(Path.Combine(binDir, "output.all.yaml"), "schema:");
-        File.WriteAllText(Path.Combine(objDir, "temp.all.yaml"), "schema:");
-        File.WriteAllText(Path.Combine(_tempDir, "real.all.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(binDir, "output.otel.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(objDir, "temp.otel.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(_tempDir, "real.otel.yaml"), "schema:");
 
         var files = SchemaPackageTargets.FindSchemaFiles(_tempDir);
 
         Assert.Single(files);
-        Assert.Contains("real.all.yaml", files[0]);
+        Assert.Contains("real.otel.yaml", files[0]);
     }
 
     [Fact]
@@ -87,18 +87,18 @@ public sealed class SchemaPackageTargetsTests : IDisposable
     [Fact]
     public void GetPackagePath_ReturnsContentFilesPath()
     {
-        var path = SchemaPackageTargets.GetPackagePath("events.all.yaml");
+        var path = SchemaPackageTargets.GetPackagePath("events.otel.yaml");
 
-        Assert.Equal("contentFiles/any/any/schemas/events.all.yaml", path);
+        Assert.Equal("contentFiles/any/any/schemas/events.otel.yaml", path);
     }
 
     [Fact]
     public void GetPackagePath_HandlesNestedPaths()
     {
-        var path = SchemaPackageTargets.GetPackagePath("sub/events.all.yaml");
+        var path = SchemaPackageTargets.GetPackagePath("sub/events.otel.yaml");
 
         // Only the filename should be used — flatten to avoid path issues
-        Assert.Equal("contentFiles/any/any/schemas/events.all.yaml", path);
+        Assert.Equal("contentFiles/any/any/schemas/events.otel.yaml", path);
     }
 
     // ── GeneratePackageMetadata ──────────────────────────────────────
@@ -106,8 +106,8 @@ public sealed class SchemaPackageTargetsTests : IDisposable
     [Fact]
     public void GeneratePackageMetadata_CreatesCorrectEntries()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "events.all.yaml"), "schema:");
-        File.WriteAllText(Path.Combine(_tempDir, "shared.all.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(_tempDir, "events.otel.yaml"), "schema:");
+        File.WriteAllText(Path.Combine(_tempDir, "shared.otel.yaml"), "schema:");
 
         var metadata = SchemaPackageTargets.GeneratePackageMetadata(_tempDir);
 

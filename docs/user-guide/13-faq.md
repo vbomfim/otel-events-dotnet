@@ -72,20 +72,20 @@ Schema errors are caught at **build time** with clear error codes and messages. 
 
 ```
 error ALL_SCHEMA_003: Message template placeholder '{userId}' does not match any field name
-  in event 'order.placed' at events.all.yaml:15
+  in event 'order.placed' at events.otel.yaml:15
 ```
 
 See [Chapter 5 — Schema Reference](05-schema-reference.md) for the complete list of 18 validation rules.
 
 ### Can I have multiple schema files?
 
-Yes. Place multiple `.all.yaml` files in your project — they are merged at build time. Cross-file `ref` resolution works. Event names and numeric IDs must be unique across all files.
+Yes. Place multiple `.otel.yaml` files in your project — they are merged at build time. Cross-file `ref` resolution works. Event names and numeric IDs must be unique across all files.
 
 ```
 src/MyService/
-├── http-events.all.yaml     # HTTP request events (IDs 1001-1099)
-├── order-events.all.yaml    # Order domain events (IDs 2001-2099)
-└── shared-fields.all.yaml   # Reusable field definitions
+├── http-events.otel.yaml     # HTTP request events (IDs 1001-1099)
+├── order-events.otel.yaml    # Order domain events (IDs 2001-2099)
+└── shared-fields.otel.yaml   # Reusable field definitions
 ```
 
 ### What's the maximum schema size?
@@ -105,7 +105,7 @@ Yes. Package schemas as NuGet packages and import them:
 
 ```yaml
 imports:
-  - "package:MyCompany.Events.Shared/events.all.yaml"
+  - "package:MyCompany.Events.Shared/events.otel.yaml"
 ```
 
 See [Chapter 11 — Advanced Topics](11-advanced-topics.md) for details on schema sharing via NuGet.

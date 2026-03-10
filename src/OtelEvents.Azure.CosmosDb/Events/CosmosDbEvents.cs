@@ -5,7 +5,7 @@ namespace OtelEvents.Azure.CosmosDb.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for CosmosDB operation events.
-/// Maps to the cosmosdb.all.yaml schema (event IDs 10201–10204).
+/// Maps to the cosmosdb.otel.yaml schema (event IDs 10201–10204).
 /// </summary>
 /// <remarks>
 /// This code is pre-compiled in the NuGet package — consumers do NOT need

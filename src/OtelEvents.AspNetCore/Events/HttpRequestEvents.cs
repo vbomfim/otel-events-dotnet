@@ -5,7 +5,7 @@ namespace OtelEvents.AspNetCore.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for HTTP request lifecycle events.
-/// Maps to the aspnetcore.all.yaml schema (event IDs 10001–10003).
+/// Maps to the aspnetcore.otel.yaml schema (event IDs 10001–10003).
 /// </summary>
 /// <remarks>
 /// This code is pre-compiled in the NuGet package — consumers do NOT need

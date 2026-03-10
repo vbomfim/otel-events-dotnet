@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Schemas\cosmosdb.all.yaml">
-      <LogicalName>OtelEvents.Azure.CosmosDb.cosmosdb.all.yaml</LogicalName>
+    <EmbeddedResource Include="Schemas\cosmosdb.otel.yaml">
+      <LogicalName>OtelEvents.Azure.CosmosDb.cosmosdb.otel.yaml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

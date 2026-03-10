@@ -11,7 +11,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsGrpcOptions).Assembly;
-        var resourceName = "OtelEvents.Grpc.grpc.all.yaml";
+        var resourceName = "OtelEvents.Grpc.grpc.otel.yaml";
 
         // Act
         using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -25,7 +25,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsGrpcOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.Grpc.grpc.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.Grpc.grpc.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act
@@ -46,7 +46,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsGrpcOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.Grpc.grpc.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.Grpc.grpc.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act
@@ -66,7 +66,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsGrpcOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.Grpc.grpc.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.Grpc.grpc.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act

@@ -125,7 +125,7 @@ Schemas use [semver](https://semver.org/) versioning. The schema `version` field
 
 ```bash
 # Compare two schema versions
-dotnet otel-events diff v1/events.all.yaml v2/events.all.yaml
+dotnet otel-events diff v1/events.otel.yaml v2/events.otel.yaml
 
 # Output:
 # Breaking changes detected (exit code 2):
@@ -162,8 +162,8 @@ Share event contracts across services by packaging schemas in NuGet packages.
 </PropertyGroup>
 
 <ItemGroup>
-  <!-- OtelEvents.Schema.targets auto-packages .all.yaml files -->
-  <Content Include="schemas/**/*.all.yaml" Pack="true"
+  <!-- OtelEvents.Schema.targets auto-packages .otel.yaml files -->
+  <Content Include="schemas/**/*.otel.yaml" Pack="true"
            PackagePath="contentFiles/any/any/schemas/" />
 </ItemGroup>
 ```
@@ -171,9 +171,9 @@ Share event contracts across services by packaging schemas in NuGet packages.
 ### Consumer — Import from packages
 
 ```yaml
-# In your service's events.all.yaml
+# In your service's events.otel.yaml
 imports:
-  - "package:MyCompany.Events.Shared/events.all.yaml"
+  - "package:MyCompany.Events.Shared/events.otel.yaml"
 
 events:
   order.placed:
@@ -204,16 +204,16 @@ Schema signing provides HMAC-SHA256 integrity verification for multi-team enviro
 
 ```bash
 # Sign using an environment variable (base64-encoded key)
-dotnet otel-events sign events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+dotnet otel-events sign events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
-# Produces: events.all.yaml.sig
+# Produces: events.otel.yaml.sig
 ```
 
 ### Verify a signature
 
 ```bash
 # Verify in CI pipeline
-dotnet otel-events verify events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+dotnet otel-events verify events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 # Exit code 0 = valid, 1 = invalid or missing signature
 ```
@@ -232,7 +232,7 @@ dotnet otel-events verify events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 ```yaml
 # GitHub Actions — verify schemas before build
 - name: Verify schema signatures
-  run: dotnet otel-events verify schemas/*.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+  run: dotnet otel-events verify schemas/*.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
   env:
     ALL_SCHEMA_SIGNING_KEY: ${{ secrets.SCHEMA_SIGNING_KEY }}
 ```
@@ -359,7 +359,7 @@ Generate event catalog documentation and Grafana dashboard templates from your s
 
 ```bash
 # Generate markdown documentation from schema
-dotnet otel-events docs events.all.yaml -o docs/events.md
+dotnet otel-events docs events.otel.yaml -o docs/events.md
 ```
 
 This produces a markdown file with:

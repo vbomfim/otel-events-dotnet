@@ -27,10 +27,10 @@ dotnet otel-events --help
 
 ### `dotnet otel-events validate <path>`
 
-Parse and validate a `.all.yaml` schema file. Reports all validation errors with structured error codes.
+Parse and validate a `.otel.yaml` schema file. Reports all validation errors with structured error codes.
 
 ```bash
-dotnet otel-events validate schemas/orders.all.yaml
+dotnet otel-events validate schemas/orders.otel.yaml
 ```
 
 **Success output:**
@@ -63,7 +63,7 @@ ALL_SCHEMA_006: Event name 'OrderPlaced' is invalid — must be lowercase, dot-n
 Generate C# source files from a validated schema. Creates `[LoggerMessage]` partial methods, extension methods, metric instruments, and enum types.
 
 ```bash
-dotnet otel-events generate schemas/orders.all.yaml -o src/Generated/
+dotnet otel-events generate schemas/orders.otel.yaml -o src/Generated/
 ```
 
 **Success output:**
@@ -105,7 +105,7 @@ Generated: src/Generated/OrderEventsMetrics.g.cs
 Compare two schema versions and classify changes as breaking or non-breaking. Essential for CI pipelines that guard against backward-incompatible changes.
 
 ```bash
-dotnet otel-events diff schemas/v1/orders.all.yaml schemas/v2/orders.all.yaml
+dotnet otel-events diff schemas/v1/orders.otel.yaml schemas/v2/orders.otel.yaml
 ```
 
 **Compatible output (no breaking changes):**
@@ -152,7 +152,7 @@ dotnet otel-events diff schemas/v1/orders.all.yaml schemas/v2/orders.all.yaml
 # GitHub Actions: fail the build on breaking schema changes
 - name: Check schema compatibility
   run: |
-    dotnet otel-events diff schemas/main/orders.all.yaml schemas/pr/orders.all.yaml
+    dotnet otel-events diff schemas/main/orders.otel.yaml schemas/pr/orders.otel.yaml
     # Exit code 2 = breaking changes → build fails
 ```
 
@@ -164,10 +164,10 @@ Generate Markdown documentation from a schema file. Produces an event catalog wi
 
 ```bash
 # Write to file
-dotnet otel-events docs schemas/orders.all.yaml -o docs/event-catalog.md
+dotnet otel-events docs schemas/orders.otel.yaml -o docs/event-catalog.md
 
 # Write to stdout (pipe to other tools)
-dotnet otel-events docs schemas/orders.all.yaml
+dotnet otel-events docs schemas/orders.otel.yaml
 ```
 
 **Options:**
@@ -251,7 +251,7 @@ When `validate` or `generate` reports errors, each error includes a structured c
 ```bash
 #!/bin/sh
 # .git/hooks/pre-commit
-for schema in $(git diff --cached --name-only -- '*.all.yaml'); do
+for schema in $(git diff --cached --name-only -- '*.otel.yaml'); do
     dotnet otel-events validate "$schema" || exit 1
 done
 ```
@@ -266,7 +266,7 @@ done
 </Target>
 
 <ItemGroup>
-  <OtelEventsSchema Include="schemas\*.all.yaml" />
+  <OtelEventsSchema Include="schemas\*.otel.yaml" />
   <Compile Include="$(IntermediateOutputPath)OtelEventsGenerated\**\*.g.cs" />
 </ItemGroup>
 ```
@@ -287,10 +287,10 @@ jobs:
           fetch-depth: 0
 
       - name: Get main schemas
-        run: git show origin/main:schemas/orders.all.yaml > /tmp/old.all.yaml
+        run: git show origin/main:schemas/orders.otel.yaml > /tmp/old.otel.yaml
 
       - name: Compare schemas
-        run: dotnet otel-events diff /tmp/old.all.yaml schemas/orders.all.yaml
+        run: dotnet otel-events diff /tmp/old.otel.yaml schemas/orders.otel.yaml
 ```
 
 ---

@@ -6,7 +6,7 @@ using OtelEvents.Schema.Validation;
 namespace OtelEvents.Cli.Commands;
 
 /// <summary>
-/// Generates C# source files from .all.yaml schema files.
+/// Generates C# source files from .otel.yaml schema files.
 /// Exit code 0 = success, 1 = errors.
 /// </summary>
 public static class GenerateCommand
@@ -18,7 +18,7 @@ public static class GenerateCommand
     {
         var pathArg = new Argument<string>("path")
         {
-            Description = "Path to .all.yaml schema file"
+            Description = "Path to .otel.yaml schema file"
         };
 
         var outputOption = new Option<string>("--output", "-o")
@@ -27,7 +27,7 @@ public static class GenerateCommand
             Required = true
         };
 
-        var cmd = new Command("generate", "Generate C# source files from an .all.yaml schema");
+        var cmd = new Command("generate", "Generate C# source files from an .otel.yaml schema");
         cmd.Arguments.Add(pathArg);
         cmd.Options.Add(outputOption);
 
@@ -44,7 +44,7 @@ public static class GenerateCommand
     /// <summary>
     /// Executes C# code generation from the specified schema file.
     /// </summary>
-    /// <param name="path">Path to the .all.yaml schema file.</param>
+    /// <param name="path">Path to the .otel.yaml schema file.</param>
     /// <param name="outputDir">Output directory for generated files.</param>
     /// <param name="stdout">Writer for standard output messages.</param>
     /// <param name="stderr">Writer for error messages.</param>

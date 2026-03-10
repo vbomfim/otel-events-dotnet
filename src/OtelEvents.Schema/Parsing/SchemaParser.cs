@@ -8,7 +8,7 @@ using YamlDotNet.RepresentationModel;
 namespace OtelEvents.Schema.Parsing;
 
 /// <summary>
-/// Parses .all.yaml schema files into <see cref="SchemaDocument"/> instances.
+/// Parses .otel.yaml schema files into <see cref="SchemaDocument"/> instances.
 /// Uses YamlDotNet with safe loading mode and enforces resource limits.
 /// </summary>
 public sealed class SchemaParser

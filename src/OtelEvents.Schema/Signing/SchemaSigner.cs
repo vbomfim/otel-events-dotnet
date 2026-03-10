@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace OtelEvents.Schema.Signing;
 
 /// <summary>
-/// Generates HMAC-SHA256 signatures for .all.yaml schema files.
+/// Generates HMAC-SHA256 signatures for .otel.yaml schema files.
 /// Used to ensure schema integrity in multi-team environments.
 /// </summary>
 public sealed class SchemaSigner
@@ -34,7 +34,7 @@ public sealed class SchemaSigner
     /// <summary>
     /// Signs a schema file and writes the signature to a detached .sig file.
     /// </summary>
-    /// <param name="schemaFilePath">Path to the .all.yaml schema file.</param>
+    /// <param name="schemaFilePath">Path to the .otel.yaml schema file.</param>
     /// <param name="key">The HMAC key bytes.</param>
     /// <returns>The signing result containing the signature and .sig file path.</returns>
     public static SchemaSignatureResult SignFile(string schemaFilePath, byte[] key)

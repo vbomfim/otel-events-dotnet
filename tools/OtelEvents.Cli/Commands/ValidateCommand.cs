@@ -5,7 +5,7 @@ using OtelEvents.Schema.Validation;
 namespace OtelEvents.Cli.Commands;
 
 /// <summary>
-/// Validates .all.yaml schema files by parsing and running all validation rules.
+/// Validates .otel.yaml schema files by parsing and running all validation rules.
 /// Exit code 0 = valid, 1 = errors found.
 /// </summary>
 public static class ValidateCommand
@@ -17,10 +17,10 @@ public static class ValidateCommand
     {
         var pathArg = new Argument<string>("path")
         {
-            Description = "Path to .all.yaml schema file to validate"
+            Description = "Path to .otel.yaml schema file to validate"
         };
 
-        var cmd = new Command("validate", "Validate an .all.yaml schema file");
+        var cmd = new Command("validate", "Validate an .otel.yaml schema file");
         cmd.Arguments.Add(pathArg);
 
         cmd.SetAction(parseResult =>
@@ -35,7 +35,7 @@ public static class ValidateCommand
     /// <summary>
     /// Executes schema validation against the specified file.
     /// </summary>
-    /// <param name="path">Path to the .all.yaml schema file.</param>
+    /// <param name="path">Path to the .otel.yaml schema file.</param>
     /// <param name="stdout">Writer for standard output messages.</param>
     /// <param name="stderr">Writer for error messages.</param>
     /// <returns>0 if valid, 1 if errors found.</returns>

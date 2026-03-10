@@ -5,7 +5,7 @@ using OtelEvents.Schema.Validation;
 namespace OtelEvents.Schema.Tests;
 
 /// <summary>
-/// Tests for <see cref="SchemaPackageResolver"/> — discovering .all.yaml files
+/// Tests for <see cref="SchemaPackageResolver"/> — discovering .otel.yaml files
 /// from NuGet package content directories and resolving package imports.
 /// </summary>
 public sealed class SchemaPackageResolverTests : IDisposable
@@ -27,10 +27,10 @@ public sealed class SchemaPackageResolverTests : IDisposable
     // ── IsPackageImport ──────────────────────────────────────────────
 
     [Theory]
-    [InlineData("package:MyCompany.Events/common.all.yaml", true)]
-    [InlineData("package:MyLib/schemas/shared.all.yaml", true)]
-    [InlineData("shared/common.all.yaml", false)]
-    [InlineData("common.all.yaml", false)]
+    [InlineData("package:MyCompany.Events/common.otel.yaml", true)]
+    [InlineData("package:MyLib/schemas/shared.otel.yaml", true)]
+    [InlineData("shared/common.otel.yaml", false)]
+    [InlineData("common.otel.yaml", false)]
     [InlineData("", false)]
     [InlineData("package:", false)]
     public void IsPackageImport_ClassifiesImportPaths(string importPath, bool expected)
@@ -60,15 +60,15 @@ public sealed class SchemaPackageResolverTests : IDisposable
     {
         // Simulate NuGet package content: packageName/version/contentFiles/any/any/schemas/
         var pkgDir = CreatePackageSchemaDir("MyCompany.Events.Common", "1.0.0");
-        File.WriteAllText(Path.Combine(pkgDir, "common.all.yaml"), MinimalYaml("Common"));
-        File.WriteAllText(Path.Combine(pkgDir, "http.all.yaml"), MinimalYaml("Http"));
+        File.WriteAllText(Path.Combine(pkgDir, "common.otel.yaml"), MinimalYaml("Common"));
+        File.WriteAllText(Path.Combine(pkgDir, "http.otel.yaml"), MinimalYaml("Http"));
 
         var resolver = new SchemaPackageResolver([pkgDir]);
         var schemas = resolver.DiscoverSchemas();
 
         Assert.Equal(2, schemas.Count);
-        Assert.Contains(schemas, s => s.SchemaFileName == "common.all.yaml");
-        Assert.Contains(schemas, s => s.SchemaFileName == "http.all.yaml");
+        Assert.Contains(schemas, s => s.SchemaFileName == "common.otel.yaml");
+        Assert.Contains(schemas, s => s.SchemaFileName == "http.otel.yaml");
     }
 
     [Fact]
@@ -76,8 +76,8 @@ public sealed class SchemaPackageResolverTests : IDisposable
     {
         var dir1 = CreatePackageSchemaDir("Package.A", "1.0.0");
         var dir2 = CreatePackageSchemaDir("Package.B", "2.0.0");
-        File.WriteAllText(Path.Combine(dir1, "a.all.yaml"), MinimalYaml("A"));
-        File.WriteAllText(Path.Combine(dir2, "b.all.yaml"), MinimalYaml("B"));
+        File.WriteAllText(Path.Combine(dir1, "a.otel.yaml"), MinimalYaml("A"));
+        File.WriteAllText(Path.Combine(dir2, "b.otel.yaml"), MinimalYaml("B"));
 
         var resolver = new SchemaPackageResolver([dir1, dir2]);
         var schemas = resolver.DiscoverSchemas();
@@ -89,7 +89,7 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void DiscoverSchemas_IgnoresNonYamlFiles()
     {
         var dir = CreatePackageSchemaDir("MyPkg", "1.0.0");
-        File.WriteAllText(Path.Combine(dir, "schema.all.yaml"), MinimalYaml("Schema"));
+        File.WriteAllText(Path.Combine(dir, "schema.otel.yaml"), MinimalYaml("Schema"));
         File.WriteAllText(Path.Combine(dir, "readme.txt"), "Not a schema");
         File.WriteAllText(Path.Combine(dir, "config.yaml"), "not: all-schema");
 
@@ -97,7 +97,7 @@ public sealed class SchemaPackageResolverTests : IDisposable
         var schemas = resolver.DiscoverSchemas();
 
         Assert.Single(schemas);
-        Assert.Equal("schema.all.yaml", schemas[0].SchemaFileName);
+        Assert.Equal("schema.otel.yaml", schemas[0].SchemaFileName);
     }
 
     [Fact]
@@ -115,11 +115,11 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void Resolve_ValidPackageImport_ReturnsFilePath()
     {
         var dir = CreatePackageSchemaDir("MyCompany.Events", "1.0.0");
-        var schemaPath = Path.Combine(dir, "common.all.yaml");
+        var schemaPath = Path.Combine(dir, "common.otel.yaml");
         File.WriteAllText(schemaPath, MinimalYaml("Common"));
 
         var resolver = new SchemaPackageResolver([dir]);
-        var result = resolver.Resolve("package:MyCompany.Events/common.all.yaml");
+        var result = resolver.Resolve("package:MyCompany.Events/common.otel.yaml");
 
         Assert.NotNull(result);
         Assert.Equal(Path.GetFullPath(schemaPath), Path.GetFullPath(result));
@@ -129,7 +129,7 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void Resolve_PackageNotFound_ReturnsNull()
     {
         var resolver = new SchemaPackageResolver([]);
-        var result = resolver.Resolve("package:NonExistent/schema.all.yaml");
+        var result = resolver.Resolve("package:NonExistent/schema.otel.yaml");
 
         Assert.Null(result);
     }
@@ -138,10 +138,10 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void Resolve_SchemaFileNotInDirectory_ReturnsNull()
     {
         var dir = CreatePackageSchemaDir("MyPkg", "1.0.0");
-        File.WriteAllText(Path.Combine(dir, "other.all.yaml"), MinimalYaml("Other"));
+        File.WriteAllText(Path.Combine(dir, "other.otel.yaml"), MinimalYaml("Other"));
 
         var resolver = new SchemaPackageResolver([dir]);
-        var result = resolver.Resolve("package:MyPkg/missing.all.yaml");
+        var result = resolver.Resolve("package:MyPkg/missing.otel.yaml");
 
         Assert.Null(result);
     }
@@ -150,7 +150,7 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void Resolve_InvalidPackageImport_ReturnsNull()
     {
         var resolver = new SchemaPackageResolver([]);
-        var result = resolver.Resolve("not-a-package-import.all.yaml");
+        var result = resolver.Resolve("not-a-package-import.otel.yaml");
 
         Assert.Null(result);
     }
@@ -159,7 +159,7 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void Resolve_PathTraversalAttempt_ReturnsNull()
     {
         var dir = CreatePackageSchemaDir("MyPkg", "1.0.0");
-        File.WriteAllText(Path.Combine(dir, "safe.all.yaml"), MinimalYaml("Safe"));
+        File.WriteAllText(Path.Combine(dir, "safe.otel.yaml"), MinimalYaml("Safe"));
 
         var resolver = new SchemaPackageResolver([dir]);
         var result = resolver.Resolve("package:MyPkg/../../etc/passwd");
@@ -181,14 +181,14 @@ public sealed class SchemaPackageResolverTests : IDisposable
     {
         var dir1 = CreatePackageSchemaDir("Pkg.A", "1.0.0");
         var dir2 = CreatePackageSchemaDir("Pkg.B", "1.0.0");
-        File.WriteAllText(Path.Combine(dir1, "a.all.yaml"), MinimalYaml("A"));
-        File.WriteAllText(Path.Combine(dir2, "b.all.yaml"), MinimalYaml("B"));
+        File.WriteAllText(Path.Combine(dir1, "a.otel.yaml"), MinimalYaml("A"));
+        File.WriteAllText(Path.Combine(dir2, "b.otel.yaml"), MinimalYaml("B"));
 
         var resolver = new SchemaPackageResolver([dir1, dir2]);
 
-        var result = resolver.Resolve("package:Pkg.B/b.all.yaml");
+        var result = resolver.Resolve("package:Pkg.B/b.otel.yaml");
         Assert.NotNull(result);
-        Assert.Contains("b.all.yaml", result);
+        Assert.Contains("b.otel.yaml", result);
     }
 
     // ── PackageSchemaSource properties ───────────────────────────────
@@ -197,13 +197,13 @@ public sealed class SchemaPackageResolverTests : IDisposable
     public void DiscoverSchemas_ReturnsCorrectSourceProperties()
     {
         var dir = CreatePackageSchemaDir("MyCompany.Events.Common", "1.0.0");
-        var schemaPath = Path.Combine(dir, "common.all.yaml");
+        var schemaPath = Path.Combine(dir, "common.otel.yaml");
         File.WriteAllText(schemaPath, MinimalYaml("Common"));
 
         var resolver = new SchemaPackageResolver([dir]);
         var source = resolver.DiscoverSchemas().Single();
 
-        Assert.Equal("common.all.yaml", source.SchemaFileName);
+        Assert.Equal("common.otel.yaml", source.SchemaFileName);
         Assert.Equal(Path.GetFullPath(schemaPath), Path.GetFullPath(source.FullPath));
         Assert.Equal(dir, source.SourceDirectory);
     }

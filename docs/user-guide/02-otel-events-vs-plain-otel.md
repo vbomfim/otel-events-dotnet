@@ -116,7 +116,7 @@ Verbose, includes the raw format string, no causal linking, no sequence number, 
 ### Step 1 — Define the event in YAML
 
 ```yaml
-# schemas/orders.all.yaml
+# schemas/orders.otel.yaml
 schema:
   name: "OrderEvents"
   version: "1.0.0"

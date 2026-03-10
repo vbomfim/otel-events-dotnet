@@ -322,7 +322,7 @@ Once you've migrated a critical mass of events:
 
 ```bash
 # In your CI pipeline
-dotnet otel-events validate events.all.yaml
+dotnet otel-events validate events.otel.yaml
 ```
 
 ### Enable analyzers
@@ -366,7 +366,7 @@ Use this checklist to track your migration progress:
 
 - [ ] Install `OtelEvents.Schema`, `OtelEvents.Exporter.Json`, `OtelEvents.Causality`
 - [ ] Register otel-events components in `Program.cs` alongside existing OTEL
-- [ ] Create initial `events.all.yaml` with 3–5 high-priority events
+- [ ] Create initial `events.otel.yaml` with 3–5 high-priority events
 - [ ] Run `dotnet otel-events generate` and verify generated code
 - [ ] Replace first event category (e.g., HTTP request events)
 - [ ] Verify JSONL output on stdout

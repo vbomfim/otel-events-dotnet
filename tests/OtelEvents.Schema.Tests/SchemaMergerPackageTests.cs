@@ -34,7 +34,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     {
         // Arrange: simulate a NuGet package with a shared schema
         var pkgDir = CreatePackageDir("MyCompany.Events.Shared");
-        WriteSchema(pkgDir, "shared.all.yaml", """
+        WriteSchema(pkgDir, "shared.otel.yaml", """
             schema:
               name: "Shared"
               version: "1.0.0"
@@ -51,13 +51,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
         // Arrange: a consumer schema that imports from the package
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "service.all.yaml", """
+        WriteSchema(consumerDir, "service.otel.yaml", """
             schema:
               name: "OrderService"
               version: "1.0.0"
               namespace: "MyCompany.OrderService"
             imports:
-              - "package:MyCompany.Events.Shared/shared.all.yaml"
+              - "package:MyCompany.Events.Shared/shared.otel.yaml"
             events:
               order.placed:
                 id: 1
@@ -73,7 +73,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
         // Act
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.otel.yaml"));
 
         // Assert
         Assert.True(result.IsSuccess, $"Errors: {string.Join(", ", result.Errors)}");
@@ -88,13 +88,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
     {
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "service.all.yaml", """
+        WriteSchema(consumerDir, "service.otel.yaml", """
             schema:
               name: "Service"
               version: "1.0.0"
               namespace: "Test.Service"
             imports:
-              - "package:NonExistent.Package/shared.all.yaml"
+              - "package:NonExistent.Package/shared.otel.yaml"
             events:
               test.event:
                 id: 1
@@ -105,7 +105,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.otel.yaml"));
 
         Assert.False(result.IsSuccess);
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.PackageSchemaNotFound);
@@ -117,7 +117,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         // Local shared schema
         var localDir = Path.Combine(_tempDir, "local");
         Directory.CreateDirectory(localDir);
-        WriteSchema(localDir, "local-shared.all.yaml", """
+        WriteSchema(localDir, "local-shared.otel.yaml", """
             schema:
               name: "LocalShared"
               version: "1.0.0"
@@ -130,7 +130,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         // Package shared schema
         var pkgDir = CreatePackageDir("Pkg.Common");
-        WriteSchema(pkgDir, "common.all.yaml", """
+        WriteSchema(pkgDir, "common.otel.yaml", """
             schema:
               name: "Common"
               version: "1.0.0"
@@ -142,14 +142,14 @@ public sealed class SchemaMergerPackageTests : IDisposable
             """);
 
         // Consumer that imports both
-        WriteSchema(localDir, "main.all.yaml", """
+        WriteSchema(localDir, "main.otel.yaml", """
             schema:
               name: "MainService"
               version: "1.0.0"
               namespace: "Test.MainService"
             imports:
-              - "local-shared.all.yaml"
-              - "package:Pkg.Common/common.all.yaml"
+              - "local-shared.otel.yaml"
+              - "package:Pkg.Common/common.otel.yaml"
             events:
               test.event:
                 id: 1
@@ -167,7 +167,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(localDir, "main.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(localDir, "main.otel.yaml"));
 
         Assert.True(result.IsSuccess, $"Errors: {string.Join(", ", result.Errors)}");
         Assert.NotNull(result.Document);
@@ -179,7 +179,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     public void MergeFromFile_MultiplePackageImports_ResolvesAll()
     {
         var pkgDir1 = CreatePackageDir("Pkg.Auth");
-        WriteSchema(pkgDir1, "auth.all.yaml", """
+        WriteSchema(pkgDir1, "auth.otel.yaml", """
             schema:
               name: "Auth"
               version: "1.0.0"
@@ -191,7 +191,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
             """);
 
         var pkgDir2 = CreatePackageDir("Pkg.Http");
-        WriteSchema(pkgDir2, "http.all.yaml", """
+        WriteSchema(pkgDir2, "http.otel.yaml", """
             schema:
               name: "Http"
               version: "1.0.0"
@@ -204,14 +204,14 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "api.all.yaml", """
+        WriteSchema(consumerDir, "api.otel.yaml", """
             schema:
               name: "ApiService"
               version: "1.0.0"
               namespace: "Test.Api"
             imports:
-              - "package:Pkg.Auth/auth.all.yaml"
-              - "package:Pkg.Http/http.all.yaml"
+              - "package:Pkg.Auth/auth.otel.yaml"
+              - "package:Pkg.Http/http.otel.yaml"
             events:
               api.request:
                 id: 1
@@ -229,7 +229,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir1, pkgDir2]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "api.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "api.otel.yaml"));
 
         Assert.True(result.IsSuccess, $"Errors: {string.Join(", ", result.Errors)}");
         Assert.Equal(2, result.Document!.Fields.Count);
@@ -239,7 +239,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     public void MergeFromFile_PackageSchemaWithEvents_MergesEventsAcrossPackages()
     {
         var pkgDir = CreatePackageDir("Pkg.BaseEvents");
-        WriteSchema(pkgDir, "base.all.yaml", """
+        WriteSchema(pkgDir, "base.otel.yaml", """
             schema:
               name: "BaseEvents"
               version: "1.0.0"
@@ -253,13 +253,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "service.all.yaml", """
+        WriteSchema(consumerDir, "service.otel.yaml", """
             schema:
               name: "MyService"
               version: "1.0.0"
               namespace: "Test.MyService"
             imports:
-              - "package:Pkg.BaseEvents/base.all.yaml"
+              - "package:Pkg.BaseEvents/base.otel.yaml"
             events:
               service.ready:
                 id: 1
@@ -270,7 +270,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.otel.yaml"));
 
         Assert.True(result.IsSuccess, $"Errors: {string.Join(", ", result.Errors)}");
         Assert.Equal(2, result.Document!.Events.Count);
@@ -282,7 +282,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     public void MergeFromFile_DuplicateEventIdAcrossPackages_ReportsError()
     {
         var pkgDir = CreatePackageDir("Pkg.Events");
-        WriteSchema(pkgDir, "pkg.all.yaml", """
+        WriteSchema(pkgDir, "pkg.otel.yaml", """
             schema:
               name: "PkgEvents"
               version: "1.0.0"
@@ -296,13 +296,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "service.all.yaml", """
+        WriteSchema(consumerDir, "service.otel.yaml", """
             schema:
               name: "Service"
               version: "1.0.0"
               namespace: "Test.Service"
             imports:
-              - "package:Pkg.Events/pkg.all.yaml"
+              - "package:Pkg.Events/pkg.otel.yaml"
             events:
               service.event:
                 id: 1
@@ -313,7 +313,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.otel.yaml"));
 
         Assert.False(result.IsSuccess);
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.DuplicateEventId);
@@ -323,7 +323,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     public void MergeFromFile_DuplicateEventNameAcrossPackages_ReportsError()
     {
         var pkgDir = CreatePackageDir("Pkg.Events");
-        WriteSchema(pkgDir, "pkg.all.yaml", """
+        WriteSchema(pkgDir, "pkg.otel.yaml", """
             schema:
               name: "PkgEvents"
               version: "1.0.0"
@@ -337,13 +337,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "service.all.yaml", """
+        WriteSchema(consumerDir, "service.otel.yaml", """
             schema:
               name: "Service"
               version: "1.0.0"
               namespace: "Test.Service"
             imports:
-              - "package:Pkg.Events/pkg.all.yaml"
+              - "package:Pkg.Events/pkg.otel.yaml"
             events:
               test.event:
                 id: 200
@@ -354,7 +354,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.otel.yaml"));
 
         Assert.False(result.IsSuccess);
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.DuplicateEventName);
@@ -364,7 +364,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     public void MergeFromFile_IncompatibleVersionAcrossPackages_ReportsError()
     {
         var pkgDir = CreatePackageDir("Pkg.V2");
-        WriteSchema(pkgDir, "v2.all.yaml", """
+        WriteSchema(pkgDir, "v2.otel.yaml", """
             schema:
               name: "V2Package"
               version: "2.0.0"
@@ -376,13 +376,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var consumerDir = Path.Combine(_tempDir, "consumer");
         Directory.CreateDirectory(consumerDir);
-        WriteSchema(consumerDir, "service.all.yaml", """
+        WriteSchema(consumerDir, "service.otel.yaml", """
             schema:
               name: "Service"
               version: "1.0.0"
               namespace: "Test.Service"
             imports:
-              - "package:Pkg.V2/v2.all.yaml"
+              - "package:Pkg.V2/v2.otel.yaml"
             events:
               test.event:
                 id: 1
@@ -393,7 +393,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "service.otel.yaml"));
 
         Assert.False(result.IsSuccess);
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.IncompatibleSchemaVersion);
@@ -409,7 +409,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var dir = Path.Combine(_tempDir, "local-only");
         Directory.CreateDirectory(dir);
-        WriteSchema(dir, "shared.all.yaml", """
+        WriteSchema(dir, "shared.otel.yaml", """
             schema:
               name: "Shared"
               version: "1.0.0"
@@ -419,13 +419,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
                 type: string
             """);
 
-        WriteSchema(dir, "main.all.yaml", """
+        WriteSchema(dir, "main.otel.yaml", """
             schema:
               name: "Main"
               version: "1.0.0"
               namespace: "Test.Main"
             imports:
-              - "shared.all.yaml"
+              - "shared.otel.yaml"
             events:
               user.login:
                 id: 1
@@ -437,7 +437,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
                     required: true
             """);
 
-        var result = merger.MergeFromFile(Path.Combine(dir, "main.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(dir, "main.otel.yaml"));
 
         Assert.True(result.IsSuccess, $"Errors: {string.Join(", ", result.Errors)}");
     }
@@ -450,13 +450,13 @@ public sealed class SchemaMergerPackageTests : IDisposable
 
         var dir = Path.Combine(_tempDir, "no-resolver");
         Directory.CreateDirectory(dir);
-        WriteSchema(dir, "main.all.yaml", """
+        WriteSchema(dir, "main.otel.yaml", """
             schema:
               name: "Main"
               version: "1.0.0"
               namespace: "Test.Main"
             imports:
-              - "package:SomePkg/schema.all.yaml"
+              - "package:SomePkg/schema.otel.yaml"
             events:
               test.event:
                 id: 1
@@ -464,7 +464,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
                 message: "Test"
             """);
 
-        var result = merger.MergeFromFile(Path.Combine(dir, "main.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(dir, "main.otel.yaml"));
 
         Assert.False(result.IsSuccess);
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.PackageSchemaNotFound);
@@ -507,7 +507,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
     public void MergeFromFile_PackageImportedTwice_DeduplicatesViaVisited()
     {
         var pkgDir = CreatePackageDir("Pkg.Shared");
-        WriteSchema(pkgDir, "shared.all.yaml", """
+        WriteSchema(pkgDir, "shared.otel.yaml", """
             schema:
               name: "Shared"
               version: "1.0.0"
@@ -521,23 +521,23 @@ public sealed class SchemaMergerPackageTests : IDisposable
         Directory.CreateDirectory(consumerDir);
 
         // Two local schemas both import the same package schema
-        WriteSchema(consumerDir, "a.all.yaml", """
+        WriteSchema(consumerDir, "a.otel.yaml", """
             schema:
               name: "A"
               version: "1.0.0"
               namespace: "Test.A"
             imports:
-              - "package:Pkg.Shared/shared.all.yaml"
+              - "package:Pkg.Shared/shared.otel.yaml"
             """);
 
-        WriteSchema(consumerDir, "main.all.yaml", """
+        WriteSchema(consumerDir, "main.otel.yaml", """
             schema:
               name: "Main"
               version: "1.0.0"
               namespace: "Test.Main"
             imports:
-              - "a.all.yaml"
-              - "package:Pkg.Shared/shared.all.yaml"
+              - "a.otel.yaml"
+              - "package:Pkg.Shared/shared.otel.yaml"
             events:
               test.event:
                 id: 1
@@ -552,7 +552,7 @@ public sealed class SchemaMergerPackageTests : IDisposable
         var resolver = new SchemaPackageResolver([pkgDir]);
         var merger = new SchemaMerger(_parser, _validator, resolver);
 
-        var result = merger.MergeFromFile(Path.Combine(consumerDir, "main.all.yaml"));
+        var result = merger.MergeFromFile(Path.Combine(consumerDir, "main.otel.yaml"));
 
         Assert.True(result.IsSuccess, $"Errors: {string.Join(", ", result.Errors)}");
         // Should only have ONE commonField (deduplication via visited set)

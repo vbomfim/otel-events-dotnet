@@ -7,7 +7,7 @@ namespace OtelEvents.AspNetCore.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for HTTP infrastructure events.
-/// Maps to the aspnetcore.all.yaml schema (event IDs 10004–10006).
+/// Maps to the aspnetcore.otel.yaml schema (event IDs 10004–10006).
 /// These are SUPPLEMENTAL events — they fire alongside the standard operation events.
 /// </summary>
 /// <remarks>

@@ -138,7 +138,7 @@ Navigate to [http://localhost:3000](http://localhost:3000) (admin/admin) and fin
 
 ## Custom Dashboards from Your Schema
 
-Use `SchemaMetricsDashboardGenerator` to generate dashboard JSON from any `.all.yaml` schema:
+Use `SchemaMetricsDashboardGenerator` to generate dashboard JSON from any `.otel.yaml` schema:
 
 ```csharp
 using OtelEvents.Schema.CodeGen;
@@ -146,7 +146,7 @@ using OtelEvents.Schema.Parsing;
 
 // Parse your schema
 var parser = new SchemaParser();
-var doc = parser.Parse(File.ReadAllText("my-service.all.yaml"));
+var doc = parser.Parse(File.ReadAllText("my-service.otel.yaml"));
 
 // Generate dashboard files
 var generator = new SchemaMetricsDashboardGenerator();

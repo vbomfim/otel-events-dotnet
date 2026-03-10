@@ -14,7 +14,7 @@ public static class BuiltInSchemas
     /// <summary>
     /// The embedded resource name for the lifecycle schema.
     /// </summary>
-    internal const string LifecycleResourceName = "OtelEvents.Schema.Schemas.lifecycle.all.yaml";
+    internal const string LifecycleResourceName = "OtelEvents.Schema.Schemas.lifecycle.otel.yaml";
 
     /// <summary>
     /// Loads and parses the built-in lifecycle schema (application health and lifecycle events).

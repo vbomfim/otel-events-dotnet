@@ -8,7 +8,7 @@ namespace OtelEvents.Grpc.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for gRPC infrastructure events.
-/// Maps to the grpc.all.yaml schema (event IDs 10104–10106).
+/// Maps to the grpc.otel.yaml schema (event IDs 10104–10106).
 /// These events are supplemental — they fire alongside <c>grpc.call.failed</c> (10103)
 /// to provide domain-specific detail about connection, authentication, and throttling failures.
 /// </summary>

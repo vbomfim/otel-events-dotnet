@@ -375,7 +375,7 @@ OtelEvents.Testing (test-time only)
 
 ### Schema File Structure
 
-Schema files use `.all.yaml` or `.all.yml` extension. A project can have multiple schema files — they are merged by the code generator.
+Schema files use `.otel.yaml` or `.all.yml` extension. A project can have multiple schema files — they are merged by the code generator.
 
 ### Full Schema Grammar
 
@@ -2011,9 +2011,9 @@ otel-events-dotnet/
 │
 ├── schemas/
 │   └── examples/
-│       ├── web-api.all.yaml                  # Example: Web API events
-│       ├── worker.all.yaml                   # Example: Background worker events
-│       └── shared.all.yaml                   # Example: Shared field definitions
+│       ├── web-api.otel.yaml                  # Example: Web API events
+│       ├── worker.otel.yaml                   # Example: Background worker events
+│       └── shared.otel.yaml                   # Example: Shared field definitions
 │
 └── .github/
     ├── workflows/
@@ -2104,7 +2104,7 @@ steps:
 
 ```
 Step 1: dotnet add package OtelEvents.Schema          (adds code generator)
-Step 2: Create events.all.yaml                 (define your events)
+Step 2: Create events.otel.yaml                 (define your events)
 Step 3: Build                                  (generated code appears)
 Step 4: Replace manual ILogger calls with      (use generated extension methods)
         generated extension methods
@@ -2124,7 +2124,7 @@ Step 7: (Optional) dotnet add package          (compile-time enforcement)
 Step 1: dotnet add package OtelEvents          (meta-package — everything)
 Step 2: Configure AddOpenTelemetry() in        (standard OTEL setup)
         Program.cs
-Step 3: Create events.all.yaml                 (define your events)
+Step 3: Create events.otel.yaml                 (define your events)
 Step 4: Build and use generated events         (type-safe, schema-enforced)
 ```
 
@@ -2750,7 +2750,7 @@ Integration packs are **pre-built NuGet packages** that provide curated YAML sch
 
 | Property | Description |
 |----------|-------------|
-| **Pre-built schemas** | Each pack bundles a `.all.yaml` schema file as an embedded resource (for documentation and tooling inspection) |
+| **Pre-built schemas** | Each pack bundles a `.otel.yaml` schema file as an embedded resource (for documentation and tooling inspection) |
 | **Pre-compiled code** | Generated `[LoggerMessage]` methods, `Meter`/`Counter`/`Histogram` instruments, and extension methods are compiled into the NuGet package — the consumer does NOT need `OtelEvents.Schema` at build time |
 | **Runtime glue** | Middleware, interceptors, diagnostic listeners, or publishers that automatically emit schema-defined events from the target technology |
 | **Complementary** | Works alongside existing OTEL auto-instrumentation (traces + metrics) — adds the **structured event** layer that OTEL does not provide |
@@ -4851,7 +4851,7 @@ OtelEvents (meta-package — references all below)
 │   │   ├── OtelEventsAspNetCoreOptions.cs             # Configuration options
 │   │   ├── OtelEventsAspNetCoreExtensions.cs          # AddOtelEventsAspNetCore() extension
 │   │   └── Schemas/
-│   │       └── aspnetcore.all.yaml                    # Bundled schema (embedded resource)
+│   │       └── aspnetcore.otel.yaml                    # Bundled schema (embedded resource)
 │   │
 │   ├── OtelEvents.Grpc/
 │   │   ├── OtelEvents.Grpc.csproj
@@ -4863,7 +4863,7 @@ OtelEvents (meta-package — references all below)
 │   │   ├── OtelEventsGrpcOptions.cs
 │   │   ├── OtelEventsGrpcExtensions.cs
 │   │   └── Schemas/
-│   │       └── grpc.all.yaml
+│   │       └── grpc.otel.yaml
 │   │
 │   ├── OtelEvents.Azure.CosmosDb/
 │   │   ├── OtelEvents.Azure.CosmosDb.csproj
@@ -4874,7 +4874,7 @@ OtelEvents (meta-package — references all below)
 │   │   ├── OtelEventsCosmosDbOptions.cs
 │   │   ├── OtelEventsCosmosDbExtensions.cs
 │   │   └── Schemas/
-│   │       └── cosmosdb.all.yaml
+│   │       └── cosmosdb.otel.yaml
 │   │
 │   ├── OtelEvents.Azure.Storage/
 │   │   ├── OtelEvents.Azure.Storage.csproj
@@ -4885,7 +4885,7 @@ OtelEvents (meta-package — references all below)
 │   │   ├── OtelEventsStorageOptions.cs
 │   │   ├── OtelEventsStorageExtensions.cs
 │   │   └── Schemas/
-│   │       └── storage.all.yaml
+│   │       └── storage.otel.yaml
 │   │
 │   └── OtelEvents.HealthChecks/
 │       ├── OtelEvents.HealthChecks.csproj
@@ -4896,7 +4896,7 @@ OtelEvents (meta-package — references all below)
 │       ├── OtelEventsHealthCheckOptions.cs
 │       ├── OtelEventsHealthCheckExtensions.cs
 │       └── Schemas/
-│           └── healthchecks.all.yaml
+│           └── healthchecks.otel.yaml
 │
 ├── tests/
 │   ├── ... (existing test projects) ...

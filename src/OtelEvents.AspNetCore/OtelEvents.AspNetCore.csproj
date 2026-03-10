@@ -21,8 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Schemas\aspnetcore.all.yaml">
-      <LogicalName>OtelEvents.AspNetCore.aspnetcore.all.yaml</LogicalName>
+    <EmbeddedResource Include="Schemas\aspnetcore.otel.yaml">
+      <LogicalName>OtelEvents.AspNetCore.aspnetcore.otel.yaml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

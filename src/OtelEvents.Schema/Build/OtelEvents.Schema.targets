@@ -4,7 +4,7 @@
   This targets file is included automatically when a project references the OtelEvents.Schema package.
   It provides two capabilities:
   
-  1. PRODUCER: Automatically packages .all.yaml files as NuGet content files.
+  1. PRODUCER: Automatically packages .otel.yaml files as NuGet content files.
      Schema files are placed in contentFiles/any/any/schemas/ within the NuGet package,
      making them available to consuming projects.
   
@@ -12,8 +12,8 @@
      SchemaPackageResolver can discover and resolve cross-package imports at build time.
   
   Usage:
-    Producer: Simply place .all.yaml files in your project directory.
-    Consumer: Use "package:PackageName/schema.all.yaml" in your schema imports.
+    Producer: Simply place .otel.yaml files in your project directory.
+    Consumer: Use "package:PackageName/schema.otel.yaml" in your schema imports.
   
   Properties:
     EnableOtelEventsSchemaPackaging (default: true) — Set to false to disable auto-packaging.
@@ -28,11 +28,11 @@
   </PropertyGroup>
 
   <!--
-    PRODUCER: Auto-detect .all.yaml files and include them as NuGet content.
+    PRODUCER: Auto-detect .otel.yaml files and include them as NuGet content.
     Only applies to packable projects with EnableOtelEventsSchemaPackaging=true.
   -->
   <ItemGroup Condition="'$(IsPackable)' != 'false' AND '$(EnableOtelEventsSchemaPackaging)' == 'true'">
-    <None Include="**/*.all.yaml"
+    <None Include="**/*.otel.yaml"
           Exclude="bin/**;obj/**"
           Pack="true"
           PackagePath="contentFiles/any/any/$(OtelEventsSchemaContentDir)/%(Filename)%(Extension)"
@@ -49,11 +49,11 @@
           Condition="'$(EnableOtelEventsSchemaPackaging)' == 'true'">
     <ItemGroup>
       <!--
-        Find .all.yaml files from NuGet package content directories.
+        Find .otel.yaml files from NuGet package content directories.
         NuGet restores content files to: $(NuGetPackageRoot)/PackageId/Version/contentFiles/
         The schema files will be in the 'schemas' subdirectory.
       -->
-      <_OtelEventsSchemaPackageFiles Include="$(NuGetPackageRoot)/**/contentFiles/any/any/$(OtelEventsSchemaContentDir)/*.all.yaml" />
+      <_OtelEventsSchemaPackageFiles Include="$(NuGetPackageRoot)/**/contentFiles/any/any/$(OtelEventsSchemaContentDir)/*.otel.yaml" />
       <OtelEventsSchemaPackagePath Include="@(_OtelEventsSchemaPackageFiles->'%(RootDir)%(Directory)')" />
     </ItemGroup>
   </Target>

@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace OtelEvents.Schema.Signing;
 
 /// <summary>
-/// Validates HMAC-SHA256 signatures for .all.yaml schema files.
+/// Validates HMAC-SHA256 signatures for .otel.yaml schema files.
 /// Used to verify schema integrity before code generation in multi-team environments.
 /// </summary>
 public sealed class SchemaVerifier
@@ -45,7 +45,7 @@ public sealed class SchemaVerifier
     /// <summary>
     /// Verifies a schema file against its detached .sig file.
     /// </summary>
-    /// <param name="schemaFilePath">Path to the .all.yaml schema file.</param>
+    /// <param name="schemaFilePath">Path to the .otel.yaml schema file.</param>
     /// <param name="key">The HMAC key bytes.</param>
     /// <returns>Verification result.</returns>
     public static SchemaVerificationResult VerifyFile(string schemaFilePath, byte[] key)

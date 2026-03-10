@@ -54,7 +54,7 @@ Create a `schemas/` directory and add your first schema file:
 mkdir schemas
 ```
 
-Create `schemas/orders.all.yaml`:
+Create `schemas/orders.otel.yaml`:
 
 ```yaml
 schema:
@@ -169,7 +169,7 @@ events:
 Run the code generator:
 
 ```bash
-dotnet otel-events generate schemas/orders.all.yaml -o Generated/
+dotnet otel-events generate schemas/orders.otel.yaml -o Generated/
 ```
 
 This creates:

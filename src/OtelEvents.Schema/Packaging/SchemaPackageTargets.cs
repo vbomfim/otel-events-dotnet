@@ -6,10 +6,10 @@ namespace OtelEvents.Schema.Packaging;
 /// </summary>
 public sealed class SchemaPackageMetadata
 {
-    /// <summary>The absolute path to the source .all.yaml file.</summary>
+    /// <summary>The absolute path to the source .otel.yaml file.</summary>
     public required string SourcePath { get; init; }
 
-    /// <summary>The NuGet package path (e.g., "contentFiles/any/any/schemas/events.all.yaml").</summary>
+    /// <summary>The NuGet package path (e.g., "contentFiles/any/any/schemas/events.otel.yaml").</summary>
     public required string PackagePath { get; init; }
 
     /// <summary>The MSBuild build action for this file.</summary>
@@ -20,7 +20,7 @@ public sealed class SchemaPackageMetadata
 }
 
 /// <summary>
-/// Provides helpers for discovering and packaging .all.yaml schema files
+/// Provides helpers for discovering and packaging .otel.yaml schema files
 /// as NuGet package content. Used by MSBuild targets integration.
 /// </summary>
 public static class SchemaPackageTargets
@@ -29,7 +29,7 @@ public static class SchemaPackageTargets
     internal const string ContentFilesPrefix = "contentFiles/any/any/schemas/";
 
     /// <summary>
-    /// Finds all .all.yaml schema files in the given directory, excluding bin/ and obj/.
+    /// Finds all .otel.yaml schema files in the given directory, excluding bin/ and obj/.
     /// </summary>
     /// <param name="projectDirectory">The project root directory to search.</param>
     /// <returns>List of absolute file paths to discovered schema files.</returns>
@@ -39,7 +39,7 @@ public static class SchemaPackageTargets
             return [];
 
         return Directory
-            .GetFiles(projectDirectory, "*.all.yaml", SearchOption.AllDirectories)
+            .GetFiles(projectDirectory, "*.otel.yaml", SearchOption.AllDirectories)
             .Where(f => !IsExcludedDirectory(f, projectDirectory))
             .ToList();
     }
@@ -57,7 +57,7 @@ public static class SchemaPackageTargets
     }
 
     /// <summary>
-    /// Generates NuGet package metadata for all .all.yaml files in a project directory.
+    /// Generates NuGet package metadata for all .otel.yaml files in a project directory.
     /// </summary>
     /// <param name="projectDirectory">The project root directory.</param>
     /// <returns>Package metadata entries for each discovered schema file.</returns>

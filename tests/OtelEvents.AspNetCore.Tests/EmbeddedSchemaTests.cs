@@ -11,7 +11,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsAspNetCoreOptions).Assembly;
-        var resourceName = "OtelEvents.AspNetCore.aspnetcore.all.yaml";
+        var resourceName = "OtelEvents.AspNetCore.aspnetcore.otel.yaml";
 
         // Act
         using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -25,7 +25,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsAspNetCoreOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act
@@ -46,7 +46,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsAspNetCoreOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act
@@ -67,7 +67,7 @@ public class EmbeddedSchemaTests
     {
         // Arrange
         var assembly = typeof(OtelEventsAspNetCoreOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act

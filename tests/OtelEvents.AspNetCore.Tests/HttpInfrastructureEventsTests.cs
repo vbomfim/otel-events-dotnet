@@ -632,7 +632,7 @@ public class HttpInfrastructureEventsTests : IAsyncDisposable
     {
         // Arrange
         var assembly = typeof(OtelEventsAspNetCoreOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act
@@ -652,7 +652,7 @@ public class HttpInfrastructureEventsTests : IAsyncDisposable
     {
         // Arrange
         var assembly = typeof(OtelEventsAspNetCoreOptions).Assembly;
-        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.all.yaml")!;
+        using var stream = assembly.GetManifestResourceStream("OtelEvents.AspNetCore.aspnetcore.otel.yaml")!;
         using var reader = new StreamReader(stream);
 
         // Act

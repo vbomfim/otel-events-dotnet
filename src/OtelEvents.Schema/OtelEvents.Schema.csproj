@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Schemas\lifecycle.all.yaml" LogicalName="OtelEvents.Schema.Schemas.lifecycle.all.yaml" />
+    <EmbeddedResource Include="Schemas\lifecycle.otel.yaml" LogicalName="OtelEvents.Schema.Schemas.lifecycle.otel.yaml" />
   </ItemGroup>
 
   <!-- Include MSBuild targets for NuGet schema packaging (auto-imported by consumers) -->

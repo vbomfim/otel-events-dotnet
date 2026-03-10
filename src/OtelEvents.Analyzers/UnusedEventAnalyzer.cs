@@ -33,7 +33,7 @@ namespace OtelEvents.Analyzers
             context.EnableConcurrentExecution();
             // TODO: Register compilation-end action once schema context is available.
             // This analyzer requires:
-            //   1. Loading .all.yaml to enumerate all defined events
+            //   1. Loading .otel.yaml to enumerate all defined events
             //   2. Scanning the entire compilation for Emit* method calls
             //   3. Reporting events that have definitions but no callers
         }

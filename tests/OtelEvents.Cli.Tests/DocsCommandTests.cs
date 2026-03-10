@@ -26,7 +26,7 @@ public sealed class DocsCommandTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private string CreateSchemaFile(string content, string fileName = "test.all.yaml")
+    private string CreateSchemaFile(string content, string fileName = "test.otel.yaml")
     {
         var path = Path.Combine(_tempDir, fileName);
         File.WriteAllText(path, content);

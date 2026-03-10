@@ -10,7 +10,7 @@ namespace OtelEvents.Azure.Storage.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for Azure Storage infrastructure events.
-/// Maps to the azure-storage.all.yaml schema (event IDs 10308–10310).
+/// Maps to the azure-storage.otel.yaml schema (event IDs 10308–10310).
 /// </summary>
 /// <remarks>
 /// Infrastructure events provide deeper diagnostics by classifying

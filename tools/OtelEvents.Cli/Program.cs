@@ -5,7 +5,7 @@ namespace OtelEvents.Cli;
 
 /// <summary>
 /// Entry point for the otel-events Schema CLI tool.
-/// Provides validate, generate, and diff commands for .all.yaml schema files.
+/// Provides validate, generate, and diff commands for .otel.yaml schema files.
 /// </summary>
 public static class Program
 {
@@ -23,7 +23,7 @@ public static class Program
     /// </summary>
     internal static RootCommand BuildRootCommand()
     {
-        var rootCommand = new RootCommand("otel-events Schema CLI — validate, generate, and diff .all.yaml schema files");
+        var rootCommand = new RootCommand("otel-events Schema CLI — validate, generate, and diff .otel.yaml schema files");
 
         rootCommand.Subcommands.Add(ValidateCommand.Create());
         rootCommand.Subcommands.Add(GenerateCommand.Create());
