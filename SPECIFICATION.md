@@ -1,4 +1,4 @@
-# ALL — Another Logging Library
+# otel-events — Another Logging Library
 
 ## Project Specification v2.0
 
@@ -30,11 +30,11 @@
 
 ## 1. Project Overview & Vision
 
-### What is ALL?
+### What is otel-events?
 
-**Another Logging Library (ALL)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it. It is a set of packages that **extend** the standard OpenTelemetry pipeline with schema-driven code generation, AI-optimized JSON export, causal event linking, and compile-time consistency enforcement.
+**otel-events (Another Logging Library)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it. It is a set of packages that **extend** the standard OpenTelemetry pipeline with schema-driven code generation, AI-optimized JSON export, causal event linking, and compile-time consistency enforcement.
 
-Projects already using the OpenTelemetry .NET SDK can **adopt ALL incrementally** — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through their existing OTEL pipeline. No migration. No replacement. No parallel infrastructure.
+Projects already using the OpenTelemetry .NET SDK can **adopt otel-events incrementally** — add a package, point it at a YAML schema, and get type-safe, schema-enforced events flowing through their existing OTEL pipeline. No migration. No replacement. No parallel infrastructure.
 
 ### Core Thesis
 
@@ -59,7 +59,7 @@ Projects already using the OpenTelemetry .NET SDK can **adopt ALL incrementally*
 | **OTEL-native** | Generated code creates `LogRecord`s and `Meter` recordings directly — no intermediate types |
 | **Schema-first** | Events defined in YAML → C# generated → compile-time enforced |
 | **Type-safe** | No `string.Format`, no anonymous objects — typed methods with IntelliSense |
-| **Incremental adoption** | Teams already on OTEL add ALL packages and get value immediately |
+| **Incremental adoption** | Teams already on OTEL add otel-events packages and get value immediately |
 | **Consistent** | Every JSON output line is the same AI-optimized envelope — no formatting surprises |
 | **AI-optimized** | Predictable structure, causal trees via `eventId`/`parentEventId`, structured exceptions |
 | **Zero-friction** | Works with `dotnet add package`, extends existing OTEL setup, uses YAML files |
@@ -69,7 +69,7 @@ Projects already using the OpenTelemetry .NET SDK can **adopt ALL incrementally*
 
 ## 2. Problem Statement & Target Audience
 
-### Problems ALL Solves
+### Problems otel-events Solves
 
 1. **Inconsistent logging** — Different developers write different `[LoggerMessage]` definitions for the same events. Messages drift between services. There is no central schema governing what events exist and what fields they carry.
 
@@ -95,7 +95,7 @@ Projects already using the OpenTelemetry .NET SDK can **adopt ALL incrementally*
 - Target: .NET teams with 2–200 developers, already using or willing to adopt OpenTelemetry
 - Services: 1 to hundreds of microservices
 - Events per service: 10–500 defined events
-- Throughput target: 100,000+ events/second per process (limited by OTEL SDK pipeline, not by ALL)
+- Throughput target: 100,000+ events/second per process (limited by OTEL SDK pipeline, not by otel-events)
 
 ---
 
@@ -109,10 +109,10 @@ The minimum viable product that proves the concept and is usable in a real proje
 |---|---------|-------------|
 | 1.1 | **Event schema parser** | Parse YAML schema files into an in-memory model (`EventDefinition`, `FieldDefinition`, etc.) with safe loading: max file size 1 MB, max 500 events, max 50 fields per event |
 | 1.2 | **C# code generator** | MSBuild-integrated source generator that produces `[LoggerMessage]` partial methods + `Meter`/`Counter`/`Histogram` instances + typed extension methods from YAML schemas |
-| 1.3 | **JSON log exporter** | Custom OTEL `BaseExporter<LogRecord>` that formats `LogRecord`s as AI-optimized single-line JSONL (the ALL envelope) to stdout or file. Includes environment-aware defaults (see §16). |
+| 1.3 | **JSON log exporter** | Custom OTEL `BaseExporter<LogRecord>` that formats `LogRecord`s as AI-optimized single-line JSONL (the otel-events envelope) to stdout or file. Includes environment-aware defaults (see §16). |
 | 1.4 | **Causality processor** | Custom OTEL `BaseProcessor<LogRecord>` that adds `all.event_id` and `all.parent_event_id` attributes to `LogRecord`s for causal tree construction |
 | 1.5 | **Exception serialization** | Structured exception → `exception` object in JSON exporter with configurable `ExceptionDetailLevel` (`Full`, `TypeAndMessage`, `TypeOnly`), depth cap at 5 |
-| 1.6 | **DI integration** | Extension methods on `OpenTelemetryBuilder` to register ALL components: `.AddAllJsonExporter()`, `.AddProcessor<AllCausalityProcessor>()`, `.AddMeter("MyApp.Events.*")` |
+| 1.6 | **DI integration** | Extension methods on `OpenTelemetryBuilder` to register otel-events components: `.AddOtelEventsJsonExporter()`, `.AddProcessor<OtelEventsCausalityProcessor>()`, `.AddMeter("MyApp.Events.*")` |
 | 1.7 | **Basic schema validation** | Validate YAML schemas at build time — duplicate IDs, missing fields, type mismatches, PII sensitivity annotations |
 | 1.8 | **Basic severity-based filtering** | Configurable per-severity log filtering as an OTEL processor, allowing events below a threshold to be dropped before export (moved from Phase 3 per Platform Guardian review) |
 
@@ -127,7 +127,7 @@ Features required for production use and team adoption.
 | 2.2 | **Configuration** | `appsettings.json` / env-var configuration for JSON exporter output target, severity filtering, metric batching, `EnvironmentProfile` |
 | 2.3 | **Schema versioning** | `all.v` field, compatibility validation between schema versions |
 | 2.4 | **Health/readiness events** | Built-in schema for application lifecycle events: startup, ready, degraded, shutdown |
-| 2.5 | **Testing utilities** | `ALL.Testing` package with in-memory `LogRecord` collector and assertion extensions |
+| 2.5 | **Testing utilities** | `OtelEvents.Testing` package with in-memory `LogRecord` collector and assertion extensions |
 | 2.6 | **OtelEvents.AspNetCore integration pack** | Pre-built ASP.NET Core middleware that auto-emits schema-defined `http.request.received`, `http.request.completed`, `http.request.failed` events with causal scope per request |
 | 2.7 | **OtelEvents.HealthChecks integration pack** | Pre-built `IHealthCheckPublisher` that emits `health.check.executed` and `health.state.changed` events; complements 2.4 lifecycle events |
 | 2.8 | **Per-event-category rate limiting** | OTEL processor that rate-limits events by category (e.g., max 100 `db.query.executed` events per second), configurable per event name |
@@ -187,7 +187,7 @@ Advanced features for large-scale adoption.
 │  ┌────────────────────────────────────────────────────────────┐     │
 │  │  Roslyn Analyzers                                          │     │
 │  │  • ALL001: Console.Write detected                          │     │
-│  │  • ALL002: Untyped ILogger usage (not via ALL extension)   │     │
+│  │  • ALL002: Untyped ILogger usage (not via otel-events extension)   │     │
 │  │  • ALL003: String interpolation in event field             │     │
 │  │  • ALL004: Undefined event name                            │     │
 │  └────────────────────────────────────────────────────────────┘     │
@@ -203,7 +203,7 @@ Advanced features for large-scale adoption.
 │           │                                                         │
 │           ▼                                                         │
 │  ┌──────────────────────┐                                           │
-│  │ ALL Generated Code   │  Extension method on ILogger<T>           │
+│  │ otel-events Generated Code   │  Extension method on ILogger<T>           │
 │  │                      │  • Calls [LoggerMessage] partial method   │
 │  │                      │    → creates OTEL LogRecord natively      │
 │  │                      │  • Records Histogram/Counter via Meter    │
@@ -222,7 +222,7 @@ Advanced features for large-scale adoption.
 │  │             │                                           │        │
 │  │             ▼                                           │        │
 │  │  ┌─────────────────────┐  ┌──────────────────────────┐  │        │
-│  │  │ AllJsonExporter     │  │ OTLP Exporter            │  │        │
+│  │  │ OtelEventsJsonExporter     │  │ OTLP Exporter            │  │        │
 │  │  │ (BaseExporter       │  │ (standard OTEL)          │  │        │
 │  │  │  <LogRecord>)       │  │                          │  │        │
 │  │  │                     │  │ → OTEL Collector          │  │        │
@@ -234,7 +234,7 @@ Advanced features for large-scale adoption.
 │  ┌─────────────────────────────────────────────────────────┐        │
 │  │              OTEL SDK METRICS PIPELINE                   │        │
 │  │                                                         │        │
-│  │  ALL-generated Meters (MyApp.Events.Http, etc.)          │        │
+│  │  otel-events generated Meters (MyApp.Events.Http, etc.)          │        │
 │  │  → Registered via .AddMeter("MyApp.Events.*")            │        │
 │  │  → OTEL SDK handles aggregation + export (OTLP, etc.)    │        │
 │  └─────────────────────────────────────────────────────────┘        │
@@ -242,23 +242,23 @@ Advanced features for large-scale adoption.
 │  ┌─────────────────────────────────────────────────────────┐        │
 │  │  OTEL Trace Context (Activity.Current)                   │        │
 │  │  • traceId, spanId flow automatically via OTEL           │        │
-│  │  • ALL reads them — does NOT propagate or create spans   │        │
+│  │  • otel-events reads them — does NOT propagate or create spans   │        │
 │  └─────────────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### How ALL Extends OTEL
+### How otel-events Extends OTEL
 
-ALL adds exactly **four components** to an existing OTEL setup. Everything else is standard OTEL.
+otel-events adds exactly **four components** to an existing OTEL setup. Everything else is standard OTEL.
 
-| ALL Component | OTEL Extension Point | What it does |
+| otel-events Component | OTEL Extension Point | What it does |
 |---------------|---------------------|-------------|
-| **ALL.Schema** (build-time) | N/A — build-time only | Parses YAML → generates C# code that uses `[LoggerMessage]` + `Meter` + `Counter<T>` + `Histogram<T>` |
-| **AllJsonExporter** | `BaseExporter<LogRecord>` | Formats `LogRecord`s as AI-optimized single-line JSONL to stdout/file |
-| **AllCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `all.event_id` (UUID v7) and `all.parent_event_id` attributes to each `LogRecord` |
-| **ALL.Analyzers** | Roslyn `DiagnosticAnalyzer` | Compile-time enforcement of schema usage, detects `Console.Write`, validates patterns |
+| **OtelEvents.Schema** (build-time) | N/A — build-time only | Parses YAML → generates C# code that uses `[LoggerMessage]` + `Meter` + `Counter<T>` + `Histogram<T>` |
+| **OtelEventsJsonExporter** | `BaseExporter<LogRecord>` | Formats `LogRecord`s as AI-optimized single-line JSONL to stdout/file |
+| **OtelEventsCausalityProcessor** | `BaseProcessor<LogRecord>` | Adds `all.event_id` (UUID v7) and `all.parent_event_id` attributes to each `LogRecord` |
+| **OtelEvents.Analyzers** | Roslyn `DiagnosticAnalyzer` | Compile-time enforcement of schema usage, detects `Console.Write`, validates patterns |
 
-### What ALL Does NOT Provide (OTEL Handles It)
+### What otel-events Does NOT Provide (OTEL Handles It)
 
 | Responsibility | OTEL Component |
 |---------------|---------------|
@@ -293,12 +293,12 @@ ALL adds exactly **four components** to an existing OTEL setup. Everything else 
 ## 5. NuGet Package Structure
 
 ```
-All4dotnet (meta-package — references all below)
-├── All.Schema                  — YAML parser, schema model, validation, code generator
-├── All.Exporter.Json           — Custom OTEL BaseExporter<LogRecord> for AI-optimized JSONL
-├── All.Causality               — Custom OTEL BaseProcessor<LogRecord> for eventId/parentEventId
-├── All.Analyzers               — Roslyn analyzers (Console.Write, ILogger, etc.)
-└── All.Testing                 — In-memory LogRecord collector, assertion extensions
+OtelEvents (meta-package — references all below)
+├── OtelEvents.Schema                  — YAML parser, schema model, validation, code generator
+├── OtelEvents.Exporter.Json           — Custom OTEL BaseExporter<LogRecord> for AI-optimized JSONL
+├── OtelEvents.Causality               — Custom OTEL BaseProcessor<LogRecord> for eventId/parentEventId
+├── OtelEvents.Analyzers               — Roslyn analyzers (Console.Write, ILogger, etc.)
+└── OtelEvents.Testing                 — In-memory LogRecord collector, assertion extensions
 ```
 
 ### Package Dependencies
@@ -322,25 +322,25 @@ All dependencies are managed via **Central Package Management** (`Directory.Pack
 ```
 
 ```
-All.Schema (build-time only — source generator + MSBuild task)
+OtelEvents.Schema (build-time only — source generator + MSBuild task)
 ├── YamlDotNet [16.1.3] (pinned; safe-loading mode configured — see §16)
 ├── Microsoft.CodeAnalysis.CSharp [4.8.0]
 └── (no runtime dependency — generates code that uses standard BCL + OTEL types)
 
-All.Exporter.Json (runtime — custom OTEL exporter)
+OtelEvents.Exporter.Json (runtime — custom OTEL exporter)
 ├── OpenTelemetry [1.9, 2.0)
 ├── System.Text.Json [8.0.5]
 └── (thin package — only the exporter + JSON serialization)
 
-All.Causality (runtime — custom OTEL processor)
+OtelEvents.Causality (runtime — custom OTEL processor)
 ├── OpenTelemetry [1.9, 2.0)
 └── (thin package — only the processor + UUID v7 generation)
 
-All.Analyzers (build-time only — Roslyn analyzers)
+OtelEvents.Analyzers (build-time only — Roslyn analyzers)
 └── Microsoft.CodeAnalysis.CSharp [4.8.0]
     (analyzer-only package — no runtime dependency)
 
-All.Testing (test-time only)
+OtelEvents.Testing (test-time only)
 ├── OpenTelemetry [1.9, 2.0)
 ├── Microsoft.Extensions.Logging [8.0.1]
 └── (no external test framework dependency — works with any)
@@ -351,23 +351,23 @@ All.Testing (test-time only)
 
 | Decision | Rationale |
 |----------|-----------|
-| `All.Schema` is build-time only | Source generator + MSBuild task — never ships in app binaries. Can also be used by CLI tools and CI validation. |
-| `All.Exporter.Json` is separate and optional | Not every project needs JSONL stdout output. Teams using OTLP-only pipelines can skip it. |
-| `All.Causality` is separate and optional | Teams that don't need causal event trees can skip it. Keeps core footprint minimal. |
-| `All.Analyzers` is separate | Analyzers have strict packaging rules; keeps the analyzer DLL isolated. |
-| `All.Testing` is separate | Test infrastructure shouldn't be in production packages. |
-| No `All.Core` package | There is no ALL runtime core — generated code uses only BCL types (`ILogger`, `Meter`, `Activity`) and OTEL SDK types. ALL adds no runtime abstraction layer. |
-| No `All.Bridge.MicrosoftLogging` package | OTEL SDK already provides `OpenTelemetryLoggerProvider` which bridges `ILogger` → `LogRecord`. ALL's generated code uses `ILogger` natively, so no bridge is needed. |
+| `OtelEvents.Schema` is build-time only | Source generator + MSBuild task — never ships in app binaries. Can also be used by CLI tools and CI validation. |
+| `OtelEvents.Exporter.Json` is separate and optional | Not every project needs JSONL stdout output. Teams using OTLP-only pipelines can skip it. |
+| `OtelEvents.Causality` is separate and optional | Teams that don't need causal event trees can skip it. Keeps core footprint minimal. |
+| `OtelEvents.Analyzers` is separate | Analyzers have strict packaging rules; keeps the analyzer DLL isolated. |
+| `OtelEvents.Testing` is separate | Test infrastructure shouldn't be in production packages. |
+| No `OtelEvents.Core` package | There is no otel-events runtime core — generated code uses only BCL types (`ILogger`, `Meter`, `Activity`) and OTEL SDK types. otel-events adds no runtime abstraction layer. |
+| No `All.Bridge.MicrosoftLogging` package | OTEL SDK already provides `OpenTelemetryLoggerProvider` which bridges `ILogger` → `LogRecord`. otel-events' generated code uses `ILogger` natively, so no bridge is needed. |
 
 ### Adoption Scenarios
 
 | Scenario | Packages Needed |
 |----------|----------------|
-| Schema-driven events + OTLP export (no JSON stdout) | `All.Schema` |
-| Schema-driven events + AI-optimized JSON stdout | `All.Schema` + `All.Exporter.Json` |
-| Full ALL experience | `All.Schema` + `All.Exporter.Json` + `All.Causality` + `All.Analyzers` |
-| CI schema validation only | `All.Schema` (used via `dotnet all validate` CLI) |
-| Testing ALL events | `All.Testing` (in test projects) |
+| Schema-driven events + OTLP export (no JSON stdout) | `OtelEvents.Schema` |
+| Schema-driven events + AI-optimized JSON stdout | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` |
+| Full otel-events experience | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.Analyzers` |
+| CI schema validation only | `OtelEvents.Schema` (used via `dotnet all validate` CLI) |
+| Testing otel-events events | `OtelEvents.Testing` (in test projects) |
 
 ---
 
@@ -628,7 +628,7 @@ fields:
     maxLength: 256               # Truncate long paths
 ```
 
-When a value exceeds `maxLength`, it is truncated with the suffix `"…[truncated]"`. A global default maximum is set via `AllJsonExporterOptions.MaxAttributeValueLength` (default: 4096 characters). Per-field `maxLength` overrides the global default.
+When a value exceeds `maxLength`, it is truncated with the suffix `"…[truncated]"`. A global default maximum is set via `OtelEventsJsonExporterOptions.MaxAttributeValueLength` (default: 4096 characters). Per-field `maxLength` overrides the global default.
 
 ### Field Types
 
@@ -740,7 +740,7 @@ events:
 
 ```csharp
 // <auto-generated>
-// Generated by ALL Code Generator v2.0.0
+// Generated by otel-events Code Generator v2.0.0
 // Schema: MyService v1.0.0
 // DO NOT EDIT — changes will be overwritten on next build
 // </auto-generated>
@@ -884,7 +884,7 @@ public static class HttpMethodExtensions
 ```csharp
 // <auto-generated/>
 using System.Text.Json.Serialization;
-using All.Exporter.Json;
+using OtelEvents.Exporter.Json;
 
 namespace MyCompany.MyService.Events;
 
@@ -958,19 +958,19 @@ public class OrderController : ControllerBase
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// Standard OTEL setup — ALL extends it, doesn't replace it
+// Standard OTEL setup — otel-events extends it, doesn't replace it
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService("order-service"))
     .WithLogging(logging =>
     {
-        // ALL extension: adds eventId/parentEventId to LogRecords
-        logging.AddProcessor<AllCausalityProcessor>();
+        // otel-events extension: adds eventId/parentEventId to LogRecords
+        logging.AddProcessor<OtelEventsCausalityProcessor>();
 
-        // ALL extension: AI-optimized JSON exporter (stdout)
-        logging.AddAllJsonExporter(options =>
+        // otel-events extension: AI-optimized JSON exporter (stdout)
+        logging.AddOtelEventsJsonExporter(options =>
         {
-            options.Output = AllJsonOutput.Stdout;
+            options.Output = OtelEventsJsonOutput.Stdout;
             options.SchemaVersion = "1.0.0";
         });
 
@@ -979,7 +979,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithMetrics(metrics =>
     {
-        // Pick up ALL-generated meters
+        // Pick up otel-events generated meters
         metrics.AddMeter("MyCompany.MyService.Events.*");
 
         // Standard OTEL: export to collector
@@ -987,7 +987,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithTracing(tracing =>
     {
-        // Standard OTEL: tracing (ALL reads Activity.Current but doesn't create spans)
+        // Standard OTEL: tracing (otel-events reads Activity.Current but doesn't create spans)
         tracing.AddAspNetCoreInstrumentation();
         tracing.AddOtlpExporter();
     });
@@ -999,7 +999,7 @@ builder.Logging.AddFilter<OpenTelemetryLoggerProvider>("MyCompany.MyService.Even
 
 ### What the Developer Gets
 
-| Before ALL | After ALL |
+| Before otel-events | After otel-events |
 |-----------|----------|
 | Write `[LoggerMessage]` by hand for each event | YAML schema generates all `[LoggerMessage]` methods |
 | Create `Meter`, `Counter`, `Histogram` manually | Schema generates metric instruments automatically |
@@ -1007,27 +1007,27 @@ builder.Logging.AddFilter<OpenTelemetryLoggerProvider>("MyCompany.MyService.Even
 | Inconsistent message templates across services | Schema enforces identical templates everywhere |
 | No IntelliSense for valid event fields | Generated extension methods provide full IntelliSense |
 | No compile-time event validation | Analyzers catch `Console.Write`, untyped `ILogger`, wrong fields |
-| No causal linking between events | `AllCausalityProcessor` adds `eventId`/`parentEventId` |
-| Verbose/inconsistent JSON on stdout | `AllJsonExporter` writes predictable AI-optimized JSONL |
+| No causal linking between events | `OtelEventsCausalityProcessor` adds `eventId`/`parentEventId` |
+| Verbose/inconsistent JSON on stdout | `OtelEventsJsonExporter` writes predictable AI-optimized JSONL |
 
 ---
 
 ## 8. JSON Envelope Specification
 
-### AllJsonExporter — Custom OTEL Log Exporter
+### OtelEventsJsonExporter — Custom OTEL Log Exporter
 
-The `AllJsonExporter` is a `BaseExporter<LogRecord>` that reads OTEL `LogRecord`s from the pipeline and serializes them as single-line AI-optimized JSONL. It is not a parallel output path — it IS an OTEL exporter, sitting alongside OTLP exporters in the standard OTEL pipeline.
+The `OtelEventsJsonExporter` is a `BaseExporter<LogRecord>` that reads OTEL `LogRecord`s from the pipeline and serializes them as single-line AI-optimized JSONL. It is not a parallel output path — it IS an OTEL exporter, sitting alongside OTLP exporters in the standard OTEL pipeline.
 
 ### Complete Envelope Schema
 
-Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSONL) with this structure:
+Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON line (JSONL) with this structure:
 
 ```jsonc
 {
   // ─── Mandatory Envelope (from OTEL LogRecord) ────────────────
   "timestamp": "2025-01-15T14:30:00.123456Z",   // LogRecord.Timestamp → ISO 8601 UTC, microsecond precision
   "event": "http.request.completed",              // LogRecord.EventId.Name (set by [LoggerMessage] EventName)
-  "severity": "INFO",                             // LogRecord.LogLevel → mapped to ALL severity string
+  "severity": "INFO",                             // LogRecord.LogLevel → mapped to otel-events severity string
   "severityNumber": 9,                            // OTEL numeric: 1-24
   "message": "HTTP GET /api/orders completed with 200 in 45.2ms",  // LogRecord.FormattedMessage
   "service": "order-service",                     // From OTEL Resource["service.name"]
@@ -1036,7 +1036,7 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSO
   // ─── Correlation (from OTEL context) ─────────────────────────
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736", // LogRecord.TraceId (from Activity.Current)
   "spanId": "00f067aa0ba902b7",                   // LogRecord.SpanId (from Activity.Current)
-  "eventId": "evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",       // From attribute "all.event_id" (set by AllCausalityProcessor)
+  "eventId": "evt_7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",       // From attribute "all.event_id" (set by OtelEventsCausalityProcessor)
   "parentEventId": "evt_1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", // From attribute "all.parent_event_id" (optional)
 
   // ─── Typed Payload (from LogRecord.Attributes) ───────────────
@@ -1114,7 +1114,7 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSO
 | **No null fields** | If a value is null/absent, the key is **omitted entirely** from the JSON object. No `"field": null`. |
 | **Single line** | Every event is exactly one JSON line terminated by `\n`. No pretty-printing, ever. |
 | **UTC timestamps** | All timestamps are ISO 8601 UTC with microsecond precision: `yyyy-MM-ddTHH:mm:ss.ffffffZ` |
-| **Reserved prefix** | All keys starting with `all.` are reserved for library metadata. User schemas must not use this prefix. At runtime, the exporter strips/renames any incoming `all.*` attributes not set by ALL components (see §16.4). |
+| **Reserved prefix** | All keys starting with `all.` are reserved for library metadata. User schemas must not use this prefix. At runtime, the exporter strips/renames any incoming `all.*` attributes not set by otel-events components (see §16.4). |
 | **eventId format** | `evt_` prefix + UUID v7 (time-sortable): `evt_{uuid}` |
 | **Event name format** | Lowercase, dot-namespaced: `category.subcategory.action` (e.g., `http.request.completed`) |
 | **Severity string** | Exactly one of: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` — always uppercase |
@@ -1131,7 +1131,7 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSO
 
 ### Severity Mapping Table
 
-| ALL Severity | severityNumber | OTEL Range | .NET LogLevel |
+| otel-events Severity | severityNumber | OTEL Range | .NET LogLevel |
 |-------------|---------------|------------|---------------|
 | TRACE | 1 | 1–4 | Trace |
 | DEBUG | 5 | 5–8 | Debug |
@@ -1142,7 +1142,7 @@ Every `LogRecord` exported by `AllJsonExporter` produces a single JSON line (JSO
 
 ### How the Exporter Reads LogRecord Fields
 
-The `AllJsonExporter` maps `LogRecord` fields to envelope fields as follows:
+The `OtelEventsJsonExporter` maps `LogRecord` fields to envelope fields as follows:
 
 | LogRecord Field | Envelope Field | Source |
 |----------------|---------------|--------|
@@ -1153,33 +1153,33 @@ The `AllJsonExporter` maps `LogRecord` fields to envelope fields as follows:
 | `FormattedMessage` | `message` | Set by `[LoggerMessage(Message = "...")]` |
 | `TraceId` | `traceId` | From `Activity.Current` (OTEL captures automatically) |
 | `SpanId` | `spanId` | From `Activity.Current` (OTEL captures automatically) |
-| `Exception` | `exception` | Serialized by ALL's structured exception serializer |
+| `Exception` | `exception` | Serialized by otel-events' structured exception serializer |
 | `Attributes` (state) | `attr` | Key-value pairs from `[LoggerMessage]` parameters |
-| `Attributes["all.event_id"]` | `eventId` | Set by `AllCausalityProcessor` |
-| `Attributes["all.parent_event_id"]` | `parentEventId` | Set by `AllCausalityProcessor` |
+| `Attributes["all.event_id"]` | `eventId` | Set by `OtelEventsCausalityProcessor` |
+| `Attributes["all.parent_event_id"]` | `parentEventId` | Set by `OtelEventsCausalityProcessor` |
 | `Attributes["all.tags"]` | `tags` | Set by generated code as log scope or attribute |
 | Resource `service.name` | `service` | OTEL resource (set at startup) |
 | Resource `deployment.environment` | `environment` | OTEL resource (set at startup) |
 
-### Non-ALL LogRecords
+### Non-otel-events LogRecords
 
-The `AllJsonExporter` can export **any** `LogRecord`, not just those from ALL-generated code. For non-ALL `LogRecord`s (e.g., from third-party libraries using `ILogger`):
+The `OtelEventsJsonExporter` can export **any** `LogRecord`, not just those from otel-events generated code. For non-otel-events `LogRecord`s (e.g., from third-party libraries using `ILogger`):
 
 - `event` = `LogRecord.EventId.Name` if set, otherwise `"dotnet.ilogger"` (fallback)
 - `attr` = all state key-value pairs from the `LogRecord`, subject to allowlist/denylist filtering (see below)
-- `eventId`/`parentEventId` = present only if `AllCausalityProcessor` is in the pipeline
+- `eventId`/`parentEventId` = present only if `OtelEventsCausalityProcessor` is in the pipeline
 - All other envelope fields are populated normally
 
-This means the `AllJsonExporter` provides a **unified JSONL output** for ALL-generated events AND third-party `ILogger` calls, without requiring a separate bridge component.
+This means the `OtelEventsJsonExporter` provides a **unified JSONL output** for otel-events generated events AND third-party `ILogger` calls, without requiring a separate bridge component.
 
-#### Attribute Filtering for Non-ALL LogRecords
+#### Attribute Filtering for Non-otel-events LogRecords
 
-Non-ALL `LogRecord`s may contain sensitive data from third-party libraries (connection strings, tokens, PII). The exporter provides filtering controls:
+Non-otel-events `LogRecord`s may contain sensitive data from third-party libraries (connection strings, tokens, PII). The exporter provides filtering controls:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    // Allowlist: only emit these attributes from non-ALL LogRecords
+    // Allowlist: only emit these attributes from non-otel-events LogRecords
     options.AttributeAllowlist = ["RequestPath", "StatusCode", "ElapsedMs"];
 
     // Denylist: never emit these attributes (takes precedence over allowlist)
@@ -1197,17 +1197,17 @@ logging.AddAllJsonExporter(options =>
 
 When neither allowlist nor denylist is configured, all attributes are emitted (backward-compatible default). When an allowlist is set, only listed attributes pass through. The denylist always takes precedence.
 
-### AllJsonExporter Implementation
+### OtelEventsJsonExporter Implementation
 
 ```csharp
 /// <summary>
 /// Custom OTEL Log Exporter that writes LogRecords as AI-optimized single-line JSONL.
 /// Plugs into the standard OTEL log pipeline alongside OTLP, Console, or any other exporter.
 /// </summary>
-public sealed class AllJsonExporter : BaseExporter<LogRecord>
+public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
 {
     private readonly Stream _output;
-    private readonly AllJsonExporterOptions _options;
+    private readonly OtelEventsJsonExporterOptions _options;
     private readonly StreamWriter _writer; // 32 KB buffer, flushed after each batch
     private long _seq; // monotonic sequence counter
     private static readonly TimeSpan s_lockTimeout = TimeSpan.FromMilliseconds(100);
@@ -1227,7 +1227,7 @@ public sealed class AllJsonExporter : BaseExporter<LogRecord>
 
             foreach (var logRecord in batch)
             {
-                // Strip/rename any incoming all.* attributes not set by ALL components
+                // Strip/rename any incoming all.* attributes not set by otel-events components
                 SanitizeReservedPrefix(logRecord);
 
                 var seq = Interlocked.Increment(ref _seq);
@@ -1242,7 +1242,7 @@ public sealed class AllJsonExporter : BaseExporter<LogRecord>
         catch (IOException ex)
         {
             s_exportErrorCounter.Add(1, new TagList { { "error_type", ex.GetType().Name } });
-            OpenTelemetrySdkEventSource.Log.ExporterErrorResult(nameof(AllJsonExporter), ex.Message);
+            OpenTelemetrySdkEventSource.Log.ExporterErrorResult(nameof(OtelEventsJsonExporter), ex.Message);
             return ExportResult.Failure;
         }
         finally
@@ -1253,14 +1253,14 @@ public sealed class AllJsonExporter : BaseExporter<LogRecord>
 }
 ```
 
-### AllJsonExporterOptions
+### OtelEventsJsonExporterOptions
 
 ```csharp
-/// <summary>Configuration for the ALL JSON exporter.</summary>
-public sealed class AllJsonExporterOptions
+/// <summary>Configuration for the otel-events JSON exporter.</summary>
+public sealed class OtelEventsJsonExporterOptions
 {
     /// <summary>Output target: Stdout, Stderr, or File.</summary>
-    public AllJsonOutput Output { get; set; } = AllJsonOutput.Stdout;
+    public OtelEventsJsonOutput Output { get; set; } = OtelEventsJsonOutput.Stdout;
 
     /// <summary>Schema version stamped into every envelope as "all.v".</summary>
     public string SchemaVersion { get; set; } = "1.0.0";
@@ -1269,7 +1269,7 @@ public sealed class AllJsonExporterOptions
     /// Environment profile that adjusts multiple security-sensitive defaults at once.
     /// Default: Production (most restrictive).
     /// </summary>
-    public AllEnvironmentProfile EnvironmentProfile { get; set; } = AllEnvironmentProfile.Production;
+    public OtelEventsEnvironmentProfile EnvironmentProfile { get; set; } = OtelEventsEnvironmentProfile.Production;
 
     /// <summary>
     /// Controls exception detail in the JSON envelope.
@@ -1291,7 +1291,7 @@ public sealed class AllJsonExporterOptions
     public int MaxAttributeValueLength { get; set; } = 4096;
 
     /// <summary>
-    /// Allowlist of attribute names to emit for non-ALL LogRecords.
+    /// Allowlist of attribute names to emit for non-otel-events LogRecords.
     /// When set, only listed attributes pass through. Null = all attributes (default).
     /// </summary>
     public ISet<string>? AttributeAllowlist { get; set; }
@@ -1313,7 +1313,7 @@ public sealed class AllJsonExporterOptions
 }
 
 /// <summary>Environment profiles adjust multiple security defaults simultaneously.</summary>
-public enum AllEnvironmentProfile
+public enum OtelEventsEnvironmentProfile
 {
     /// <summary>Most permissive: full exception details, all sensitivity levels visible.</summary>
     Development,
@@ -1339,12 +1339,12 @@ public enum ExceptionDetailLevel
 
 | Topology | When to Use | Configuration |
 |----------|-------------|---------------|
-| **Stdout-only** (recommended for containers) | Logs collected by sidecar/DaemonSet agent | `AllJsonExporter` only — no `AddOtlpExporter()` for logs |
-| **OTLP-only** | Direct OTEL Collector connection | `AddOtlpExporter()` only — no `AllJsonExporter` |
+| **Stdout-only** (recommended for containers) | Logs collected by sidecar/DaemonSet agent | `OtelEventsJsonExporter` only — no `AddOtlpExporter()` for logs |
+| **OTLP-only** | Direct OTEL Collector connection | `AddOtlpExporter()` only — no `OtelEventsJsonExporter` |
 | **Both** (use sparingly) | Need local stdout + direct OTLP | Both configured — accept 2× log export cost |
-| **Stdout + Collector `filelog`** (recommended) | Best of both worlds | `AllJsonExporter` → stdout → Collector `filelog` receiver → OTLP |
+| **Stdout + Collector `filelog`** (recommended) | Best of both worlds | `OtelEventsJsonExporter` → stdout → Collector `filelog` receiver → OTLP |
 
-See §17 for OTEL Collector configuration matching the ALL envelope format.
+See §17 for OTEL Collector configuration matching the otel-events envelope format.
 
 ### Stdout Write Buffer & Flush Strategy
 
@@ -1362,7 +1362,7 @@ See §17 for OTEL Collector configuration matching the ALL envelope format.
 
 ### Purpose
 
-OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. ALL's `AllCausalityProcessor` adds `all.event_id` and `all.parent_event_id` attributes to every `LogRecord`, enabling construction of **causal event trees** within and across services.
+OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`). But within a single trace/span, individual log events have no causal relationship. otel-events' `OtelEventsCausalityProcessor` adds `all.event_id` and `all.parent_event_id` attributes to every `LogRecord`, enabling construction of **causal event trees** within and across services.
 
 ### Design
 
@@ -1372,7 +1372,7 @@ OTEL provides distributed trace correlation via `Activity` (`traceId`, `spanId`)
 /// Generates a unique eventId (UUID v7) for every LogRecord.
 /// Reads parentEventId from AsyncLocal context (set by application code).
 /// </summary>
-public sealed class AllCausalityProcessor : BaseProcessor<LogRecord>
+public sealed class OtelEventsCausalityProcessor : BaseProcessor<LogRecord>
 {
     public override void OnEnd(LogRecord logRecord)
     {
@@ -1382,7 +1382,7 @@ public sealed class AllCausalityProcessor : BaseProcessor<LogRecord>
             logRecord.Attributes, "all.event_id", eventId);
 
         // Read parent event ID from ambient context
-        var parentEventId = AllCausalityContext.CurrentParentEventId;
+        var parentEventId = OtelEventsCausalityContext.CurrentParentEventId;
         if (parentEventId is not null)
         {
             logRecord.Attributes = AppendAttribute(
@@ -1399,7 +1399,7 @@ public sealed class AllCausalityProcessor : BaseProcessor<LogRecord>
 /// Ambient context for causal event linking.
 /// Uses AsyncLocal to flow across async boundaries.
 /// </summary>
-public static class AllCausalityContext
+public static class OtelEventsCausalityContext
 {
     private static readonly AsyncLocal<string?> s_parentEventId = new();
 
@@ -1421,11 +1421,11 @@ public static class AllCausalityContext
 // Usage in application code:
 public async Task ProcessOrder(OrderRequest request)
 {
-    // Emit parent event — eventId is auto-generated by AllCausalityProcessor
+    // Emit parent event — eventId is auto-generated by OtelEventsCausalityProcessor
     _logger.OrderProcessingStarted(request.OrderId);
 
     // Set the causal parent for subsequent events
-    using (AllCausalityContext.SetParent(lastEmittedEventId))
+    using (OtelEventsCausalityContext.SetParent(lastEmittedEventId))
     {
         _logger.PaymentProcessed(request.OrderId, request.Amount);
         _logger.InventoryReserved(request.OrderId, request.Items.Count);
@@ -1455,26 +1455,26 @@ evt_001: order.processing.started (orderId: "ORD-123")
 
 ## 10. Roslyn Analyzer Rules
 
-### Analyzer Package: `All.Analyzers`
+### Analyzer Package: `OtelEvents.Analyzers`
 
 All analyzers are delivered as a NuGet analyzer package. They activate automatically when the package is referenced.
 
 | Rule ID | Severity | Title | Description |
 |---------|----------|-------|-------------|
-| **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use ALL-generated events instead. |
-| **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.Log*`, `ILogger.LogInformation`, etc. detected in application code without using an ALL-generated extension method. Use schema-defined events instead. |
-| **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an ALL-generated event method parameter. ALL handles message interpolation — pass raw values only. |
+| **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use otel-events generated events instead. |
+| **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.Log*`, `ILogger.LogInformation`, etc. detected in application code without using an otel-events generated extension method. Use schema-defined events instead. |
+| **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events generated event method parameter. ALL handles message interpolation — pass raw values only. |
 | **ALL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
 | **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
 | **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an ALL event with the caught exception. |
-| **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use ALL-generated events instead. |
+| **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
 | **ALL008** | Error | Reserved prefix usage | Code uses `all.` prefix in field names — this prefix is reserved for library metadata. |
-| **ALL009** | Warning | PII field without redaction policy | Schema field with `sensitivity: pii` or `sensitivity: credential` is used in code but no redaction policy is configured in `AllJsonExporterOptions`. Configure `EnvironmentProfile` or explicit `RedactPatterns`. |
+| **ALL009** | Warning | PII field without redaction policy | Schema field with `sensitivity: pii` or `sensitivity: credential` is used in code but no redaction policy is configured in `OtelEventsJsonExporterOptions`. Configure `EnvironmentProfile` or explicit `RedactPatterns`. |
 
 ### Analyzer Configuration
 
 ```editorconfig
-# .editorconfig — ALL analyzer severity overrides
+# .editorconfig — otel-events analyzer severity overrides
 
 # Promote Console.Write to error in production code
 [src/**/*.cs]
@@ -1518,7 +1518,7 @@ Console.WriteLine(capturedOutput);
 
 ### Test Categories
 
-#### Unit Tests (All.Schema)
+#### Unit Tests (OtelEvents.Schema)
 
 | Test Area | Examples |
 |-----------|---------|
@@ -1533,7 +1533,7 @@ Console.WriteLine(capturedOutput);
 | EventId uniqueness | Numeric event IDs are unique within merged schemas |
 | Code generation | Generated code compiles and uses `[LoggerMessage]` correctly |
 
-#### Unit Tests (All.Exporter.Json)
+#### Unit Tests (OtelEvents.Exporter.Json)
 
 | Test Area | Examples |
 |-----------|---------|
@@ -1543,20 +1543,20 @@ Console.WriteLine(capturedOutput);
 | Sequence numbering | Monotonic, starts at 1, thread-safe |
 | Timestamp formatting | ISO 8601 UTC with microsecond precision |
 | LogRecord mapping | All `LogRecord` fields map to correct envelope fields |
-| Non-ALL LogRecords | Third-party `ILogger` calls produce valid JSONL with `"dotnet.ilogger"` event name |
+| Non-otel-events LogRecords | Third-party `ILogger` calls produce valid JSONL with `"dotnet.ilogger"` event name |
 | Attribute extraction | `LogRecord` state key-value pairs → `attr` object |
 
-#### Unit Tests (All.Causality)
+#### Unit Tests (OtelEvents.Causality)
 
 | Test Area | Examples |
 |-----------|---------|
 | Event ID generation | UUID v7 format, `evt_` prefix, unique across calls, time-sortable |
-| Parent event ID | `AllCausalityContext` sets/reads `parentEventId` via `AsyncLocal` |
+| Parent event ID | `OtelEventsCausalityContext` sets/reads `parentEventId` via `AsyncLocal` |
 | Scope disposal | `CausalityScope` restores previous parent on dispose |
-| Processor behavior | `AllCausalityProcessor.OnEnd` adds `all.event_id` attribute to `LogRecord` |
+| Processor behavior | `OtelEventsCausalityProcessor.OnEnd` adds `all.event_id` attribute to `LogRecord` |
 | Thread safety | Concurrent event ID generation produces no duplicates |
 
-#### Unit Tests (All.Schema — Code Generation)
+#### Unit Tests (OtelEvents.Schema — Code Generation)
 
 | Test Area | Examples |
 |-----------|---------|
@@ -1574,14 +1574,14 @@ Console.WriteLine(capturedOutput);
 
 | Test Area | Examples |
 |-----------|---------|
-| Full pipeline | Emit event → OTEL pipeline → `AllJsonExporter` → JSONL output verified |
-| Exporter + processor | `AllCausalityProcessor` enriches → `AllJsonExporter` formats → correct eventId in JSON |
-| DI registration | `AddAllJsonExporter()` + `AddProcessor<AllCausalityProcessor>()` registers correctly |
-| Configuration | `AllJsonExporterOptions` from appsettings.json / env vars apply correctly |
+| Full pipeline | Emit event → OTEL pipeline → `OtelEventsJsonExporter` → JSONL output verified |
+| Exporter + processor | `OtelEventsCausalityProcessor` enriches → `OtelEventsJsonExporter` formats → correct eventId in JSON |
+| DI registration | `AddOtelEventsJsonExporter()` + `AddProcessor<OtelEventsCausalityProcessor>()` registers correctly |
+| Configuration | `OtelEventsJsonExporterOptions` from appsettings.json / env vars apply correctly |
 | Severity filtering | Events below minimum LogLevel are not emitted (standard .NET `AddFilter`) |
-| Non-ALL events | Third-party `ILogger` calls pass through exporter as valid JSONL |
+| Non-otel-events events | Third-party `ILogger` calls pass through exporter as valid JSONL |
 | Metrics emission | Generated `Histogram`/`Counter` recordings are visible via OTEL `MeterProvider` |
-| OTEL coexistence | `AllJsonExporter` runs alongside OTLP exporter without interference |
+| OTEL coexistence | `OtelEventsJsonExporter` runs alongside OTLP exporter without interference |
 
 #### E2E Tests
 
@@ -1590,9 +1590,9 @@ Console.WriteLine(capturedOutput);
 | Schema → code → emit → verify | Full round-trip from YAML to JSONL output |
 | ASP.NET integration | Generated events work in ASP.NET Core with `AddOpenTelemetry()` |
 | OTEL export | LogRecords appear in OTEL collector (using test collector) |
-| Metrics export | ALL-generated metrics appear in OTEL metrics pipeline |
+| Metrics export | otel-events generated metrics appear in OTEL metrics pipeline |
 
-### Test Infrastructure (All.Testing)
+### Test Infrastructure (OtelEvents.Testing)
 
 ```csharp
 /// <summary>
@@ -1636,9 +1636,9 @@ public sealed record ExportedLogRecord
 }
 
 /// <summary>
-/// Test helper for setting up OTEL + ALL in test projects.
+/// Test helper for setting up OTEL + otel-events in test projects.
 /// </summary>
-public static class AllTestHost
+public static class OtelEventsTestHost
 {
     public static (ILoggerFactory Factory, InMemoryLogExporter Exporter) Create();
     public static (ILoggerFactory Factory, InMemoryLogExporter Exporter) CreateWithCausality();
@@ -1648,7 +1648,7 @@ public static class AllTestHost
 [Fact]
 public void HttpRequestCompleted_EmitsCorrectLogRecord()
 {
-    var (loggerFactory, exporter) = AllTestHost.Create();
+    var (loggerFactory, exporter) = OtelEventsTestHost.Create();
     var logger = loggerFactory.CreateLogger<HttpRequestEventSource>();
 
     logger.HttpRequestCompleted(
@@ -1668,7 +1668,7 @@ public void HttpRequestCompleted_EmitsCorrectLogRecord()
 [Fact]
 public void CausalityProcessor_AddsEventId()
 {
-    var (loggerFactory, exporter) = AllTestHost.CreateWithCausality();
+    var (loggerFactory, exporter) = OtelEventsTestHost.CreateWithCausality();
     var logger = loggerFactory.CreateLogger<HttpRequestEventSource>();
 
     logger.HttpRequestCompleted(
@@ -1690,8 +1690,8 @@ public void CausalityProcessor_AddsEventId()
 | Benchmark | Target | What It Measures |
 |-----------|--------|-----------------|
 | `EmitLoggerMessageEvent` | < 200ns | Time for `[LoggerMessage]` call (OTEL SDK baseline) |
-| `EmitAllExtensionMethod` | < 500ns | Time for ALL extension method (log + metrics recording) |
-| `AllJsonExporterWrite` | < 1μs | Time to serialize one LogRecord → JSONL in exporter |
+| `EmitAllExtensionMethod` | < 500ns | Time for otel-events extension method (log + metrics recording) |
+| `OtelEventsJsonExporterWrite` | < 1μs | Time to serialize one LogRecord → JSONL in exporter |
 | `CausalityProcessorOnEnd` | < 200ns | Time for UUID v7 generation + attribute append |
 | `ExceptionSerialization` | < 3μs | Serialize exception with 3 levels of nesting |
 | `SequenceIncrement` | < 50ns | `Interlocked.Increment` contention test |
@@ -1705,7 +1705,7 @@ JSON output is tested with snapshot testing to catch unintentional envelope form
 [Fact]
 public Task JsonOutput_MatchesSnapshot()
 {
-    var (loggerFactory, jsonCapture) = AllTestHost.CreateWithJsonCapture();
+    var (loggerFactory, jsonCapture) = OtelEventsTestHost.CreateWithJsonCapture();
     var logger = loggerFactory.CreateLogger<HttpRequestEventSource>();
 
     logger.HttpRequestCompleted(
@@ -1726,14 +1726,14 @@ public Task JsonOutput_MatchesSnapshot()
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|
-| ALL extension method call (log + metrics) | < 500ns p95 | BenchmarkDotNet |
-| AllJsonExporter per-record serialization | < 1μs p95 | BenchmarkDotNet |
-| AllCausalityProcessor per-record processing | < 200ns p95 | BenchmarkDotNet |
+| otel-events extension method call (log + metrics) | < 500ns p95 | BenchmarkDotNet |
+| OtelEventsJsonExporter per-record serialization | < 1μs p95 | BenchmarkDotNet |
+| OtelEventsCausalityProcessor per-record processing | < 200ns p95 | BenchmarkDotNet |
 | Throughput | > 100,000 events/s | BenchmarkDotNet, sustained |
-| Memory allocation (ALL extension method) | < 256 bytes/event | BenchmarkDotNet `[MemoryDiagnoser]` |
+| Memory allocation otel-events extension method | < 256 bytes/event | BenchmarkDotNet `[MemoryDiagnoser]` |
 | GC pressure | No Gen2 collections under steady load | GC monitoring in integration tests |
 
-Note: The OTEL SDK pipeline itself (batching, export) adds its own overhead. ALL's targets apply to the ALL-specific code only. The total pipeline cost is ALL overhead + OTEL SDK overhead.
+Note: The OTEL SDK pipeline itself (batching, export) adds its own overhead. otel-events' targets apply to the otel-events specific code only. The total pipeline cost is otel-events overhead + OTEL SDK overhead.
 
 ### Zero-Allocation Strategy
 
@@ -1750,11 +1750,11 @@ Note: The OTEL SDK pipeline itself (batching, export) adds its own overhead. ALL
 
 | Package | Target Frameworks | Rationale |
 |---------|-------------------|-----------|
-| All.Schema | `netstandard2.0` | MSBuild tasks/source generators must target netstandard2.0 |
-| All.Exporter.Json | `net8.0`, `net9.0` | Matches OTEL SDK targets, AOT requires .NET 8+ |
-| All.Causality | `net8.0`, `net9.0` | Matches OTEL SDK targets |
-| All.Analyzers | `netstandard2.0` | Roslyn analyzer requirement |
-| All.Testing | `net8.0`, `net9.0` | Matches runtime targets |
+| OtelEvents.Schema | `netstandard2.0` | MSBuild tasks/source generators must target netstandard2.0 |
+| OtelEvents.Exporter.Json | `net8.0`, `net9.0` | Matches OTEL SDK targets, AOT requires .NET 8+ |
+| OtelEvents.Causality | `net8.0`, `net9.0` | Matches OTEL SDK targets |
+| OtelEvents.Analyzers | `netstandard2.0` | Roslyn analyzer requirement |
+| OtelEvents.Testing | `net8.0`, `net9.0` | Matches runtime targets |
 
 ### AOT Compatibility
 
@@ -1770,22 +1770,22 @@ Note: The OTEL SDK pipeline itself (batching, export) adds its own overhead. ALL
 
 | Requirement | Specification |
 |-------------|---------------|
-| Exporter failure isolation | `AllJsonExporter` failure does not affect other OTEL exporters (OTEL SDK handles exporter isolation) |
-| No application crashes | ALL components must never throw exceptions that propagate to application code. OTEL SDK's processor/exporter error handling applies. |
-| Backpressure | If stdout is blocked, `AllJsonExporter.Export()` may block until OTEL SDK's batch timeout fires, then drops. Standard OTEL batching behavior. |
-| Graceful shutdown | OTEL SDK handles `Shutdown()` on all processors and exporters. ALL implements `OnShutdown()` to flush pending JSON. |
-| Thread safety | All public APIs must be thread-safe. `AllCausalityProcessor` uses `AsyncLocal` (thread-safe by design). `AllJsonExporter` uses `lock` around stream writes. |
+| Exporter failure isolation | `OtelEventsJsonExporter` failure does not affect other OTEL exporters (OTEL SDK handles exporter isolation) |
+| No application crashes | otel-events components must never throw exceptions that propagate to application code. OTEL SDK's processor/exporter error handling applies. |
+| Backpressure | If stdout is blocked, `OtelEventsJsonExporter.Export()` may block until OTEL SDK's batch timeout fires, then drops. Standard OTEL batching behavior. |
+| Graceful shutdown | OTEL SDK handles `Shutdown()` on all processors and exporters. otel-events implements `OnShutdown()` to flush pending JSON. |
+| Thread safety | All public APIs must be thread-safe. `OtelEventsCausalityProcessor` uses `AsyncLocal` (thread-safe by design). `OtelEventsJsonExporter` uses `lock` around stream writes. |
 
 ### Observability (Self-Telemetry)
 
-ALL emits its own internal metrics for self-monitoring using OTEL's native `Meter`:
+otel-events emits its own internal metrics for self-monitoring using OTEL's native `Meter`:
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `all.exporter.json.records_exported` | Counter | Total LogRecords exported by AllJsonExporter |
+| `all.exporter.json.records_exported` | Counter | Total LogRecords exported by OtelEventsJsonExporter |
 | `all.exporter.json.export_errors` | Counter | Errors during JSON export |
 | `all.exporter.json.export_duration` | Histogram | Time to export a batch of LogRecords |
-| `all.causality.events_processed` | Counter | Total LogRecords processed by AllCausalityProcessor |
+| `all.causality.events_processed` | Counter | Total LogRecords processed by OtelEventsCausalityProcessor |
 
 ---
 
@@ -1797,7 +1797,7 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 |--------|-------------------|-------------|
 | NuGet downloads | 1,000+ | NuGet.org stats |
 | GitHub stars | 100+ | GitHub stats |
-| Projects using ALL | 5+ production | User reports, GitHub dependency graph |
+| Projects using otel-events | 5+ production | User reports, GitHub dependency graph |
 | Contributor PRs | 10+ | GitHub PR count |
 
 ### Quality Metrics
@@ -1827,20 +1827,20 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 
 | Non-Goal | Rationale |
 |----------|-----------|
-| **Standalone event model** | ALL does NOT have its own `EventData`, `IAllSink`, or custom pipeline. It uses OTEL types natively. |
-| **Replacing OTEL** | ALL is an OTEL extension. It does not replace, wrap, or abstract OTEL. |
-| **Custom pipeline** | ALL does NOT implement enrichment, fan-out, or routing. OTEL SDK handles all of this. |
-| **ILogger bridge** | OTEL already bridges `ILogger` → `LogRecord`. ALL doesn't duplicate this. |
-| **Log storage / querying** | ALL produces output — it does not store or query. Use OTEL Collector → Loki/Elasticsearch/etc. |
-| **Trace propagation** | OTEL handles W3C trace context propagation. ALL reads `Activity.Current` but does not propagate. |
-| **APM** | ALL records metrics per-event but is not a full APM. Use OTEL + Datadog/New Relic/etc. |
+| **Standalone event model** | otel-events does NOT have its own `EventData`, `IAllSink`, or custom pipeline. It uses OTEL types natively. |
+| **Replacing OTEL** | otel-events is an OTEL extension. It does not replace, wrap, or abstract OTEL. |
+| **Custom pipeline** | otel-events does NOT implement enrichment, fan-out, or routing. OTEL SDK handles all of this. |
+| **ILogger bridge** | OTEL already bridges `ILogger` → `LogRecord`. otel-events doesn't duplicate this. |
+| **Log storage / querying** | otel-events produces output — it does not store or query. Use OTEL Collector → Loki/Elasticsearch/etc. |
+| **Trace propagation** | OTEL handles W3C trace context propagation. otel-events reads `Activity.Current` but does not propagate. |
+| **APM** | otel-events records metrics per-event but is not a full APM. Use OTEL + Datadog/New Relic/etc. |
 | **Log rotation / file management** | JSONL goes to stdout. Log rotation is the container/OS responsibility. |
 | **Pretty-printing / human-readable output** | Single-line JSONL everywhere. No exceptions. Use `jq` or log viewer tools for human reading. |
 | **Configuration-driven event definitions** | Events are ALWAYS defined in YAML schemas at build time. No runtime event creation. |
-| **Free-text messages** | Messages are ALWAYS template-generated from schemas. No `logger.Log("arbitrary message")` via ALL. |
+| **Free-text messages** | Messages are ALWAYS template-generated from schemas. No `logger.Log("arbitrary message")` via otel-events. |
 | **Supporting .NET Framework** | .NET 8+ only for runtime packages. Source generators and AOT require modern .NET. |
 | **Console UI / structured console output** | No colors, no tables, no interactive console. JSONL only. |
-| **Sampling decisions** | Phase 1–2 do not include event sampling. OTEL SDK provides trace/log sampling. ALL may add schema-aware sampling as a processor in Phase 3. |
+| **Sampling decisions** | Phase 1–2 do not include event sampling. OTEL SDK provides trace/log sampling. otel-events may add schema-aware sampling as a processor in Phase 3. |
 
 ### Deferred to Future Versions
 
@@ -1853,7 +1853,7 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 | Schema migration tooling | Phase 3+ | Automated schema version migration |
 | gRPC service events | Phase 3+ | Built-in gRPC request/response events (like HTTP events) |
 | Blazor/WASM support | TBD | Browser environment has different constraints |
-| Custom OTEL metric exporter | TBD | JSON-formatted metrics output (like `AllJsonExporter` but for metrics) |
+| Custom OTEL metric exporter | TBD | JSON-formatted metrics output (like `OtelEventsJsonExporter` but for metrics) |
 
 ---
 
@@ -1863,11 +1863,11 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 |------|-----------|
 | **Event** | A discrete, typed, schema-defined occurrence in a system — emitted as an OTEL `LogRecord` with associated metrics |
 | **Schema** | YAML file defining events, their fields, metrics, and metadata |
-| **Envelope** | The fixed JSON structure that `AllJsonExporter` writes for every `LogRecord` |
-| **Exporter** | An OTEL `BaseExporter<T>` that sends telemetry to a destination. `AllJsonExporter` is ALL's custom log exporter. |
-| **Processor** | An OTEL `BaseProcessor<T>` that enriches or transforms telemetry in-flight. `AllCausalityProcessor` is ALL's custom log processor. |
+| **Envelope** | The fixed JSON structure that `OtelEventsJsonExporter` writes for every `LogRecord` |
+| **Exporter** | An OTEL `BaseExporter<T>` that sends telemetry to a destination. `OtelEventsJsonExporter` is otel-events' custom log exporter. |
+| **Processor** | An OTEL `BaseProcessor<T>` that enriches or transforms telemetry in-flight. `OtelEventsCausalityProcessor` is otel-events' custom log processor. |
 | **Codegen** | Source generator that creates C# code from YAML schemas — generates `[LoggerMessage]` methods + `Meter` instruments |
-| **LogRecord** | OTEL's native log data type (`OpenTelemetry.Logs.LogRecord`). ALL generates code that emits `LogRecord`s via `ILogger`. |
+| **LogRecord** | OTEL's native log data type (`OpenTelemetry.Logs.LogRecord`). otel-events generates code that emits `LogRecord`s via `ILogger`. |
 | **JSONL** | JSON Lines — one JSON object per line, newline-delimited |
 | **Causal tree** | Directed graph of events linked by `all.parent_event_id` → `all.event_id` relationships |
 | **`[LoggerMessage]`** | .NET source generator attribute that creates high-performance, zero-alloc `ILogger` extension methods |
@@ -1879,8 +1879,8 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 | DR-001 | Architecture model | OTEL extension (not standalone) | Standalone library with custom pipeline; OTEL wrapper/abstraction |
 | DR-002 | Event emission | `[LoggerMessage]` source generator → native `LogRecord` | Custom `EventData` struct; direct OTEL `Logger.EmitLog()` |
 | DR-003 | Metrics emission | Native `Meter`/`Counter<T>`/`Histogram<T>` in generated code | Custom metrics abstraction; OTEL Logger attributes only |
-| DR-004 | JSON output | Custom `BaseExporter<LogRecord>` (AllJsonExporter) | Parallel sink; custom `ILoggerProvider`; `ConsoleExporter` override |
-| DR-005 | Causal linking | Custom `BaseProcessor<LogRecord>` (AllCausalityProcessor) | Application-level middleware; log scope; custom attributes in generated code |
+| DR-004 | JSON output | Custom `BaseExporter<LogRecord>` (OtelEventsJsonExporter) | Parallel sink; custom `ILoggerProvider`; `ConsoleExporter` override |
+| DR-005 | Causal linking | Custom `BaseProcessor<LogRecord>` (OtelEventsCausalityProcessor) | Application-level middleware; log scope; custom attributes in generated code |
 | DR-006 | Event ID generation | Always generate, UUID v7, globally unique, `evt_` prefix | Optional IDs; sequential IDs; hash-based |
 | DR-007 | Message format | Template-only from schema, rendered by `[LoggerMessage]` | Free-text allowed; template + override |
 | DR-008 | Exception depth | Cap at 5, truncate with `"truncated": true` | Unlimited; cap at 3; cap at 10 |
@@ -1894,10 +1894,10 @@ ALL emits its own internal metrics for self-monitoring using OTEL's native `Mete
 | DR-016 | Code gen approach | MSBuild task + incremental source gen | T4 templates; runtime reflection; manual |
 | DR-017 | DI registration | Extends `AddOpenTelemetry()` fluent API | Custom `AddAll()` method; separate DI registration |
 | DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `All.*`) | Same `All.*` prefix; `All.IntegrationPacks.*`; `All.Events.*` |
-| DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `All.Schema`); Ship as source package |
-| DR-020 | Integration pack meta-package inclusion | NOT included in `All4dotnet` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
+| DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `OtelEvents.Schema`); Ship as source package |
+| DR-020 | Integration pack meta-package inclusion | NOT included in `OtelEvents` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
 | DR-021 | Event ID range separation | Consumer: 1–9999, Integration packs: 10000+ | Shared range with collision detection; prefix-based disambiguation |
-| DR-022 | Integration pack `All.Causality` dependency | Optional (auto-detected at runtime) | Required; not supported |
+| DR-022 | Integration pack `OtelEvents.Causality` dependency | Optional (auto-detected at runtime) | Required; not supported |
 | DR-023 | Static Meter vs IMeterFactory | Static `Meter` instances as default (Phase 1); optional `IMeterFactory`-based mode in Phase 2 (2.9) | `IMeterFactory` only; both as equal options. Trade-off: Static Meters are never disposed — acceptable for long-lived services. `IMeterFactory` provides DI-friendly, disposable meters. |
 | DR-024 | PII field defaults | PII-capturing options (CaptureClientIp, CaptureUserAgent) default to `false` | Default `true` with opt-out; no PII capture at all |
 | DR-025 | Exception detail level | Environment-based defaults: Development=Full, Staging/Production=TypeAndMessage | Always full; always minimal; configurable without environment concept |
@@ -1918,8 +1918,8 @@ all4dotnet/
 ├── all4dotnet.sln
 │
 ├── src/
-│   ├── All.Schema/
-│   │   ├── All.Schema.csproj
+│   ├── OtelEvents.Schema/
+│   │   ├── OtelEvents.Schema.csproj
 │   │   ├── Models/
 │   │   │   ├── SchemaDefinition.cs
 │   │   │   ├── EventDefinition.cs
@@ -1948,27 +1948,27 @@ all4dotnet/
 │   │   └── Cli/
 │   │       └── ValidateCommand.cs            # dotnet all validate (Phase 3)
 │   │
-│   ├── All.Exporter.Json/
-│   │   ├── All.Exporter.Json.csproj
-│   │   ├── AllJsonExporter.cs                # BaseExporter<LogRecord>
-│   │   ├── AllJsonExporterOptions.cs         # Configuration (output target, schema version)
+│   ├── OtelEvents.Exporter.Json/
+│   │   ├── OtelEvents.Exporter.Json.csproj
+│   │   ├── OtelEventsJsonExporter.cs                # BaseExporter<LogRecord>
+│   │   ├── OtelEventsJsonExporterOptions.cs         # Configuration (output target, schema version)
 │   │   ├── AllJsonEnvelope.cs                # Envelope model for serialization
 │   │   ├── ExceptionData.cs                  # Structured exception model
 │   │   ├── ExceptionSerializer.cs            # Exception → structured JSON
 │   │   ├── AllJsonSerializerContext.cs        # STJ source generator context
 │   │   ├── SequenceCounter.cs                # Monotonic per-process seq counter
-│   │   └── AllJsonExporterExtensions.cs      # .AddAllJsonExporter() extension method
+│   │   └── OtelEventsJsonExporterExtensions.cs      # .AddOtelEventsJsonExporter() extension method
 │   │
-│   ├── All.Causality/
-│   │   ├── All.Causality.csproj
-│   │   ├── AllCausalityProcessor.cs          # BaseProcessor<LogRecord>
-│   │   ├── AllCausalityContext.cs            # AsyncLocal<string?> for parentEventId
+│   ├── OtelEvents.Causality/
+│   │   ├── OtelEvents.Causality.csproj
+│   │   ├── OtelEventsCausalityProcessor.cs          # BaseProcessor<LogRecord>
+│   │   ├── OtelEventsCausalityContext.cs            # AsyncLocal<string?> for parentEventId
 │   │   ├── CausalityScope.cs                # IDisposable scope for setting parent
 │   │   ├── Uuid7.cs                          # UUID v7 generator
-│   │   └── AllCausalityExtensions.cs         # .AddProcessor<AllCausalityProcessor>() helpers
+│   │   └── AllCausalityExtensions.cs         # .AddProcessor<OtelEventsCausalityProcessor>() helpers
 │   │
-│   ├── All.Analyzers/
-│   │   ├── All.Analyzers.csproj
+│   ├── OtelEvents.Analyzers/
+│   │   ├── OtelEvents.Analyzers.csproj
 │   │   ├── ConsoleWriteAnalyzer.cs           # ALL001
 │   │   ├── UntypedILoggerAnalyzer.cs         # ALL002
 │   │   ├── StringInterpolationAnalyzer.cs    # ALL003
@@ -1978,18 +1978,18 @@ all4dotnet/
 │   │   ├── DebugWriteAnalyzer.cs             # ALL007
 │   │   └── ReservedPrefixAnalyzer.cs         # ALL008
 │   │
-│   └── All.Testing/
-│       ├── All.Testing.csproj
+│   └── OtelEvents.Testing/
+│       ├── OtelEvents.Testing.csproj
 │       ├── InMemoryLogExporter.cs            # BaseExporter<LogRecord> for tests
 │       ├── ExportedLogRecord.cs              # Immutable snapshot of LogRecord
-│       ├── AllTestHost.cs                    # Test setup helper
+│       ├── OtelEventsTestHost.cs                    # Test setup helper
 │       └── AssertionExtensions.cs            # Fluent assertions for ExportedLogRecord
 │
 ├── tests/
-│   ├── All.Schema.Tests/
-│   ├── All.Exporter.Json.Tests/
-│   ├── All.Causality.Tests/
-│   ├── All.Analyzers.Tests/
+│   ├── OtelEvents.Schema.Tests/
+│   ├── OtelEvents.Exporter.Json.Tests/
+│   ├── OtelEvents.Causality.Tests/
+│   ├── OtelEvents.Analyzers.Tests/
 │   ├── All.Integration.Tests/
 │   └── All.Benchmarks/
 │
@@ -2007,7 +2007,7 @@ all4dotnet/
 │   ├── schema-reference.md                   # Full YAML schema reference
 │   ├── getting-started.md                    # Quick start guide (assumes OTEL exists)
 │   ├── adopting-all-in-existing-project.md   # Migration guide for OTEL-using projects
-│   └── ai-investigation.md                   # How ALL enables AI log analysis
+│   └── ai-investigation.md                   # How otel-events enables AI log analysis
 │
 ├── schemas/
 │   └── examples/
@@ -2103,49 +2103,49 @@ steps:
 ### For Teams Already Using OTEL
 
 ```
-Step 1: dotnet add package All.Schema          (adds code generator)
+Step 1: dotnet add package OtelEvents.Schema          (adds code generator)
 Step 2: Create events.all.yaml                 (define your events)
 Step 3: Build                                  (generated code appears)
 Step 4: Replace manual ILogger calls with      (use generated extension methods)
         generated extension methods
 Step 5: (Optional) dotnet add package          (AI-optimized JSONL output)
-        All.Exporter.Json
+        OtelEvents.Exporter.Json
 Step 6: (Optional) dotnet add package          (causal event linking)
-        All.Causality
+        OtelEvents.Causality
 Step 7: (Optional) dotnet add package          (compile-time enforcement)
-        All.Analyzers
+        OtelEvents.Analyzers
 ```
 
-**Nothing breaks. Nothing changes.** The generated code uses `ILogger<T>` and `Meter`/`Counter`/`Histogram` — the same types the team already uses. ALL just generates them from a schema instead of writing them by hand.
+**Nothing breaks. Nothing changes.** The generated code uses `ILogger<T>` and `Meter`/`Counter`/`Histogram` — the same types the team already uses. otel-events just generates them from a schema instead of writing them by hand.
 
 ### For Greenfield Projects
 
 ```
-Step 1: dotnet add package All4dotnet          (meta-package — everything)
+Step 1: dotnet add package OtelEvents          (meta-package — everything)
 Step 2: Configure AddOpenTelemetry() in        (standard OTEL setup)
         Program.cs
 Step 3: Create events.all.yaml                 (define your events)
 Step 4: Build and use generated events         (type-safe, schema-enforced)
 ```
 
-### Migration Path: Manual → ALL
+### Migration Path: Manual → otel-events
 
-| What you have today | What ALL replaces | What stays the same |
+| What you have today | What otel-events replaces | What stays the same |
 |--------------------|--------------------|---------------------|
-| Hand-written `[LoggerMessage]` | ALL generates `[LoggerMessage]` from YAML | The `LogRecord`s are identical — OTEL pipeline sees no difference |
-| Hand-written `Meter`/`Counter`/`Histogram` | ALL generates metric instruments from YAML | Metrics recordings are identical — OTEL pipeline sees no difference |
+| Hand-written `[LoggerMessage]` | otel-events generates `[LoggerMessage]` from YAML | The `LogRecord`s are identical — OTEL pipeline sees no difference |
+| Hand-written `Meter`/`Counter`/`Histogram` | otel-events generates metric instruments from YAML | Metrics recordings are identical — OTEL pipeline sees no difference |
 | OTEL `AddOtlpExporter()` | Nothing — keep your existing exporters | OTLP export works exactly the same |
 | `builder.Logging.AddFilter(...)` | Nothing — keep your existing filters | Severity filtering works exactly the same |
 | Third-party library `ILogger` output | Nothing — OTEL already captures it | Third-party logs flow through the same pipeline |
 
 ---
 
-*This specification was authored on 2025-07-09, updated on 2025-07-10 to reflect the architectural pivot from standalone library to OTEL extension model, and updated on 2025-07-11 to incorporate Security Guardian (14 findings) and Platform Guardian (17 findings) review amendments including §16 Security & Privacy Requirements, §17 Container & Kubernetes Deployment Guide, PII classification framework, environment profiles, OTEL Collector topology, and Kubernetes deployment manifests. It is the foundational reference document for the ALL project and should be maintained alongside the codebase as the single source of truth for project scope, design decisions, and standards.*
+*This specification was authored on 2025-07-09, updated on 2025-07-10 to reflect the architectural pivot from standalone library to OTEL extension model, and updated on 2025-07-11 to incorporate Security Guardian (14 findings) and Platform Guardian (17 findings) review amendments including §16 Security & Privacy Requirements, §17 Container & Kubernetes Deployment Guide, PII classification framework, environment profiles, OTEL Collector topology, and Kubernetes deployment manifests. It is the foundational reference document for the otel-events project and should be maintained alongside the codebase as the single source of truth for project scope, design decisions, and standards.*
 ---
 
 ## 16. Security & Privacy Requirements
 
-This section addresses security findings from the Security Guardian review and establishes the threat model, PII classification framework, and defense-in-depth measures for all ALL components.
+This section addresses security findings from the Security Guardian review and establishes the threat model, PII classification framework, and defense-in-depth measures for all otel-events components.
 
 ### 16.1 Threat Model
 
@@ -2156,7 +2156,7 @@ This section addresses security findings from the Security Guardian review and e
 │  TRUST BOUNDARY: Application Process                             │
 │                                                                  │
 │  ┌──────────────┐     ┌─────────────────┐     ┌──────────────┐  │
-│  │ Application   │────▶│ ALL Generated   │────▶│ OTEL SDK     │  │
+│  │ Application   │────▶│ otel-events Generated   │────▶│ OTEL SDK     │  │
 │  │ Code          │     │ Code            │     │ Pipeline     │  │
 │  │ (trusted)     │     │ (trusted)       │     │ (trusted)    │  │
 │  └──────────────┘     └─────────────────┘     └──────┬───────┘  │
@@ -2191,12 +2191,12 @@ This section addresses security findings from the Security Guardian review and e
 | **PII leakage in logs** | User-Agent, Client IP, user IDs emitted to log storage | Sensitivity classification (§6), default `false` for PII capture, `EnvironmentProfile` redaction |
 | **Information disclosure via exceptions** | Stack traces expose file paths, internal class names, line numbers | `ExceptionDetailLevel` — `TypeAndMessage` in Production (no stack traces) |
 | **Information disclosure via metadata** | `all.host` and `all.pid` expose infrastructure details | Opt-in only (`EmitHostInfo = false` default) |
-| **Third-party library PII leakage** | Non-ALL `ILogger` calls may include connection strings, tokens, PII | `AttributeAllowlist`/`AttributeDenylist`, `RedactPatterns` regex filtering |
+| **Third-party library PII leakage** | Non-otel-events `ILogger` calls may include connection strings, tokens, PII | `AttributeAllowlist`/`AttributeDenylist`, `RedactPatterns` regex filtering |
 | **Schema injection / DoS** | Malicious YAML files with excessive size, nesting, or YAML bombs | Safe YAML loading, resource limits (1 MB, 500 events, 50 fields, depth 20) |
-| **Reserved prefix hijacking** | Application code setting `all.*` attributes to spoof metadata | Runtime stripping of non-ALL `all.*` attributes in exporter |
+| **Reserved prefix hijacking** | Application code setting `all.*` attributes to spoof metadata | Runtime stripping of non-otel-events `all.*` attributes in exporter |
 | **Credential exposure in field values** | Connection strings, API keys, bearer tokens in attribute values | `sensitivity: credential` classification, regex-based `RedactPatterns`, defense-in-depth value sanitization |
 | **Unbounded attribute values** | Extremely long string values causing memory pressure or log bloat | `MaxAttributeValueLength` (default: 4096), per-field `maxLength` |
-| **AsyncLocal trust in causality** | `AllCausalityContext` uses `AsyncLocal` — any code in the async flow can set `parentEventId` | Documented trust assumption: causal context is set by trusted code within the process. Cross-process causality requires trace context (OTEL propagation), not `AsyncLocal`. |
+| **AsyncLocal trust in causality** | `OtelEventsCausalityContext` uses `AsyncLocal` — any code in the async flow can set `parentEventId` | Documented trust assumption: causal context is set by trusted code within the process. Cross-process causality requires trace context (OTEL propagation), not `AsyncLocal`. |
 
 ### 16.2 PII Classification Framework
 
@@ -2211,9 +2211,9 @@ The `sensitivity` field attribute (§6) provides a compile-time classification s
 **Override behavior:** Individual fields can be explicitly opted in or out of redaction:
 
 ```csharp
-logging.AddAllJsonExporter(options =>
+logging.AddOtelEventsJsonExporter(options =>
 {
-    options.EnvironmentProfile = AllEnvironmentProfile.Production;
+    options.EnvironmentProfile = OtelEventsEnvironmentProfile.Production;
 
     // Override: allow userId (pii) in Production for this specific service
     // Requires documented legal basis (e.g., audit trail requirement)
@@ -2240,16 +2240,16 @@ logging.AddAllJsonExporter(options =>
 
 ### 16.4 Reserved Prefix Runtime Enforcement
 
-At build time, the schema validator rejects field names starting with `all.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-ALL `LogRecord`s:
+At build time, the schema validator rejects field names starting with `all.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
 
 1. During `Export()`, iterate over `LogRecord.Attributes`.
-2. Any attribute with key starting with `all.` that was NOT set by `AllCausalityProcessor` or `AllJsonExporter` itself is **stripped** (removed from the exported envelope).
+2. Any attribute with key starting with `all.` that was NOT set by `OtelEventsCausalityProcessor` or `OtelEventsJsonExporter` itself is **stripped** (removed from the exported envelope).
 3. Increment `all.exporter.json.reserved_prefix_stripped` counter for each occurrence.
-4. This prevents application code or third-party libraries from spoofing ALL metadata fields.
+4. This prevents application code or third-party libraries from spoofing otel-events metadata fields.
 
 ### 16.5 Defense-in-Depth Value Sanitization
 
-As a last line of defense, the exporter applies pattern-based value sanitization to ALL attribute values (not just non-ALL LogRecords). This catches connection strings, tokens, and API keys that might be accidentally included in schema-defined fields:
+As a last line of defense, the exporter applies pattern-based value sanitization to otel-events attribute values (not just non-otel-events LogRecords). This catches connection strings, tokens, and API keys that might be accidentally included in schema-defined fields:
 
 **Default patterns (always active):**
 
@@ -2269,20 +2269,20 @@ Values matching these patterns are replaced with `"[REDACTED:pattern]"`. This is
 
 ### 16.6 Regulatory Compliance Considerations
 
-ALL does not enforce specific regulatory requirements but provides the mechanisms for compliance:
+otel-events does not enforce specific regulatory requirements but provides the mechanisms for compliance:
 
-| Regulation | ALL Mechanism |
+| Regulation | otel-events Mechanism |
 |------------|---------------|
 | **GDPR** (EU) | `sensitivity: pii` classification → redaction in Production; `CaptureClientIp`/`CaptureUserAgent` default `false`; documented data retention is the responsibility of the log storage backend |
 | **CCPA** (California) | Same PII controls as GDPR apply |
-| **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; ALL does not provide encryption at rest (log storage responsibility) |
+| **HIPAA** (US Healthcare) | `sensitivity: credential` for PHI fields; teams must configure `EnvironmentProfile = Production` and audit `SensitivityOverrides`; otel-events does not provide encryption at rest (log storage responsibility) |
 | **SOC 2** | Audit trail via `all.event_id`, `all.seq`, `traceId`; `all.host`/`all.pid` opt-in for attribution; SBOM generation in CI |
 
-**Decision (OQ-PG-03):** ALL provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. ALL's defaults are privacy-preserving (PII redacted in Production).
+**Decision (OQ-PG-03):** otel-events provides PII classification and redaction mechanisms. Specific regulatory compliance configuration (which fields to redact, data retention, encryption at rest) is the responsibility of the deploying organization. otel-events' defaults are privacy-preserving (PII redacted in Production).
 
 ### 16.7 OWASP Reference Mapping
 
-| OWASP Category | ALL Mitigation |
+| OWASP Category | otel-events Mitigation |
 |----------------|----------------|
 | **A01:2021 — Broken Access Control** | `CaptureClientIp = false` by default; `sensitivity: pii` classification |
 | **A04:2021 — Insecure Design** | `ExceptionDetailLevel`; no file paths in Production; `EmitHostInfo = false`; `sensitivity` framework |
@@ -2292,13 +2292,13 @@ ALL does not enforce specific regulatory requirements but provides the mechanism
 
 ## 17. Container & Kubernetes Deployment Guide
 
-This section provides deployment guidance for ALL-instrumented .NET applications in containerized and Kubernetes environments. It addresses OTEL Collector topology, container specifications, resource sizing, TLS configuration, and operational recommendations.
+This section provides deployment guidance for otel-events-instrumented .NET applications in containerized and Kubernetes environments. It addresses OTEL Collector topology, container specifications, resource sizing, TLS configuration, and operational recommendations.
 
 ### 17.1 OTEL Collector Deployment Topology
 
 #### Recommended Architecture: DaemonSet `filelog` Receiver
 
-The recommended deployment pattern for ALL uses the OTEL Collector's `filelog` receiver to collect stdout JSONL output, avoiding dual export overhead:
+The recommended deployment pattern for otel-events uses the OTEL Collector's `filelog` receiver to collect stdout JSONL output, avoiding dual export overhead:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -2306,7 +2306,7 @@ The recommended deployment pattern for ALL uses the OTEL Collector's `filelog` r
 │                                                          │
 │  ┌─────────────────────┐  stdout  ┌──────────────────┐  │
 │  │ .NET Application     │─────────▶│ Container Runtime │  │
-│  │ (AllJsonExporter     │  JSONL   │ (writes to        │  │
+│  │ (OtelEventsJsonExporter     │  JSONL   │ (writes to        │  │
 │  │  → stdout)           │          │  /var/log/pods/)   │  │
 │  └─────────────────────┘          └────────┬─────────┘  │
 │                                             │            │
@@ -2318,7 +2318,7 @@ The recommended deployment pattern for ALL uses the OTEL Collector's `filelog` r
                       │                                         │
                       │  filelog receiver                        │
                       │  → reads /var/log/pods/**/*.log          │
-                      │  → parses JSONL (ALL envelope format)   │
+                      │  → parses JSONL (otel-events envelope format)   │
                       │                                         │
                       │  Exporters:                              │
                       │  → OTLP (to central Collector/backend)  │
@@ -2331,7 +2331,7 @@ The recommended deployment pattern for ALL uses the OTEL Collector's `filelog` r
 
 **Decision (OQ-PG-02):** The expected log collection agent for stdout JSONL is the **OTEL Collector** with the `filelog` receiver. Alternatives (Fluent Bit, Vector, Fluentd) are compatible but the Collector is preferred for its native OTEL support.
 
-#### OTEL Collector Configuration for ALL Envelope
+#### OTEL Collector Configuration for otel-events Envelope
 
 ```yaml
 # otel-collector-config.yaml
@@ -2346,13 +2346,13 @@ receivers:
         timestamp:
           parse_from: attributes.time
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
-      # Parse ALL JSON envelope
+      # Parse otel-events JSON envelope
       - type: json_parser
         parse_from: attributes.log
         timestamp:
           parse_from: attributes.timestamp
           layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-      # Move ALL envelope fields to OTEL LogRecord attributes
+      # Move otel-events envelope fields to OTEL LogRecord attributes
       - type: move
         from: attributes.event
         to: attributes["event.name"]
@@ -2540,9 +2540,9 @@ spec:
               cpu: 500m
               memory: 512Mi
           env:
-            - name: ALL__EnvironmentProfile
+            - name: OTELEVENTS__EnvironmentProfile
               value: "Production"
-            - name: ALL__EmitHostInfo
+            - name: OTELEVENTS__EmitHostInfo
               value: "false"
             - name: OTEL_SERVICE_NAME
               value: "my-service"
@@ -2637,8 +2637,8 @@ spec:
 | > 100,000 | 1000m+ | 4000m+ | 1 Gi+ | 4 Gi+ | Benchmark-specific; consider event sampling (Phase 1.8/2.8) |
 
 **Notes:**
-- ALL overhead is ~500ns per event (log + metrics). At 100K events/s, ALL consumes ~50ms of CPU per second.
-- Memory overhead is dominated by OTEL SDK batching buffers, not ALL components.
+- otel-events overhead is ~500ns per event (log + metrics). At 100K events/s, otel-events consumes ~50ms of CPU per second.
+- Memory overhead is dominated by OTEL SDK batching buffers, not otel-events components.
 - Allocation rate at 100K events/s: ~24.4 MB/s (256 bytes/event). Monitor Gen2 GC collections — target < 3/min.
 - The `Utf8JsonWriter` uses `ArrayPool<byte>.Shared` for buffer pooling. Pool size scales with throughput.
 
@@ -2678,7 +2678,7 @@ spec:
 
 ### 17.7 Operational Decisions
 
-**Decision (OQ-PG-04):** ALL publishes **documentation and sample manifests only** — not a reference Helm chart. Helm charts are highly organization-specific (naming conventions, label standards, ingress controllers). The sample manifests in this section serve as a starting point.
+**Decision (OQ-PG-04):** otel-events publishes **documentation and sample manifests only** — not a reference Helm chart. Helm charts are highly organization-specific (naming conventions, label standards, ingress controllers). The sample manifests in this section serve as a starting point.
 
 **Decision (OQ-PG-05):** The default Meter creation strategy is **static `Meter` instances** (Phase 1). Optional `IMeterFactory`-based mode is available in Phase 2 (feature 2.9) for teams that need DI-friendly, disposable meters. Static Meters are acceptable for long-lived service processes but are not ideal for test scenarios. See DR-023 in Appendix B.
 
@@ -2692,7 +2692,7 @@ spec:
 |----|----------|----------|
 | OQ-PG-01 | Intended OTEL Collector deployment topology? | DaemonSet for logs (filelog receiver), Gateway for OTLP metrics/traces. See §17.1. |
 | OQ-PG-02 | Expected log collection agent for stdout JSONL? | OTEL Collector with `filelog` receiver (preferred). Fluent Bit, Vector compatible. See §17.1. |
-| OQ-PG-03 | Regulatory compliance requirements (GDPR, CCPA, HIPAA)? | ALL provides PII classification and redaction mechanisms; specific compliance configuration is deployer responsibility. See §16.6. |
+| OQ-PG-03 | Regulatory compliance requirements (GDPR, CCPA, HIPAA)? | otel-events provides PII classification and redaction mechanisms; specific compliance configuration is deployer responsibility. See §16.6. |
 | OQ-PG-04 | Should library publish reference Helm chart or docs-only? | Docs and sample manifests only — Helm charts are organization-specific. See §17.7. |
 | OQ-PG-05 | Static Meter vs IMeterFactory default? | Static Meter as Phase 1 default; optional IMeterFactory mode in Phase 2 (2.9). See DR-023. |
 
@@ -2728,13 +2728,13 @@ The specification itself is NOT a ticket — it is a **project specification doc
 |---------|---------------|-------------|
 | 1.1 Schema parser | Small (1 sprint) | None |
 | 1.2 Code generator | Medium (1-2 sprints) | 1.1 |
-| 1.3 JSON log exporter | Small (1 sprint) | None (uses OTEL LogRecord, not ALL types) |
-| 1.4 Causality processor | Small (1 sprint) | None (uses OTEL LogRecord, not ALL types) |
+| 1.3 JSON log exporter | Small (1 sprint) | None (uses OTEL LogRecord, not otel-events types) |
+| 1.4 Causality processor | Small (1 sprint) | None (uses OTEL LogRecord, not otel-events types) |
 | 1.5 Exception serialization | Small (1 sprint) | 1.3 (used by exporter) |
 | 1.6 DI integration | Small (1 sprint) | 1.3, 1.4 |
 | 1.7 Schema validation | Small (1 sprint) | 1.1 |
 
-**Key improvement over v1:** Features 1.3 (exporter) and 1.4 (processor) have NO dependency on the code generator (1.2). They work on any `LogRecord`, not just ALL-generated ones. This means 3 workstreams can proceed in parallel:
+**Key improvement over v1:** Features 1.3 (exporter) and 1.4 (processor) have NO dependency on the code generator (1.2). They work on any `LogRecord`, not just otel-events generated ones. This means 3 workstreams can proceed in parallel:
 - **Stream A:** Schema parser → Code generator → Schema validation (1.1 → 1.2 → 1.7)
 - **Stream B:** JSON exporter → Exception serialization (1.3 → 1.5)
 - **Stream C:** Causality processor (1.4)
@@ -2742,7 +2742,7 @@ The specification itself is NOT a ticket — it is a **project specification doc
 
 ### 15.1 Overview & Design Philosophy
 
-Integration packs are **pre-built NuGet packages** that provide curated YAML schemas, pre-generated code, and runtime middleware/interceptors for common .NET technologies. They deliver the core ALL value proposition — schema-defined, structured, AI-optimized events — with **zero YAML authoring** by the consumer.
+Integration packs are **pre-built NuGet packages** that provide curated YAML schemas, pre-generated code, and runtime middleware/interceptors for common .NET technologies. They deliver the core otel-events value proposition — schema-defined, structured, AI-optimized events — with **zero YAML authoring** by the consumer.
 
 > **One package, consistent schema-defined events for your entire stack.**
 
@@ -2751,7 +2751,7 @@ Integration packs are **pre-built NuGet packages** that provide curated YAML sch
 | Property | Description |
 |----------|-------------|
 | **Pre-built schemas** | Each pack bundles a `.all.yaml` schema file as an embedded resource (for documentation and tooling inspection) |
-| **Pre-compiled code** | Generated `[LoggerMessage]` methods, `Meter`/`Counter`/`Histogram` instruments, and extension methods are compiled into the NuGet package — the consumer does NOT need `All.Schema` at build time |
+| **Pre-compiled code** | Generated `[LoggerMessage]` methods, `Meter`/`Counter`/`Histogram` instruments, and extension methods are compiled into the NuGet package — the consumer does NOT need `OtelEvents.Schema` at build time |
 | **Runtime glue** | Middleware, interceptors, diagnostic listeners, or publishers that automatically emit schema-defined events from the target technology |
 | **Complementary** | Works alongside existing OTEL auto-instrumentation (traces + metrics) — adds the **structured event** layer that OTEL does not provide |
 | **Optional** | Each pack is independently installable. No pack depends on another pack. |
@@ -2770,7 +2770,7 @@ Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish the
 
 | Prefix | Purpose | Examples |
 |--------|---------|---------|
-| `All.*` | Core infrastructure (schema parser, exporter, processor, analyzers, testing) | `All.Schema`, `All.Exporter.Json`, `All.Causality` |
+| `All.*` | Core infrastructure (schema parser, exporter, processor, analyzers, testing) | `OtelEvents.Schema`, `OtelEvents.Exporter.Json`, `OtelEvents.Causality` |
 | `OtelEvents.*` | Pre-built integration packs for specific .NET technologies | `OtelEvents.AspNetCore`, `OtelEvents.Grpc` |
 
 ### 15.2 Architecture
@@ -2782,7 +2782,7 @@ Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish the
 │                        PACK BUILD TIME (pack author)                        │
 │                                                                             │
 │  ┌─────────────────┐    ┌──────────────┐    ┌──────────────────────────┐    │
-│  │  Pack YAML      │───▶│  All.Schema  │───▶│  Pre-generated C#        │    │
+│  │  Pack YAML      │───▶│  OtelEvents.Schema  │───▶│  Pre-generated C#        │    │
 │  │  Schema          │    │  (build-time) │    │  • [LoggerMessage] methods│    │
 │  │  (embedded)      │    │              │    │  • Meter/Counter/Histogram│    │
 │  └─────────────────┘    └──────────────┘    │  • Extension methods      │    │
@@ -2816,13 +2816,13 @@ Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish the
 │  │  • Observes request/response lifecycle                              │   │
 │  │  • Calls pre-generated ILogger extension methods                    │   │
 │  │  • Records pre-generated Meter instruments                          │   │
-│  │  • (Optional) Creates AllCausalityContext scope                     │   │
+│  │  • (Optional) Creates OtelEventsCausalityContext scope                     │   │
 │  └────────────────┬─────────────────────────────────────────────────────┘   │
 │                   │                                                         │
 │                   ▼                                                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │  Standard OTEL SDK Pipeline                                         │    │
-│  │  AllCausalityProcessor → AllJsonExporter + OTLP Exporter            │    │
+│  │  OtelEventsCausalityProcessor → OtelEventsJsonExporter + OTLP Exporter            │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -2865,8 +2865,8 @@ Consumers register all integration pack meters via: `metrics.AddMeter("OtelEvent
 OtelEvents.AspNetCore (runtime)
 ├── Microsoft.AspNetCore.Http (>= 8.0)     — ASP.NET Core HTTP abstractions
 ├── OpenTelemetry (>= 1.9)                 — OTEL SDK types
-├── All.Causality (>= 1.0) [optional]      — Causal scope per request (auto-detected)
-└── (no dependency on All.Schema — code is pre-generated)
+├── OtelEvents.Causality (>= 1.0) [optional]      — Causal scope per request (auto-detected)
+└── (no dependency on OtelEvents.Schema — code is pre-generated)
 ```
 
 **Target frameworks:** `net8.0`, `net9.0`
@@ -2877,7 +2877,7 @@ OtelEvents.AspNetCore (runtime)
 # ─── OtelEvents.AspNetCore — Bundled Schema ─────────────────────────────
 # This schema is embedded in the NuGet package for documentation and
 # tooling inspection. The C# code is pre-compiled — consumers do NOT
-# need All.Schema to use this pack.
+# need OtelEvents.Schema to use this pack.
 
 schema:
   name: "OtelEvents.AspNetCore"
@@ -3071,8 +3071,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenTelemetry()
     .WithLogging(logging =>
     {
-        logging.AddProcessor<AllCausalityProcessor>();  // ALL core (optional)
-        logging.AddAllJsonExporter();                   // ALL core (optional)
+        logging.AddProcessor<OtelEventsCausalityProcessor>();  // otel-events core (optional)
+        logging.AddOtelEventsJsonExporter();                   // otel-events core (optional)
     })
     .WithMetrics(metrics =>
     {
@@ -3086,7 +3086,7 @@ builder.Services.AddOtelEventsAspNetCore();
 // Or with configuration:
 builder.Services.AddOtelEventsAspNetCore(options =>
 {
-    options.EnableCausalScope = true;             // Default: true (if All.Causality is referenced)
+    options.EnableCausalScope = true;             // Default: true (if OtelEvents.Causality is referenced)
     options.RecordRequestReceived = true;         // Default: true — emit http.request.received
     options.CaptureUserAgent = false;              // Default: true;             // Default: false — opt-in only (PII: GDPR/CCPA)
     options.CaptureClientIp = false;               // Default: true;              // Default: false — opt-in only (PII: GDPR/CCPA)
@@ -3141,9 +3141,9 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
 
         // Create causal scope — all events within this request share a parentEventId
         IDisposable? causalScope = null;
-        if (_options.EnableCausalScope && AllCausalityContextAvailable)
+        if (_options.EnableCausalScope && OtelEventsCausalityContextAvailable)
         {
-            causalScope = AllCausalityContext.SetParent(lastEmittedEventId);
+            causalScope = OtelEventsCausalityContext.SetParent(lastEmittedEventId);
         }
 
         var sw = Stopwatch.StartNew();
@@ -3194,13 +3194,13 @@ internal sealed class OtelEventsAspNetCoreMiddleware : IMiddleware
 - `http.request.failed` is emitted **only** for unhandled exceptions — not for 4xx responses (those are completed, not failed).
 - The middleware **re-throws** exceptions — it observes, never interferes.
 - Path uses route template when available (e.g., `/api/orders/{id}`) to avoid cardinality explosion.
-- `causalScope` creates an `AllCausalityContext` scope so that all events emitted by application code during the request automatically get the request's `eventId` as their `parentEventId`.
+- `causalScope` creates an `OtelEventsCausalityContext` scope so that all events emitted by application code during the request automatically get the request's `eventId` as their `parentEventId`.
 
 #### What It Complements
 
 | Existing OTEL Instrumentation | What It Provides | What OtelEvents.AspNetCore Adds |
 |-------------------------------|------------------|---------------------------------|
-| `OpenTelemetry.Instrumentation.AspNetCore` (traces) | `Activity` span per request with `http.request.method`, `http.route`, `http.response.status_code` | Schema-defined `LogRecord` events with ALL envelope structure, causal scope, AI-optimized JSON |
+| `OpenTelemetry.Instrumentation.AspNetCore` (traces) | `Activity` span per request with `http.request.method`, `http.route`, `http.response.status_code` | Schema-defined `LogRecord` events with otel-events envelope structure, causal scope, AI-optimized JSON |
 | `OpenTelemetry.Instrumentation.AspNetCore` (metrics) | `http.server.request.duration` histogram, `http.server.active_requests` gauge | Schema-defined counter + histogram with pack-specific metric names, queryable by `httpMethod` + `httpStatusCode` |
 | Neither | N/A | `http.request.received` event (start of request — not provided by OTEL auto-instrumentation) |
 | Neither | N/A | `http.request.failed` with structured exception data and `errorType` field |
@@ -3234,7 +3234,7 @@ public sealed class OtelEventsAspNetCoreOptions
     /// <summary>
     /// Enable causal scope per request. When true, all events emitted during
     /// request processing share a parentEventId pointing to the http.request.received event.
-    /// Default: true (if All.Causality is referenced; no-op otherwise).
+    /// Default: true (if OtelEvents.Causality is referenced; no-op otherwise).
     /// </summary>
     public bool EnableCausalScope { get; set; } = true;
 
@@ -3284,8 +3284,8 @@ OtelEvents.Grpc (runtime)
 ├── Grpc.AspNetCore.Server (>= 2.60)       — gRPC server interceptor base
 ├── Grpc.Net.Client (>= 2.60)              — gRPC client interceptor base
 ├── OpenTelemetry (>= 1.9)                 — OTEL SDK types
-├── All.Causality (>= 1.0) [optional]      — Causal scope per call
-└── (no dependency on All.Schema — code is pre-generated)
+├── OtelEvents.Causality (>= 1.0) [optional]      — Causal scope per call
+└── (no dependency on OtelEvents.Schema — code is pre-generated)
 ```
 
 **Target frameworks:** `net8.0`, `net9.0`
@@ -3547,8 +3547,8 @@ builder.Services.AddGrpcClient<Greeter.GreeterClient>(options =>
 OtelEvents.Azure.CosmosDb (runtime)
 ├── Microsoft.Azure.Cosmos (>= 3.36.0)    — CosmosDB .NET SDK (v3)
 ├── OpenTelemetry (>= 1.9)                — OTEL SDK types
-├── All.Causality (>= 1.0) [optional]     — Causal scope per operation
-└── (no dependency on All.Schema — code is pre-generated)
+├── OtelEvents.Causality (>= 1.0) [optional]     — Causal scope per operation
+└── (no dependency on OtelEvents.Schema — code is pre-generated)
 ```
 
 **Target frameworks:** `net8.0`, `net9.0`
@@ -3877,7 +3877,7 @@ var cosmosClient = new CosmosClient(connectionString, new CosmosClientOptions
 | Existing OTEL | What It Provides | What OtelEvents.Azure.CosmosDb Adds |
 |---------------|------------------|------------------------------------|
 | CosmosDB SDK distributed tracing (`Azure.Cosmos.Operation`) | Trace spans with `db.cosmosdb.request_charge`, `db.operation` | Schema-defined log events with full RU histograms, query item counts, partition key, region |
-| CosmosDB SDK diagnostics logging | Unstructured diagnostic text at Warning+ latency | Structured events for ALL operations with AI-optimized envelope format |
+| CosmosDB SDK diagnostics logging | Unstructured diagnostic text at Warning+ latency | Structured events for otel-events operations with AI-optimized envelope format |
 | Neither | N/A | RU consumption histograms, query result count distribution, error rate by container + status code |
 
 #### Example JSON Output
@@ -3909,8 +3909,8 @@ OtelEvents.Azure.Storage (runtime)
 ├── Azure.Storage.Queues (>= 12.17)       — Queue storage client
 ├── Azure.Core (>= 1.38)                  — Azure SDK pipeline policy base
 ├── OpenTelemetry (>= 1.9)                — OTEL SDK types
-├── All.Causality (>= 1.0) [optional]     — Causal scope per operation
-└── (no dependency on All.Schema — code is pre-generated)
+├── OtelEvents.Causality (>= 1.0) [optional]     — Causal scope per operation
+└── (no dependency on OtelEvents.Schema — code is pre-generated)
 ```
 
 **Target frameworks:** `net8.0`, `net9.0`
@@ -4335,8 +4335,8 @@ var blobClient = new BlobServiceClient(connectionString, blobOptions);
 OtelEvents.HealthChecks (runtime)
 ├── Microsoft.Extensions.Diagnostics.HealthChecks (>= 8.0) — Health check abstractions
 ├── OpenTelemetry (>= 1.9)                                 — OTEL SDK types
-├── All.Causality (>= 1.0) [optional]                      — Causal scope
-└── (no dependency on All.Schema — code is pre-generated)
+├── OtelEvents.Causality (>= 1.0) [optional]                      — Causal scope
+└── (no dependency on OtelEvents.Schema — code is pre-generated)
 ```
 
 **Target frameworks:** `net8.0`, `net9.0`
@@ -4628,9 +4628,9 @@ Each integration pack includes its own test suite following the project's testin
 
 | Test Area | Examples |
 |-----------|---------|
-| Full OTEL pipeline | Pack emits event → OTEL pipeline → `AllJsonExporter` → verify JSONL output |
+| Full OTEL pipeline | Pack emits event → OTEL pipeline → `OtelEventsJsonExporter` → verify JSONL output |
 | DI registration | `AddOtelEvents*()` registers all required services correctly |
-| Causal scope | Events within a request/call share `parentEventId` when `All.Causality` is present |
+| Causal scope | Events within a request/call share `parentEventId` when `OtelEvents.Causality` is present |
 | OTEL coexistence | Pack runs alongside `AddAspNetCoreInstrumentation()` without conflict |
 | Metrics pipeline | Pack-generated metrics visible in `MeterProvider` |
 
@@ -4688,12 +4688,12 @@ builder.Services.AddOpenTelemetry()
         .AddService("order-service"))
     .WithLogging(logging =>
     {
-        // ALL core: causal linking
-        logging.AddProcessor<AllCausalityProcessor>();
-        // ALL core: AI-optimized JSON stdout
-        logging.AddAllJsonExporter(options =>
+        // otel-events core: causal linking
+        logging.AddProcessor<OtelEventsCausalityProcessor>();
+        // otel-events core: AI-optimized JSON stdout
+        logging.AddOtelEventsJsonExporter(options =>
         {
-            options.Output = AllJsonOutput.Stdout;
+            options.Output = OtelEventsJsonOutput.Stdout;
             options.SchemaVersion = "1.0.0";
         });
         // Standard OTEL: export to collector
@@ -4701,7 +4701,7 @@ builder.Services.AddOpenTelemetry()
     })
     .WithMetrics(metrics =>
     {
-        // Pick up ALL integration pack meters + app-defined meters
+        // Pick up otel-events integration pack meters + app-defined meters
         metrics.AddMeter("OtelEvents.*");
         metrics.AddMeter("MyCompany.OrderService.Events.*");
         metrics.AddOtlpExporter();
@@ -4781,12 +4781,12 @@ app.Run();
 **Add to the package tree:**
 
 ```
-All4dotnet (meta-package — references all below)
-├── All.Schema                  — YAML parser, schema model, validation, code generator
-├── All.Exporter.Json           — Custom OTEL BaseExporter<LogRecord> for AI-optimized JSONL
-├── All.Causality               — Custom OTEL BaseProcessor<LogRecord> for eventId/parentEventId
-├── All.Analyzers               — Roslyn analyzers (Console.Write, ILogger, etc.)
-├── All.Testing                 — In-memory LogRecord collector, assertion extensions
+OtelEvents (meta-package — references all below)
+├── OtelEvents.Schema                  — YAML parser, schema model, validation, code generator
+├── OtelEvents.Exporter.Json           — Custom OTEL BaseExporter<LogRecord> for AI-optimized JSONL
+├── OtelEvents.Causality               — Custom OTEL BaseProcessor<LogRecord> for eventId/parentEventId
+├── OtelEvents.Analyzers               — Roslyn analyzers (Console.Write, ILogger, etc.)
+├── OtelEvents.Testing                 — In-memory LogRecord collector, assertion extensions
 │
 └── Integration Packs (separate packages, not part of meta-package):
     ├── OtelEvents.AspNetCore        — ASP.NET Core middleware for HTTP request events    [Phase 2]
@@ -4800,18 +4800,18 @@ All4dotnet (meta-package — references all below)
 
 | Scenario | Packages Needed |
 |----------|----------------|
-| Auto-events for ASP.NET Core APIs | `All.Schema` (or not — pack is self-contained) + `OtelEvents.AspNetCore` |
-| Full stack with ASP.NET Core + CosmosDB | `All.Exporter.Json` + `All.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Azure.CosmosDb` |
+| Auto-events for ASP.NET Core APIs | `OtelEvents.Schema` (or not — pack is self-contained) + `OtelEvents.AspNetCore` |
+| Full stack with ASP.NET Core + CosmosDB | `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Azure.CosmosDb` |
 | Health monitoring with state change alerts | `OtelEvents.HealthChecks` |
-| Full integration pack suite | `All.Exporter.Json` + `All.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Grpc` + `OtelEvents.Azure.CosmosDb` + `OtelEvents.Azure.Storage` + `OtelEvents.HealthChecks` |
+| Full integration pack suite | `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Grpc` + `OtelEvents.Azure.CosmosDb` + `OtelEvents.Azure.Storage` + `OtelEvents.HealthChecks` |
 
 **Add to "Why This Split?" table:**
 
 | Decision | Rationale |
 |----------|-----------|
-| Integration packs are NOT part of the `All4dotnet` meta-package | They bring external dependencies (ASP.NET Core, gRPC, Azure SDKs) — shouldn't be pulled transitively. Opt-in per technology. |
+| Integration packs are NOT part of the `OtelEvents` meta-package | They bring external dependencies (ASP.NET Core, gRPC, Azure SDKs) — shouldn't be pulled transitively. Opt-in per technology. |
 | Integration packs use `OtelEvents.*` prefix | Distinguishes pre-built packs from core infrastructure. Clear marketing: "OtelEvents for [technology]." |
-| Integration packs ship pre-compiled code | Consumers don't need `All.Schema` at build time. Reduces dependency graph and build complexity. |
+| Integration packs ship pre-compiled code | Consumers don't need `OtelEvents.Schema` at build time. Reduces dependency graph and build complexity. |
 | Each pack is independently versioned | Packs may release on different cadences than core — Azure SDK updates, gRPC updates, etc. |
 
 ### Addendum to Section 14: Out of Scope & Explicit Non-Goals
@@ -4914,13 +4914,13 @@ All4dotnet (meta-package — references all below)
 
 ### Addendum to Appendix E: Adoption Story
 
-**Add new section after "Migration Path: Manual → ALL":**
+**Add new section after "Migration Path: Manual → otel-events":**
 
 ```
 ### With Integration Packs (fastest path)
 
-Step 1: dotnet add package All.Exporter.Json     (AI-optimized JSONL output)
-Step 2: dotnet add package All.Causality         (causal event linking)
+Step 1: dotnet add package OtelEvents.Exporter.Json     (AI-optimized JSONL output)
+Step 2: dotnet add package OtelEvents.Causality         (causal event linking)
 Step 3: dotnet add package OtelEvents.AspNetCore (auto HTTP request events)
 Step 4: dotnet add package OtelEvents.HealthChecks (auto health check events)
 Step 5: Add 3 lines to Program.cs:
@@ -4931,7 +4931,7 @@ Step 6: Run — consistent, schema-defined events flowing immediately.
 
 No YAML to write. No code to generate. No [LoggerMessage] to define.
 Infrastructure events are handled by integration packs.
-Application-specific events can be added later via All.Schema + YAML.
+Application-specific events can be added later via OtelEvents.Schema + YAML.
 ```
 
 **Update "Time to first event" targets in Section 13 (Success Metrics):**
@@ -4947,10 +4947,10 @@ Application-specific events can be added later via All.Schema + YAML.
 | # | Decision | Choice | Alternatives Considered |
 |---|----------|--------|------------------------|
 | DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `All.*`) | Same `All.*` prefix; `All.IntegrationPacks.*`; `All.Events.*` |
-| DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `All.Schema`); Ship as source package |
-| DR-020 | Integration pack meta-package inclusion | NOT included in `All4dotnet` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
+| DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `OtelEvents.Schema`); Ship as source package |
+| DR-020 | Integration pack meta-package inclusion | NOT included in `OtelEvents` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
 | DR-021 | Event ID range separation | Consumer: 1–9999, Integration packs: 10000+ | Shared range with collision detection; prefix-based disambiguation |
-| DR-022 | Integration pack `All.Causality` dependency | Optional (auto-detected at runtime) | Required; not supported |
+| DR-022 | Integration pack `OtelEvents.Causality` dependency | Optional (auto-detected at runtime) | Required; not supported |
 
 ---
 
@@ -4962,7 +4962,7 @@ Application-specific events can be added later via All.Schema + YAML.
 - [ ] **OQ-IP-04:** Should `OtelEvents.AspNetCore` capture request/response bodies as opt-in fields? PII risk but high diagnostic value.
 - [ ] **OQ-IP-05:** Should there be an `OtelEvents` meta-package that references all integration packs? Or is explicit per-pack installation the preferred model?
 - [ ] **OQ-IP-06:** Package naming — confirm `OtelEvents.*` prefix vs. aligning with core `All.*` prefix. Needs marketing/branding decision.
-- [ ] **OQ-IP-07:** Should integration pack meters share the same meter instance pattern (static readonly) as core ALL-generated code, or use DI-injected `IMeterFactory` (the newer .NET 8+ pattern)?
+- [ ] **OQ-IP-07:** Should integration pack meters share the same meter instance pattern (static readonly) as core otel-events generated code, or use DI-injected `IMeterFactory` (the newer .NET 8+ pattern)?
 ```
 
 ---
