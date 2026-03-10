@@ -49,6 +49,14 @@ public sealed class OtelEventsAzureStorageOptionsTests
     }
 
     [Fact]
+    public void DefaultOptions_InfrastructureEventsEnabled()
+    {
+        var options = new OtelEventsAzureStorageOptions();
+
+        Assert.True(options.EmitInfrastructureEvents);
+    }
+
+    [Fact]
     public void Options_CanConfigureAllProperties()
     {
         var options = new OtelEventsAzureStorageOptions
@@ -56,6 +64,7 @@ public sealed class OtelEventsAzureStorageOptionsTests
             EnableBlobEvents = false,
             EnableQueueEvents = false,
             EnableCausalScope = false,
+            EmitInfrastructureEvents = false,
             ExcludeContainers = ["logs", "diagnostics"],
             ExcludeQueues = ["internal-queue"]
         };
@@ -63,6 +72,7 @@ public sealed class OtelEventsAzureStorageOptionsTests
         Assert.False(options.EnableBlobEvents);
         Assert.False(options.EnableQueueEvents);
         Assert.False(options.EnableCausalScope);
+        Assert.False(options.EmitInfrastructureEvents);
         Assert.Equal(2, options.ExcludeContainers.Count);
         Assert.Single(options.ExcludeQueues);
     }

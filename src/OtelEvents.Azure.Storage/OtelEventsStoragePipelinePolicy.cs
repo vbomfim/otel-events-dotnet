@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Azure;
 using Azure.Core;
 using Azure.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -85,6 +86,12 @@ internal sealed class OtelEventsStoragePipelinePolicy : HttpPipelinePolicy
         var httpMethod = message.Request.Method.Method;
         var operation = StorageOperationClassifier.Classify(requestUri, httpMethod);
 
+        // Infrastructure events can fire even for unclassified operations
+        if (exception is RequestFailedException rfex && _options.EmitInfrastructureEvents)
+        {
+            EmitInfrastructureEvent(message, rfex, requestUri, durationMs);
+        }
+
         if (operation is null)
         {
             return;
@@ -100,7 +107,7 @@ internal sealed class OtelEventsStoragePipelinePolicy : HttpPipelinePolicy
             return;
         }
 
-        var statusCode = message.Response?.Status ?? 0;
+        var statusCode = GetResponseStatus(message);
         var contentLength = GetContentLength(message);
         var isError = exception is not null || statusCode >= 400;
 
@@ -210,6 +217,70 @@ internal sealed class OtelEventsStoragePipelinePolicy : HttpPipelinePolicy
     }
 
     /// <summary>
+    /// Emits infrastructure events (connection.failed, auth.failed, throttled)
+    /// by classifying the <see cref="RequestFailedException"/>.
+    /// These are supplemental — the regular error event is still emitted.
+    /// </summary>
+    private void EmitInfrastructureEvent(
+        HttpMessage message,
+        RequestFailedException rfex,
+        Uri requestUri,
+        double durationMs)
+    {
+        var accountName = ExtractAccountName(requestUri);
+
+        try
+        {
+            if (StorageInfrastructureEvents.IsConnectionError(rfex))
+            {
+                _logger.StorageConnectionFailed(
+                    endpoint: requestUri.Host,
+                    storageAccountName: accountName,
+                    durationMs,
+                    errorType: rfex.GetType().Name,
+                    errorMessage: rfex.Message,
+                    failureReason: StorageInfrastructureEvents.ClassifyFailureReason(rfex),
+                    exception: rfex);
+            }
+            else if (StorageInfrastructureEvents.IsAuthError(rfex))
+            {
+                _logger.StorageAuthFailed(
+                    httpStatusCode: rfex.Status,
+                    storageAccountName: accountName,
+                    authScheme: StorageInfrastructureEvents.DetectAuthScheme(message.Request),
+                    identityHint: StorageInfrastructureEvents.ExtractIdentityHint(message.Request),
+                    exception: rfex);
+            }
+            else if (StorageInfrastructureEvents.IsThrottlingError(rfex))
+            {
+                _logger.StorageThrottled(
+                    httpStatusCode: rfex.Status,
+                    storageAccountName: accountName,
+                    retryAfterMs: StorageInfrastructureEvents.ParseRetryAfterMs(message),
+                    currentLimit: null,
+                    exception: rfex);
+            }
+        }
+#pragma warning disable CA1031 // Defensive: infrastructure event emission must never break the pipeline
+        catch (Exception)
+        {
+            // Observe, never swallow pipeline-critical exceptions
+        }
+#pragma warning restore CA1031
+    }
+
+    /// <summary>
+    /// Extracts the storage account name from the request URI host.
+    /// Returns "unknown" if the host format is not recognized.
+    /// </summary>
+    private static string ExtractAccountName(Uri requestUri)
+    {
+        var host = requestUri.Host;
+        var dotIndex = host.IndexOf('.', StringComparison.Ordinal);
+        return dotIndex > 0 ? host[..dotIndex] : "unknown";
+    }
+
+    /// <summary>
     /// Checks whether events for this operation type are enabled in the options.
     /// </summary>
     private bool IsOperationEnabled(StorageOperationInfo operation)
@@ -258,21 +329,48 @@ internal sealed class OtelEventsStoragePipelinePolicy : HttpPipelinePolicy
     }
 
     /// <summary>
+    /// Extracts the HTTP status code from the response.
+    /// Returns 0 if no response is available (e.g., transport-level failure).
+    /// </summary>
+    private static int GetResponseStatus(HttpMessage message)
+    {
+        try
+        {
+            return message.Response?.Status ?? 0;
+        }
+#pragma warning disable CA1031 // Response getter throws when not set — expected for transport failures
+        catch (InvalidOperationException)
+        {
+            return 0;
+        }
+#pragma warning restore CA1031
+    }
+
+    /// <summary>
     /// Extracts content length from the response headers.
     /// Returns 0 if not available.
     /// </summary>
     private static long GetContentLength(HttpMessage message)
     {
-        if (message.Response is null)
+        try
         {
-            return 0;
-        }
+            if (message.Response is null)
+            {
+                return 0;
+            }
 
-        if (message.Response.Headers.TryGetValue("Content-Length", out var value) &&
-            long.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var length))
-        {
-            return length;
+            if (message.Response.Headers.TryGetValue("Content-Length", out var value) &&
+                long.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var length))
+            {
+                return length;
+            }
         }
+#pragma warning disable CA1031 // Response getter throws when not set — expected for transport failures
+        catch (InvalidOperationException)
+        {
+            // No response available
+        }
+#pragma warning restore CA1031
 
         return 0;
     }

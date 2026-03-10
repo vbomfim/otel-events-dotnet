@@ -38,4 +38,13 @@ public sealed class OtelEventsAzureStorageOptions
     /// Default: empty.
     /// </summary>
     public IList<string> ExcludeQueues { get; set; } = [];
+
+    /// <summary>
+    /// Enable infrastructure event emission (connection.failed, auth.failed, throttled).
+    /// These events provide deeper diagnostics for Azure Storage failures
+    /// by classifying <c>RequestFailedException</c> into connection, authentication,
+    /// and throttling categories.
+    /// Default: true.
+    /// </summary>
+    public bool EmitInfrastructureEvents { get; set; } = true;
 }
