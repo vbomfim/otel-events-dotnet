@@ -39,4 +39,9 @@ internal static class ExporterMetrics
         Meter.CreateCounter<long>(
             "all.exporter.json.reserved_prefix_stripped",
             description: "Attributes with reserved all.* prefix stripped");
+
+    internal static readonly Counter<long> SensitivityRedacted =
+        Meter.CreateCounter<long>(
+            "all.exporter.json.sensitivity_redacted",
+            description: "Attribute values redacted by sensitivity classification");
 }
