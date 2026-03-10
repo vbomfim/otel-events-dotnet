@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace OtelEvents.Subscriptions;
 
@@ -13,13 +14,16 @@ internal sealed class OtelEventsSubscriptionDispatcher : BackgroundService
 {
     private readonly Channel<DispatchItem> _channel;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<OtelEventsSubscriptionDispatcher> _logger;
 
     public OtelEventsSubscriptionDispatcher(
         Channel<DispatchItem> channel,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        ILogger<OtelEventsSubscriptionDispatcher> logger)
     {
         _channel = channel;
         _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -60,8 +64,10 @@ internal sealed class OtelEventsSubscriptionDispatcher : BackgroundService
             // Graceful shutdown — don't meter this as an error
             throw;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Subscription handler for pattern '{EventPattern}' failed on event '{EventName}'",
+                registration.EventPattern, context.EventName);
             SubscriptionMetrics.HandlerErrors.Add(1);
         }
     }

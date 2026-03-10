@@ -43,7 +43,7 @@ public sealed class OtelEventContext
     /// <summary>
     /// Initializes a new instance of <see cref="OtelEventContext"/>.
     /// </summary>
-    internal OtelEventContext(
+    public OtelEventContext(
         string eventName,
         LogLevel logLevel,
         string? formattedMessage,

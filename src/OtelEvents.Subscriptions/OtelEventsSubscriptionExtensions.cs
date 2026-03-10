@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -73,6 +74,7 @@ public static class OtelEventsSubscriptionExtensions
             new OtelEventsSubscriptionProcessor(channel, builder.Registrations));
 
         // Register the background dispatch loop
+        services.AddLogging();
         services.AddHostedService<OtelEventsSubscriptionDispatcher>();
 
         return services;

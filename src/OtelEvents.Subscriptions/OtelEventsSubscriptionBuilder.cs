@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace OtelEvents.Subscriptions;
@@ -77,7 +78,7 @@ public sealed class OtelEventsSubscriptionBuilder
         ValidatePattern(eventPattern);
 
         // Auto-register the handler type as transient if not already registered
-        _services.AddTransient<THandler>();
+        _services.TryAddTransient<THandler>();
 
         Registrations.Add(new SubscriptionRegistration(eventPattern, typeof(THandler)));
         return this;
