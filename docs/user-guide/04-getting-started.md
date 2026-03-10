@@ -41,7 +41,7 @@ dotnet add package OtelEvents.Analyzers
 Or use the meta-package for everything:
 
 ```bash
-dotnet add package All4dotnet
+dotnet add package OtelEvents
 ```
 
 ---

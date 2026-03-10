@@ -1906,7 +1906,7 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 ## Appendix C: File Structure
 
 ```
-all4dotnet/
+otel-events-dotnet/
 ├── README.md
 ├── ARCHITECTURE.md
 ├── CONTRIBUTING.md
@@ -1915,7 +1915,7 @@ all4dotnet/
 ├── LICENSE (MIT)
 ├── Directory.Build.props                    # Shared MSBuild properties
 ├── Directory.Packages.props                 # Central package management
-├── all4dotnet.sln
+├── OtelEvents.slnx
 │
 ├── src/
 │   ├── OtelEvents.Schema/
@@ -2714,7 +2714,7 @@ spec:
 ### For the Default Agent
 The specification above is complete and ready to be saved as the project's foundational document.
 
-1. **Save as** `SPECIFICATION.md` in the project root (`/Users/vbomfim/dev/all4dotnet/SPECIFICATION.md`) — replacing the existing v1 specification
+1. **Save as** `SPECIFICATION.md` in the project root (`/Users/vbomfim/dev/otel-events-dotnet/SPECIFICATION.md`) — replacing the existing v1 specification
 2. **Additionally**, consider creating these follow-up items:
    - A GitHub issue for **Phase 1 Epic** with sub-issues for each MVP feature (1.1–1.7)
    - An initial `README.md` scaffolded from the overview section
