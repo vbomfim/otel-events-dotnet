@@ -35,7 +35,7 @@ public static class ErrorCodes
     /// <summary>Schema version must be valid semver.</summary>
     public const string InvalidSemver = "ALL_SCHEMA_010";
 
-    /// <summary>Event/field names must not start with 'all.'.</summary>
+    /// <summary>Event/field names must not start with 'otel_events.'.</summary>
     public const string ReservedPrefix = "ALL_SCHEMA_011";
 
     /// <summary>Each event id must be a unique integer.</summary>

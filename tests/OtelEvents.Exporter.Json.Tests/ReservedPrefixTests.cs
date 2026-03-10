@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 namespace OtelEvents.Exporter.Json.Tests;
 
 /// <summary>
-/// Tests for reserved <c>all.*</c> prefix stripping from non-ALL attributes.
-/// Per §16.4: any attribute with key starting with <c>all.</c> that was NOT set by
+/// Tests for reserved <c>otel_events.*</c> prefix stripping from non-otel-events attributes.
+/// Per §16.4: any attribute with key starting with <c>otel_events.</c> that was NOT set by
 /// OtelEventsCausalityProcessor or OtelEventsJsonExporter is stripped from the exported envelope.
 /// </summary>
 public sealed class ReservedPrefixTests

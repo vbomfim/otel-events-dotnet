@@ -335,7 +335,7 @@ Examples:
 
 ❌ OrderPlaced          (not lowercase)
 ❌ order-placed         (hyphens not allowed)
-❌ all.custom.event     (reserved prefix)
+❌ otel_events.custom.event     (reserved prefix)
 ```
 
 ---
