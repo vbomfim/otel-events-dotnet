@@ -50,4 +50,12 @@ public sealed class OtelEventsGrpcOptions
     /// Default: false — opt-in only to avoid capturing sensitive headers.
     /// </summary>
     public bool CaptureMetadata { get; set; }
+
+    /// <summary>
+    /// Emit supplemental infrastructure events (10104–10106) for connection failures,
+    /// authentication errors, and throttling. These events fire alongside grpc.call.failed
+    /// to provide domain-specific detail for observability dashboards and alerting.
+    /// Default: true.
+    /// </summary>
+    public bool EmitInfrastructureEvents { get; set; } = true;
 }

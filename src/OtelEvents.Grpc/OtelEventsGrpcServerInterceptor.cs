@@ -78,6 +78,9 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         {
             sw.Stop();
             EmitFailed(serviceName, methodName, (int)ex.StatusCode, ex.Status.Detail, sw.Elapsed.TotalMilliseconds, ex);
+            GrpcInfrastructureEvents.TryEmitInfrastructureEvent(
+                _logger, _options, serviceName, methodName, Side, ex,
+                sw.Elapsed.TotalMilliseconds, context.Peer, context.RequestHeaders);
             throw; // Re-throw — interceptor observes, never swallows
         }
         catch (Exception ex)
@@ -134,6 +137,9 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         {
             sw.Stop();
             EmitFailed(serviceName, methodName, (int)ex.StatusCode, ex.Status.Detail, sw.Elapsed.TotalMilliseconds, ex);
+            GrpcInfrastructureEvents.TryEmitInfrastructureEvent(
+                _logger, _options, serviceName, methodName, Side, ex,
+                sw.Elapsed.TotalMilliseconds, context.Peer, context.RequestHeaders);
             throw;
         }
         catch (Exception ex)
@@ -190,6 +196,9 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         {
             sw.Stop();
             EmitFailed(serviceName, methodName, (int)ex.StatusCode, ex.Status.Detail, sw.Elapsed.TotalMilliseconds, ex);
+            GrpcInfrastructureEvents.TryEmitInfrastructureEvent(
+                _logger, _options, serviceName, methodName, Side, ex,
+                sw.Elapsed.TotalMilliseconds, context.Peer, context.RequestHeaders);
             throw;
         }
         catch (Exception ex)
@@ -246,6 +255,9 @@ internal sealed class OtelEventsGrpcServerInterceptor : Interceptor
         {
             sw.Stop();
             EmitFailed(serviceName, methodName, (int)ex.StatusCode, ex.Status.Detail, sw.Elapsed.TotalMilliseconds, ex);
+            GrpcInfrastructureEvents.TryEmitInfrastructureEvent(
+                _logger, _options, serviceName, methodName, Side, ex,
+                sw.Elapsed.TotalMilliseconds, context.Peer, context.RequestHeaders);
             throw;
         }
         catch (Exception ex)

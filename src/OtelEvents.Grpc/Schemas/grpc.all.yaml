@@ -182,3 +182,133 @@ events:
     tags:
       - grpc
       - error
+
+  # ─── Infrastructure Events (10104–10106) ─────────────────────────────
+  # Supplemental events that fire alongside grpc.call.failed (10103).
+  # Controlled by OtelEventsGrpcOptions.EmitInfrastructureEvents (default: true).
+
+  grpc.connection.failed:
+    id: 10104
+    severity: ERROR
+    description: "A gRPC call failed due to a connection issue (StatusCode.Unavailable)."
+    message: "gRPC {grpcSide} connection to {grpcService}/{grpcMethod} failed: {failureReason}"
+    exception: true
+    fields:
+      grpcService:
+        ref: grpcService
+        required: true
+      grpcMethod:
+        ref: grpcMethod
+        required: true
+      grpcSide:
+        ref: grpcSide
+        required: true
+      endpoint:
+        type: string
+        description: "The endpoint involved in the failure (host for client, peer for server)"
+        required: false
+      durationMs:
+        ref: durationMs
+        required: true
+      errorType:
+        ref: errorType
+        required: true
+      errorMessage:
+        type: string
+        description: "Exception message"
+        required: false
+      failureReason:
+        type: string
+        description: "gRPC status detail explaining the connection failure"
+        required: false
+    metrics:
+      otel.grpc.connection.failed.count:
+        type: counter
+        unit: "errors"
+        description: "gRPC connection failures"
+        labels:
+          - grpcService
+          - grpcMethod
+          - grpcSide
+    tags:
+      - grpc
+      - infrastructure
+      - connection
+
+  grpc.auth.failed:
+    id: 10105
+    severity: ERROR
+    description: "A gRPC call failed due to authentication or authorization (Unauthenticated/PermissionDenied)."
+    message: "gRPC {grpcSide} auth failed for {grpcService}/{grpcMethod} with HTTP {httpStatusCode}"
+    exception: true
+    fields:
+      grpcService:
+        ref: grpcService
+        required: true
+      grpcMethod:
+        ref: grpcMethod
+        required: true
+      grpcSide:
+        ref: grpcSide
+        required: true
+      httpStatusCode:
+        type: int
+        description: "Mapped HTTP status code (401 for Unauthenticated, 403 for PermissionDenied)"
+        index: true
+      authScheme:
+        type: string
+        description: "Authentication scheme (e.g., Bearer, Basic) extracted from Authorization header"
+        required: false
+      identityHint:
+        type: string
+        description: "Truncated SHA-256 hash of the credential — never the raw value"
+        required: false
+    metrics:
+      otel.grpc.auth.failed.count:
+        type: counter
+        unit: "errors"
+        description: "gRPC authentication failures"
+        labels:
+          - grpcService
+          - grpcMethod
+          - grpcSide
+          - httpStatusCode
+    tags:
+      - grpc
+      - infrastructure
+      - security
+
+  grpc.throttled:
+    id: 10106
+    severity: WARN
+    description: "A gRPC call was throttled (StatusCode.ResourceExhausted)."
+    message: "gRPC {grpcSide} {grpcService}/{grpcMethod} throttled"
+    exception: true
+    fields:
+      grpcService:
+        ref: grpcService
+        required: true
+      grpcMethod:
+        ref: grpcMethod
+        required: true
+      grpcSide:
+        ref: grpcSide
+        required: true
+      retryAfterMs:
+        type: long
+        description: "Retry delay in ms from trailing metadata (retry-after-ms key)"
+        unit: "ms"
+        required: false
+    metrics:
+      otel.grpc.throttled.count:
+        type: counter
+        unit: "errors"
+        description: "gRPC throttled requests"
+        labels:
+          - grpcService
+          - grpcMethod
+          - grpcSide
+    tags:
+      - grpc
+      - infrastructure
+      - throttle

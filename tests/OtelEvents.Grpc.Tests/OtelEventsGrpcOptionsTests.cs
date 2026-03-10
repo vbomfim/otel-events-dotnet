@@ -45,6 +45,13 @@ public class OtelEventsGrpcOptionsTests
     }
 
     [Fact]
+    public void DefaultOptions_EmitInfrastructureEvents_IsTrue()
+    {
+        var options = new OtelEventsGrpcOptions();
+        Assert.True(options.EmitInfrastructureEvents);
+    }
+
+    [Fact]
     public void DefaultOptions_ExcludeServices_IsEmpty()
     {
         var options = new OtelEventsGrpcOptions();
@@ -69,6 +76,7 @@ public class OtelEventsGrpcOptionsTests
             EnableClientInterceptor = false,
             CaptureMessageSize = false,
             CaptureMetadata = true,
+            EmitInfrastructureEvents = false,
             ExcludeServices = ["grpc.health.v1.Health"],
             ExcludeMethods = ["/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"]
         };
@@ -79,6 +87,7 @@ public class OtelEventsGrpcOptionsTests
         Assert.False(options.EnableClientInterceptor);
         Assert.False(options.CaptureMessageSize);
         Assert.True(options.CaptureMetadata);
+        Assert.False(options.EmitInfrastructureEvents);
         Assert.Single(options.ExcludeServices);
         Assert.Single(options.ExcludeMethods);
     }
