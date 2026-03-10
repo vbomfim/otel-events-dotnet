@@ -11,6 +11,7 @@
     <Project Path="src/OtelEvents.Azure.Storage/OtelEvents.Azure.Storage.csproj" />
     <Project Path="src/OtelEvents.Grpc/OtelEvents.Grpc.csproj" />
     <Project Path="src/OtelEvents.HealthChecks/OtelEvents.HealthChecks.csproj" />
+    <Project Path="src/OtelEvents.Subscriptions/OtelEvents.Subscriptions.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OtelEvents.Analyzers.Tests/OtelEvents.Analyzers.Tests.csproj" />
@@ -24,6 +25,7 @@
     <Project Path="tests/OtelEvents.Azure.Storage.Tests/OtelEvents.Azure.Storage.Tests.csproj" />
     <Project Path="tests/OtelEvents.Grpc.Tests/OtelEvents.Grpc.Tests.csproj" />
     <Project Path="tests/OtelEvents.HealthChecks.Tests/OtelEvents.HealthChecks.Tests.csproj" />
+    <Project Path="tests/OtelEvents.Subscriptions.Tests/OtelEvents.Subscriptions.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/OtelEvents.Cli/OtelEvents.Cli.csproj" />
