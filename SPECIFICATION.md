@@ -140,7 +140,7 @@ Advanced features for large-scale adoption.
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 3.1 | **Schema registry CLI** | `dotnet all validate`, `dotnet all generate`, `dotnet all diff` commands |
+| 3.1 | **Schema registry CLI** | `dotnet otel-events validate`, `dotnet otel-events generate`, `dotnet otel-events diff` commands |
 | 3.2 | **Multi-service schema sharing** | NuGet-packaged schemas for shared event contracts |
 | 3.3 | **Advanced event sampling** | Configurable sampling rates for high-volume events with head/tail sampling strategies (as an OTEL processor) |
 | 3.4 | **Schema documentation generator** | Auto-generate event catalog documentation from YAML |
@@ -149,10 +149,10 @@ Advanced features for large-scale adoption.
 | 3.7 | **OtelEvents.Grpc integration pack** | Pre-built gRPC server/client interceptors for `grpc.call.started`, `grpc.call.completed`, `grpc.call.failed` events (replaces deferred "gRPC service events" item) |
 | 3.8 | **OtelEvents.Azure.CosmosDb integration pack** | DiagnosticListener-based observer for `cosmosdb.query.executed`, `cosmosdb.point.read`, `cosmosdb.point.write` events with RU histograms |
 | 3.9 | **OtelEvents.Azure.Storage integration pack** | Azure SDK pipeline policy for `storage.blob.*` and `storage.queue.*` events |
-| 3.10 | **Schema file signing** | `dotnet all sign` command for schema integrity verification in multi-team environments |
+| 3.10 | **Schema file signing** | `dotnet otel-events sign` command for schema integrity verification in multi-team environments |
 
 |---|---------|-------------|
-| 3.1 | **Schema registry CLI** | `dotnet all validate`, `dotnet all generate`, `dotnet all diff` commands |
+| 3.1 | **Schema registry CLI** | `dotnet otel-events validate`, `dotnet otel-events generate`, `dotnet otel-events diff` commands |
 | 3.2 | **Multi-service schema sharing** | NuGet-packaged schemas for shared event contracts |
 | 3.3 | **Event sampling** | Configurable sampling rates for high-volume events (as an OTEL processor) |
 | 3.4 | **Schema documentation generator** | Auto-generate event catalog documentation from YAML |
@@ -357,7 +357,7 @@ OtelEvents.Testing (test-time only)
 | `OtelEvents.Analyzers` is separate | Analyzers have strict packaging rules; keeps the analyzer DLL isolated. |
 | `OtelEvents.Testing` is separate | Test infrastructure shouldn't be in production packages. |
 | No `OtelEvents.Core` package | There is no otel-events runtime core — generated code uses only BCL types (`ILogger`, `Meter`, `Activity`) and OTEL SDK types. otel-events adds no runtime abstraction layer. |
-| No `All.Bridge.MicrosoftLogging` package | OTEL SDK already provides `OpenTelemetryLoggerProvider` which bridges `ILogger` → `LogRecord`. otel-events' generated code uses `ILogger` natively, so no bridge is needed. |
+| No `OtelEvents.Bridge.MicrosoftLogging` package | OTEL SDK already provides `OpenTelemetryLoggerProvider` which bridges `ILogger` → `LogRecord`. otel-events' generated code uses `ILogger` natively, so no bridge is needed. |
 
 ### Adoption Scenarios
 
@@ -366,7 +366,7 @@ OtelEvents.Testing (test-time only)
 | Schema-driven events + OTLP export (no JSON stdout) | `OtelEvents.Schema` |
 | Schema-driven events + AI-optimized JSON stdout | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` |
 | Full otel-events experience | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.Analyzers` |
-| CI schema validation only | `OtelEvents.Schema` (used via `dotnet all validate` CLI) |
+| CI schema validation only | `OtelEvents.Schema` (used via `dotnet otel-events validate` CLI) |
 | Testing otel-events events | `OtelEvents.Testing` (in test projects) |
 
 ---
@@ -375,7 +375,7 @@ OtelEvents.Testing (test-time only)
 
 ### Schema File Structure
 
-Schema files use `.otel.yaml` or `.all.yml` extension. A project can have multiple schema files — they are merged by the code generator.
+Schema files use `.otel.yaml` or `.otel.yml` extension. A project can have multiple schema files — they are merged by the code generator.
 
 ### Full Schema Grammar
 
@@ -1847,7 +1847,7 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 | Feature | Target Phase | Notes |
 |---------|-------------|-------|
 | Advanced event sampling | Phase 3 | `BaseProcessor<LogRecord>` with head/tail sampling strategies (basic severity filtering moved to Phase 1.8, rate limiting moved to Phase 2.8) |
-| Schema registry CLI | Phase 3 | `dotnet all validate`, `dotnet all diff` |
+| Schema registry CLI | Phase 3 | `dotnet otel-events validate`, `dotnet otel-events diff` |
 | Multi-service shared schemas | Phase 3 | NuGet-packaged schema contracts |
 | VS Code extension | Phase 3+ | YAML IntelliSense, event preview |
 | Schema migration tooling | Phase 3+ | Automated schema version migration |
@@ -1893,7 +1893,7 @@ otel-events emits its own internal metrics for self-monitoring using OTEL's nati
 | DR-015 | Null handling | Omit field entirely (no `null` values in JSON) | Include `null`; use sentinel values |
 | DR-016 | Code gen approach | MSBuild task + incremental source gen | T4 templates; runtime reflection; manual |
 | DR-017 | DI registration | Extends `AddOpenTelemetry()` fluent API | Custom `AddAll()` method; separate DI registration |
-| DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `All.*`) | Same `All.*` prefix; `All.IntegrationPacks.*`; `All.Events.*` |
+| DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `OtelEvents.*`) | Same `OtelEvents.*` prefix; `OtelEvents.IntegrationPacks.*`; `OtelEvents.Events.*` |
 | DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `OtelEvents.Schema`); Ship as source package |
 | DR-020 | Integration pack meta-package inclusion | NOT included in `OtelEvents` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
 | DR-021 | Event ID range separation | Consumer: 1–9999, Integration packs: 10000+ | Shared range with collision detection; prefix-based disambiguation |
@@ -1946,7 +1946,7 @@ otel-events-dotnet/
 │   │   │   └── MSBuild/
 │   │   │       └── AllGenerateTask.cs        # MSBuild task alternative
 │   │   └── Cli/
-│   │       └── ValidateCommand.cs            # dotnet all validate (Phase 3)
+│   │       └── ValidateCommand.cs            # dotnet otel-events validate (Phase 3)
 │   │
 │   ├── OtelEvents.Exporter.Json/
 │   │   ├── OtelEvents.Exporter.Json.csproj
@@ -1990,13 +1990,13 @@ otel-events-dotnet/
 │   ├── OtelEvents.Exporter.Json.Tests/
 │   ├── OtelEvents.Causality.Tests/
 │   ├── OtelEvents.Analyzers.Tests/
-│   ├── All.Integration.Tests/
-│   └── All.Benchmarks/
+│   ├── OtelEvents.Integration.Tests/
+│   └── OtelEvents.Benchmarks/
 │
 ├── samples/
-│   ├── All.Samples.WebApi/                   # ASP.NET Core Web API example
-│   ├── All.Samples.Worker/                   # Background worker example
-│   └── All.Samples.MinimalApi/               # Minimal API example
+│   ├── OtelEvents.Samples.WebApi/                   # ASP.NET Core Web API example
+│   ├── OtelEvents.Samples.Worker/                   # Background worker example
+│   └── OtelEvents.Samples.MinimalApi/               # Minimal API example
 │
 ├── docs/
 │   ├── adr/                                  # Architecture Decision Records
@@ -2006,7 +2006,7 @@ otel-events-dotnet/
 │   │   └── ...
 │   ├── schema-reference.md                   # Full YAML schema reference
 │   ├── getting-started.md                    # Quick start guide (assumes OTEL exists)
-│   ├── adopting-all-in-existing-project.md   # Migration guide for OTEL-using projects
+│   ├── adopting-otel-events-in-existing-project.md   # Migration guide for OTEL-using projects
 │   └── ai-investigation.md                   # How otel-events enables AI log analysis
 │
 ├── schemas/
@@ -2043,8 +2043,8 @@ steps:
   3. Restore (with Central Package Management — exact version pins)
   4. Build (Release configuration)
   5. Run analyzers (treat warnings as errors)
-  6. Run unit tests (All.*.Tests)
-  7. Run integration tests (All.Integration.Tests)
+  6. Run unit tests (OtelEvents.*.Tests)
+  7. Run integration tests (OtelEvents.Integration.Tests)
   8. Run benchmarks (comparison against baseline)
   9. AOT publish test (verify trimming + AOT compatibility)
   10. Generate coverage report (Coverlet → Codecov)
@@ -2766,7 +2766,7 @@ Integration packs are **pre-built NuGet packages** that provide curated YAML sch
 
 #### Naming Convention
 
-Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish them from the core `All.*` infrastructure packages:
+Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish them from the core `OtelEvents.*` infrastructure packages:
 
 | Prefix | Purpose | Examples |
 |--------|---------|---------|
@@ -4909,7 +4909,7 @@ OtelEvents (meta-package — references all below)
 │
 ├── samples/
 │   ├── ... (existing samples) ...
-│   └── All.Samples.IntegrationPacks/          # Sample showing all packs together
+│   └── OtelEvents.Samples.IntegrationPacks/          # Sample showing all packs together
 ```
 
 ### Addendum to Appendix E: Adoption Story
@@ -4946,7 +4946,7 @@ Application-specific events can be added later via OtelEvents.Schema + YAML.
 
 | # | Decision | Choice | Alternatives Considered |
 |---|----------|--------|------------------------|
-| DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `All.*`) | Same `All.*` prefix; `All.IntegrationPacks.*`; `All.Events.*` |
+| DR-018 | Integration pack naming prefix | `OtelEvents.*` (distinct from core `OtelEvents.*`) | Same `OtelEvents.*` prefix; `OtelEvents.IntegrationPacks.*`; `OtelEvents.Events.*` |
 | DR-019 | Integration pack code distribution | Pre-compiled in NuGet (no consumer-side code generation) | Ship YAML only (require consumer to reference `OtelEvents.Schema`); Ship as source package |
 | DR-020 | Integration pack meta-package inclusion | NOT included in `OtelEvents` meta-package | Included in meta-package; separate `OtelEvents` meta-package |
 | DR-021 | Event ID range separation | Consumer: 1–9999, Integration packs: 10000+ | Shared range with collision detection; prefix-based disambiguation |
@@ -4961,7 +4961,7 @@ Application-specific events can be added later via OtelEvents.Schema + YAML.
 - [ ] **OQ-IP-03:** Should integration packs support `appsettings.json` configuration in addition to code-based `options =>` configuration? Standard pattern for .NET libraries.
 - [ ] **OQ-IP-04:** Should `OtelEvents.AspNetCore` capture request/response bodies as opt-in fields? PII risk but high diagnostic value.
 - [ ] **OQ-IP-05:** Should there be an `OtelEvents` meta-package that references all integration packs? Or is explicit per-pack installation the preferred model?
-- [ ] **OQ-IP-06:** Package naming — confirm `OtelEvents.*` prefix vs. aligning with core `All.*` prefix. Needs marketing/branding decision.
+- [ ] **OQ-IP-06:** Package naming — confirm `OtelEvents.*` prefix vs. aligning with core `OtelEvents.*` prefix. Needs marketing/branding decision.
 - [ ] **OQ-IP-07:** Should integration pack meters share the same meter instance pattern (static readonly) as core otel-events generated code, or use DI-injected `IMeterFactory` (the newer .NET 8+ pattern)?
 ```
 

@@ -34,11 +34,11 @@ If you discover a security vulnerability in otel-events-dotnet, please report it
 ### Scope
 
 This policy covers the `otel-events-dotnet` library packages:
-- `All.Schema`
-- `All.Exporter.Json`
-- `All.Causality`
-- `All.Analyzers`
-- `All.Testing`
+- `OtelEvents.Schema`
+- `OtelEvents.Exporter.Json`
+- `OtelEvents.Causality`
+- `OtelEvents.Analyzers`
+- `OtelEvents.Testing`
 - `OtelEvents.*` integration packs
 
 ### Security Design
