@@ -34,6 +34,15 @@ internal sealed class SensitivityRegistry
             ["hostName"] = OtelEventsSensitivity.Internal,
             ["grpcStatusDetail"] = OtelEventsSensitivity.Internal,
             ["cosmosQueryText"] = OtelEventsSensitivity.Internal,
+
+            // Credential fields (always redacted, even in Development)
+            ["apiKey"] = OtelEventsSensitivity.Credential,
+            ["apiSecret"] = OtelEventsSensitivity.Credential,
+            ["accessToken"] = OtelEventsSensitivity.Credential,
+            ["secretKey"] = OtelEventsSensitivity.Credential,
+            ["connectionString"] = OtelEventsSensitivity.Credential,
+            ["password"] = OtelEventsSensitivity.Credential,
+            ["token"] = OtelEventsSensitivity.Credential,
         };
 
     public SensitivityRegistry()
