@@ -29,7 +29,7 @@ Projects already using OpenTelemetry .NET can adopt otel-events incrementally â€
 
 ```bash
 # Clone and build
-git clone https://github.com/all4dotnet/otel-events-dotnet.git
+git clone https://github.com/vbomfim/otel-events-dotnet.git
 cd otel-events-dotnet
 dotnet build
 dotnet test
