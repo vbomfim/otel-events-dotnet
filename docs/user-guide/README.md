@@ -1,6 +1,6 @@
 # otel-events User Guide
 
-**Another Logging Library** — an extension to the OpenTelemetry .NET SDK for schema-driven events, AI-optimized JSON export, and causal event linking.
+An extension to the OpenTelemetry .NET SDK for schema-driven events, AI-optimized JSON export, and causal event linking.
 
 ---
 

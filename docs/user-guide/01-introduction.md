@@ -34,7 +34,7 @@ Four developers, four styles, one event. Now multiply this by 200 events across 
 
 ## What is otel-events?
 
-**otel-events (Another Logging Library)** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it.
+**otel-events** is an **extension to the OpenTelemetry .NET SDK**. It is not a standalone observability library, not a replacement for OTEL, and not a wrapper around it.
 
 > otel-events is NOT a replacement for OpenTelemetry. It is an extension that adds schema-driven code generation, AI-optimized JSON export, and causal event linking to your existing OTEL pipeline.
 
