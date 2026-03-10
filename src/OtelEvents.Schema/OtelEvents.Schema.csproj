@@ -18,7 +18,7 @@
 
   <!-- Include MSBuild targets for NuGet schema packaging (auto-imported by consumers) -->
   <ItemGroup>
-    <None Include="Build\OtelEvents.Schema.targets" Pack="true" PackagePath="buildTransitive\" />
+    <None Include="Build\OtelEvents.Schema.targets" Pack="true" PackagePath="buildTransitive\OtelEvents.Schema.targets" />
   </ItemGroup>
 
 </Project>
