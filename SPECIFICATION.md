@@ -2770,7 +2770,7 @@ Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish the
 
 | Prefix | Purpose | Examples |
 |--------|---------|---------|
-| `All.*` | Core infrastructure (schema parser, exporter, processor, analyzers, testing) | `OtelEvents.Schema`, `OtelEvents.Exporter.Json`, `OtelEvents.Causality` |
+| `OtelEvents.*` | Core infrastructure (schema parser, exporter, processor, analyzers, testing) | `OtelEvents.Schema`, `OtelEvents.Exporter.Json`, `OtelEvents.Causality` |
 | `OtelEvents.*` | Pre-built integration packs for specific .NET technologies | `OtelEvents.AspNetCore`, `OtelEvents.Grpc` |
 
 ### 15.2 Architecture
