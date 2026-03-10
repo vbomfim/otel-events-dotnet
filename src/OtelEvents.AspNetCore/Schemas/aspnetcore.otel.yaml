@@ -1,7 +1,7 @@
 # ─── OtelEvents.AspNetCore — Bundled Schema ─────────────────────────────
 # This schema is embedded in the NuGet package for documentation and
 # tooling inspection. The C# code is pre-compiled — consumers do NOT
-# need All.Schema to use this pack.
+# need OtelEvents.Schema to use this pack.
 
 schema:
   name: "OtelEvents.AspNetCore"

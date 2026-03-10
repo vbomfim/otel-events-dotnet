@@ -6,7 +6,7 @@
 schema:
   name: Lifecycle
   version: "1.0.0"
-  namespace: All.Events.Lifecycle
+  namespace: OtelEvents.Lifecycle
   description: "Built-in schema for application lifecycle and health events"
   meterName: otel_events.lifecycle
 
