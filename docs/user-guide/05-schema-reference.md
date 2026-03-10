@@ -436,4 +436,4 @@ For each schema, the code generator produces:
 ## Next Steps
 
 - [Chapter 6 — Integration Packs](06-integration-packs.md) — pre-built schemas for HTTP, gRPC, CosmosDB, Storage
-- [Chapter 9 — CLI Tool](09-cli-tool.md) — `dotnet all validate`, `generate`, `diff`, `docs`
+- [Chapter 9 — CLI Tool](09-cli-tool.md) — `dotnet otel-events validate`, `generate`, `diff`, `docs`

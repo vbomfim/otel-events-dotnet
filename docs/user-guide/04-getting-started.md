@@ -169,7 +169,7 @@ events:
 Run the code generator:
 
 ```bash
-dotnet all generate schemas/orders.all.yaml -o Generated/
+dotnet otel-events generate schemas/orders.all.yaml -o Generated/
 ```
 
 This creates:

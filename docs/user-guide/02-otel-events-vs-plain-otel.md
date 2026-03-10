@@ -236,7 +236,7 @@ Single line. No nulls. UTC microsecond timestamps. Causal event ID. Service name
 | **Type safety** | Easy to pass wrong type | Typed parameters enforced at compile time |
 | **Boilerplate per event** | ~20 lines (method + meter + counter + histogram + TagList) | ~10 lines of YAML |
 | **Schema governance** | None — each developer invents their own | Central YAML schema shared across services |
-| **Event catalog** | None | `dotnet all docs` generates Markdown from schema |
+| **Event catalog** | None | `dotnet otel-events docs` generates Markdown from schema |
 
 ---
 

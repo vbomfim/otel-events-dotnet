@@ -125,7 +125,7 @@ Schemas use [semver](https://semver.org/) versioning. The schema `version` field
 
 ```bash
 # Compare two schema versions
-dotnet all diff v1/events.all.yaml v2/events.all.yaml
+dotnet otel-events diff v1/events.all.yaml v2/events.all.yaml
 
 # Output:
 # Breaking changes detected (exit code 2):
@@ -191,7 +191,7 @@ events:
 1. Define shared fields and enums in a dedicated schema package
 2. Publish to your internal NuGet feed
 3. Consumer services reference the package and import the schema
-4. `dotnet all validate` in CI verifies cross-service schema compatibility
+4. `dotnet otel-events validate` in CI verifies cross-service schema compatibility
 5. Schema version bumps trigger downstream rebuilds via NuGet dependency updates
 
 ---
@@ -204,7 +204,7 @@ Schema signing provides HMAC-SHA256 integrity verification for multi-team enviro
 
 ```bash
 # Sign using an environment variable (base64-encoded key)
-dotnet all sign events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+dotnet otel-events sign events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 # Produces: events.all.yaml.sig
 ```
@@ -213,7 +213,7 @@ dotnet all sign events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 ```bash
 # Verify in CI pipeline
-dotnet all verify events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+dotnet otel-events verify events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 # Exit code 0 = valid, 1 = invalid or missing signature
 ```
@@ -232,7 +232,7 @@ dotnet all verify events.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 ```yaml
 # GitHub Actions — verify schemas before build
 - name: Verify schema signatures
-  run: dotnet all verify schemas/*.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+  run: dotnet otel-events verify schemas/*.all.yaml --key-env ALL_SCHEMA_SIGNING_KEY
   env:
     ALL_SCHEMA_SIGNING_KEY: ${{ secrets.SCHEMA_SIGNING_KEY }}
 ```
@@ -359,7 +359,7 @@ Generate event catalog documentation and Grafana dashboard templates from your s
 
 ```bash
 # Generate markdown documentation from schema
-dotnet all docs events.all.yaml -o docs/events.md
+dotnet otel-events docs events.all.yaml -o docs/events.md
 ```
 
 This produces a markdown file with:

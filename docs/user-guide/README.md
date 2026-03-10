@@ -16,7 +16,7 @@
 | 6 | [Integration Packs](06-integration-packs.md) | Pre-built packs: AspNetCore, gRPC, CosmosDB, Azure Storage, HealthChecks |
 | 7 | [Configuration](07-configuration.md) | appsettings.json, environment variables, exporter options, filtering |
 | 8 | [Testing](08-testing.md) | `OtelEvents.Testing` package, `OtelEventsTestHost`, assertions, test patterns |
-| 9 | [CLI Tool](09-cli-tool.md) | `dotnet all validate`, `generate`, `diff`, `docs` commands |
+| 9 | [CLI Tool](09-cli-tool.md) | `dotnet otel-events validate`, `generate`, `diff`, `docs` commands |
 | 10 | [Security & Privacy](10-security-privacy.md) | Sensitivity classification, redaction, environment profiles, OWASP mapping |
 | 11 | [Advanced Topics](11-advanced-topics.md) | Rate limiting, sampling, schema versioning, sharing, signing, analyzers |
 | 12 | [Migration Guide](12-migration-guide.md) | Step-by-step migration from plain `ILogger` to otel-events |

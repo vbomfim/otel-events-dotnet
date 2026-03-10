@@ -220,7 +220,7 @@ events:
 Generate the code:
 
 ```bash
-dotnet all generate
+dotnet otel-events generate
 ```
 
 Then replace your existing logging calls one at a time:
@@ -322,7 +322,7 @@ Once you've migrated a critical mass of events:
 
 ```bash
 # In your CI pipeline
-dotnet all validate events.all.yaml
+dotnet otel-events validate events.all.yaml
 ```
 
 ### Enable analyzers
@@ -367,10 +367,10 @@ Use this checklist to track your migration progress:
 - [ ] Install `OtelEvents.Schema`, `OtelEvents.Exporter.Json`, `OtelEvents.Causality`
 - [ ] Register otel-events components in `Program.cs` alongside existing OTEL
 - [ ] Create initial `events.all.yaml` with 3–5 high-priority events
-- [ ] Run `dotnet all generate` and verify generated code
+- [ ] Run `dotnet otel-events generate` and verify generated code
 - [ ] Replace first event category (e.g., HTTP request events)
 - [ ] Verify JSONL output on stdout
-- [ ] Add `dotnet all validate` to CI
+- [ ] Add `dotnet otel-events validate` to CI
 
 ### Phase 2 — Expansion (Sprint 2–3)
 
@@ -387,7 +387,7 @@ Use this checklist to track your migration progress:
 - [ ] Remove remaining `#pragma warning disable` suppressions
 - [ ] Configure `EnvironmentProfile = Production` for production deployments
 - [ ] Set up rate limiting / sampling for high-volume events
-- [ ] Add `dotnet all diff` to PR checks for schema compatibility
+- [ ] Add `dotnet otel-events diff` to PR checks for schema compatibility
 
 ---
 

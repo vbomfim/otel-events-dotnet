@@ -18,19 +18,19 @@ dotnet tool install OtelEvents.Cli
 After installation, the tool is available as `dotnet otel-events`:
 
 ```bash
-dotnet all --help
+dotnet otel-events --help
 ```
 
 ---
 
 ## Commands
 
-### `dotnet all validate <path>`
+### `dotnet otel-events validate <path>`
 
 Parse and validate a `.all.yaml` schema file. Reports all validation errors with structured error codes.
 
 ```bash
-dotnet all validate schemas/orders.all.yaml
+dotnet otel-events validate schemas/orders.all.yaml
 ```
 
 **Success output:**
@@ -58,12 +58,12 @@ ALL_SCHEMA_006: Event name 'OrderPlaced' is invalid — must be lowercase, dot-n
 
 ---
 
-### `dotnet all generate <path> -o <output>`
+### `dotnet otel-events generate <path> -o <output>`
 
 Generate C# source files from a validated schema. Creates `[LoggerMessage]` partial methods, extension methods, metric instruments, and enum types.
 
 ```bash
-dotnet all generate schemas/orders.all.yaml -o src/Generated/
+dotnet otel-events generate schemas/orders.all.yaml -o src/Generated/
 ```
 
 **Success output:**
@@ -100,12 +100,12 @@ Generated: src/Generated/OrderEventsMetrics.g.cs
 
 ---
 
-### `dotnet all diff <old> <new>`
+### `dotnet otel-events diff <old> <new>`
 
 Compare two schema versions and classify changes as breaking or non-breaking. Essential for CI pipelines that guard against backward-incompatible changes.
 
 ```bash
-dotnet all diff schemas/v1/orders.all.yaml schemas/v2/orders.all.yaml
+dotnet otel-events diff schemas/v1/orders.all.yaml schemas/v2/orders.all.yaml
 ```
 
 **Compatible output (no breaking changes):**
@@ -152,22 +152,22 @@ dotnet all diff schemas/v1/orders.all.yaml schemas/v2/orders.all.yaml
 # GitHub Actions: fail the build on breaking schema changes
 - name: Check schema compatibility
   run: |
-    dotnet all diff schemas/main/orders.all.yaml schemas/pr/orders.all.yaml
+    dotnet otel-events diff schemas/main/orders.all.yaml schemas/pr/orders.all.yaml
     # Exit code 2 = breaking changes → build fails
 ```
 
 ---
 
-### `dotnet all docs <path> -o <output>`
+### `dotnet otel-events docs <path> -o <output>`
 
 Generate Markdown documentation from a schema file. Produces an event catalog with descriptions, fields, types, and tags.
 
 ```bash
 # Write to file
-dotnet all docs schemas/orders.all.yaml -o docs/event-catalog.md
+dotnet otel-events docs schemas/orders.all.yaml -o docs/event-catalog.md
 
 # Write to stdout (pipe to other tools)
-dotnet all docs schemas/orders.all.yaml
+dotnet otel-events docs schemas/orders.all.yaml
 ```
 
 **Options:**
@@ -252,7 +252,7 @@ When `validate` or `generate` reports errors, each error includes a structured c
 #!/bin/sh
 # .git/hooks/pre-commit
 for schema in $(git diff --cached --name-only -- '*.all.yaml'); do
-    dotnet all validate "$schema" || exit 1
+    dotnet otel-events validate "$schema" || exit 1
 done
 ```
 
@@ -260,14 +260,14 @@ done
 
 ```xml
 <!-- In your .csproj — regenerate code on build -->
-<Target Name="AllCodeGen" BeforeTargets="CoreCompile"
-        Inputs="@(AllSchema)" Outputs="$(IntermediateOutputPath)AllGenerated\%(Filename).g.cs">
-  <Exec Command="dotnet all generate %(AllSchema.Identity) -o $(IntermediateOutputPath)AllGenerated/" />
+<Target Name="OtelEventsCodeGen" BeforeTargets="CoreCompile"
+        Inputs="@(OtelEventsSchema)" Outputs="$(IntermediateOutputPath)OtelEventsGenerated\%(Filename).g.cs">
+  <Exec Command="dotnet otel-events generate %(OtelEventsSchema.Identity) -o $(IntermediateOutputPath)OtelEventsGenerated/" />
 </Target>
 
 <ItemGroup>
-  <AllSchema Include="schemas\*.all.yaml" />
-  <Compile Include="$(IntermediateOutputPath)AllGenerated\**\*.g.cs" />
+  <OtelEventsSchema Include="schemas\*.all.yaml" />
+  <Compile Include="$(IntermediateOutputPath)OtelEventsGenerated\**\*.g.cs" />
 </ItemGroup>
 ```
 
@@ -290,7 +290,7 @@ jobs:
         run: git show origin/main:schemas/orders.all.yaml > /tmp/old.all.yaml
 
       - name: Compare schemas
-        run: dotnet all diff /tmp/old.all.yaml schemas/orders.all.yaml
+        run: dotnet otel-events diff /tmp/old.all.yaml schemas/orders.all.yaml
 ```
 
 ---
