@@ -18,7 +18,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void ExporterOptions_BindsOutputEnum_FromConfiguration()
     {
-        var config = BuildConfig(("All:Exporter:Output", "Stderr"));
+        var config = BuildConfig(("OtelEvents:Exporter:Output", "Stderr"));
 
         var options = BindExporterOptions(config);
 
@@ -28,7 +28,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void ExporterOptions_BindsEnvironmentProfile_FromConfiguration()
     {
-        var config = BuildConfig(("All:Exporter:EnvironmentProfile", "Development"));
+        var config = BuildConfig(("OtelEvents:Exporter:EnvironmentProfile", "Development"));
 
         var options = BindExporterOptions(config);
 
@@ -38,7 +38,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void ExporterOptions_BindsEmitHostInfo_FromConfiguration()
     {
-        var config = BuildConfig(("All:Exporter:EmitHostInfo", "true"));
+        var config = BuildConfig(("OtelEvents:Exporter:EmitHostInfo", "true"));
 
         var options = BindExporterOptions(config);
 
@@ -48,7 +48,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void ExporterOptions_BindsMaxAttributeValueLength_FromConfiguration()
     {
-        var config = BuildConfig(("All:Exporter:MaxAttributeValueLength", "8192"));
+        var config = BuildConfig(("OtelEvents:Exporter:MaxAttributeValueLength", "8192"));
 
         var options = BindExporterOptions(config);
 
@@ -58,7 +58,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void ExporterOptions_BindsSchemaVersion_FromConfiguration()
     {
-        var config = BuildConfig(("All:Exporter:SchemaVersion", "2.0.0"));
+        var config = BuildConfig(("OtelEvents:Exporter:SchemaVersion", "2.0.0"));
 
         var options = BindExporterOptions(config);
 
@@ -69,8 +69,8 @@ public sealed class ConfigurationBindingTests
     public void ExporterOptions_BindsFilePath_FromConfiguration()
     {
         var config = BuildConfig(
-            ("All:Exporter:Output", "File"),
-            ("All:Exporter:FilePath", "/var/log/app.jsonl"));
+            ("OtelEvents:Exporter:Output", "File"),
+            ("OtelEvents:Exporter:FilePath", "/var/log/app.jsonl"));
 
         var options = BindExporterOptions(config);
 
@@ -81,7 +81,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void ExporterOptions_BindsExceptionDetailLevel_FromConfiguration()
     {
-        var config = BuildConfig(("All:Exporter:ExceptionDetailLevel", "TypeOnly"));
+        var config = BuildConfig(("OtelEvents:Exporter:ExceptionDetailLevel", "TypeOnly"));
 
         var options = BindExporterOptions(config);
 
@@ -110,7 +110,7 @@ public sealed class ConfigurationBindingTests
     [InlineData("File", OtelEventsJsonOutput.File)]
     public void ExporterOptions_BindsAllOutputEnumValues(string configValue, OtelEventsJsonOutput expected)
     {
-        var config = BuildConfig(("All:Exporter:Output", configValue));
+        var config = BuildConfig(("OtelEvents:Exporter:Output", configValue));
 
         var options = BindExporterOptions(config);
 
@@ -124,7 +124,7 @@ public sealed class ConfigurationBindingTests
     public void ExporterOptions_BindsOtelEventsEnvironmentProfileValues(
         string configValue, OtelEventsEnvironmentProfile expected)
     {
-        var config = BuildConfig(("All:Exporter:EnvironmentProfile", configValue));
+        var config = BuildConfig(("OtelEvents:Exporter:EnvironmentProfile", configValue));
 
         var options = BindExporterOptions(config);
 
@@ -136,7 +136,7 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void FilterOptions_BindsMinSeverity_FromConfiguration()
     {
-        var config = BuildConfig(("All:Filter:MinSeverity", "Warning"));
+        var config = BuildConfig(("OtelEvents:Filter:MinSeverity", "Warning"));
 
         var options = BindFilterOptions(config);
 
@@ -162,7 +162,7 @@ public sealed class ConfigurationBindingTests
     [InlineData("Critical", LogLevel.Critical)]
     public void FilterOptions_BindsAllLogLevelValues(string configValue, LogLevel expected)
     {
-        var config = BuildConfig(("All:Filter:MinSeverity", configValue));
+        var config = BuildConfig(("OtelEvents:Filter:MinSeverity", configValue));
 
         var options = BindFilterOptions(config);
 
@@ -242,7 +242,7 @@ public sealed class ConfigurationBindingTests
     public void ExplicitConfig_Overrides_AutoDetection()
     {
         // Arrange — config explicitly sets Development
-        var config = BuildConfig(("All:Exporter:EnvironmentProfile", "Development"));
+        var config = BuildConfig(("OtelEvents:Exporter:EnvironmentProfile", "Development"));
 
         // Act — apply with auto-detection that would return Staging
         var options = BindExporterOptionsWithAutoDetection(
@@ -257,7 +257,7 @@ public sealed class ConfigurationBindingTests
     public void AutoDetection_AppliesWhenProfileNotInConfig()
     {
         // Arrange — config does NOT set EnvironmentProfile
-        var config = BuildConfig(("All:Exporter:Output", "Stderr"));
+        var config = BuildConfig(("OtelEvents:Exporter:Output", "Stderr"));
 
         // Act — apply with auto-detection that returns Development
         var options = BindExporterOptionsWithAutoDetection(
@@ -273,20 +273,20 @@ public sealed class ConfigurationBindingTests
     [Fact]
     public void EnvironmentVariables_Override_InMemoryConfiguration()
     {
-        // Demonstrates that env var keys (ALL__Exporter__Output) map to
+        // Demonstrates that env var keys (OTELEVENTS__Exporter__Output) map to
         // configuration paths (All:Exporter:Output) when using
         // ConfigurationBuilder.AddEnvironmentVariables().
         // Here we simulate the resolved config with in-memory values.
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["All:Exporter:Output"] = "Stdout",
-                ["All:Exporter:MaxAttributeValueLength"] = "2048",
+                ["OtelEvents:Exporter:Output"] = "Stdout",
+                ["OtelEvents:Exporter:MaxAttributeValueLength"] = "2048",
             })
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 // Second source overrides first (simulates env vars)
-                ["All:Exporter:Output"] = "Stderr",
+                ["OtelEvents:Exporter:Output"] = "Stderr",
             })
             .Build();
 
@@ -304,7 +304,7 @@ public sealed class ConfigurationBindingTests
     public void AddOtelEventsJsonExporter_WithConfiguration_RegistersPipeline()
     {
         // Arrange
-        var config = BuildConfig(("All:Exporter:Output", "Stderr"));
+        var config = BuildConfig(("OtelEvents:Exporter:Output", "Stderr"));
 
         var services = new ServiceCollection();
         services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Trace));
@@ -327,7 +327,7 @@ public sealed class ConfigurationBindingTests
     public void AddAllSeverityFilter_WithConfiguration_RegistersPipeline()
     {
         // Arrange
-        var config = BuildConfig(("All:Filter:MinSeverity", "Warning"));
+        var config = BuildConfig(("OtelEvents:Filter:MinSeverity", "Warning"));
         var exportedRecords = new List<LogLevel>();
 
         var services = new ServiceCollection();
@@ -409,13 +409,13 @@ public sealed class ConfigurationBindingTests
     public void FullConfiguration_BindsAllScalarProperties()
     {
         var config = BuildConfig(
-            ("All:Exporter:Output", "File"),
-            ("All:Exporter:FilePath", "/var/log/events.jsonl"),
-            ("All:Exporter:SchemaVersion", "2.0.0"),
-            ("All:Exporter:EnvironmentProfile", "Staging"),
-            ("All:Exporter:ExceptionDetailLevel", "Full"),
-            ("All:Exporter:EmitHostInfo", "true"),
-            ("All:Exporter:MaxAttributeValueLength", "8192"));
+            ("OtelEvents:Exporter:Output", "File"),
+            ("OtelEvents:Exporter:FilePath", "/var/log/events.jsonl"),
+            ("OtelEvents:Exporter:SchemaVersion", "2.0.0"),
+            ("OtelEvents:Exporter:EnvironmentProfile", "Staging"),
+            ("OtelEvents:Exporter:ExceptionDetailLevel", "Full"),
+            ("OtelEvents:Exporter:EmitHostInfo", "true"),
+            ("OtelEvents:Exporter:MaxAttributeValueLength", "8192"));
 
         var options = BindExporterOptions(config);
 
@@ -432,7 +432,7 @@ public sealed class ConfigurationBindingTests
 
     /// <summary>
     /// Builds an <see cref="IConfiguration"/> from in-memory key-value pairs.
-    /// Keys use the colon separator (e.g., "All:Exporter:Output").
+    /// Keys use the colon separator (e.g., "OtelEvents:Exporter:Output").
     /// </summary>
     private static IConfiguration BuildConfig(params (string Key, string Value)[] values)
     {
@@ -448,13 +448,13 @@ public sealed class ConfigurationBindingTests
     }
 
     /// <summary>
-    /// Binds <see cref="OtelEventsJsonExporterOptions"/> from the "All:Exporter" section.
+    /// Binds <see cref="OtelEventsJsonExporterOptions"/> from the "OtelEvents:Exporter" section.
     /// Mirrors the production binding logic.
     /// </summary>
     private static OtelEventsJsonExporterOptions BindExporterOptions(IConfiguration config)
     {
         var options = new OtelEventsJsonExporterOptions();
-        config.GetSection("All:Exporter").Bind(options);
+        config.GetSection("OtelEvents:Exporter").Bind(options);
         return options;
     }
 
@@ -466,7 +466,7 @@ public sealed class ConfigurationBindingTests
         IConfiguration config,
         Func<string, string?> getEnvironmentVariable)
     {
-        var section = config.GetSection("All:Exporter");
+        var section = config.GetSection("OtelEvents:Exporter");
         var options = new OtelEventsJsonExporterOptions();
         section.Bind(options);
 
@@ -479,13 +479,13 @@ public sealed class ConfigurationBindingTests
     }
 
     /// <summary>
-    /// Binds <see cref="OtelEventsSeverityFilterOptions"/> from the "All:Filter" section.
+    /// Binds <see cref="OtelEventsSeverityFilterOptions"/> from the "OtelEvents:Filter" section.
     /// Mirrors the production binding logic.
     /// </summary>
     private static OtelEventsSeverityFilterOptions BindFilterOptions(IConfiguration config)
     {
         var options = new OtelEventsSeverityFilterOptions();
-        config.GetSection("All:Filter").Bind(options);
+        config.GetSection("OtelEvents:Filter").Bind(options);
         return options;
     }
 

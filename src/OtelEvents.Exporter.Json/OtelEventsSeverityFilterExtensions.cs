@@ -55,13 +55,13 @@ public static class OtelEventsSeverityFilterExtensions
 
     /// <summary>
     /// Adds an <see cref="OtelEventsSeverityFilterProcessor"/> to the logging pipeline,
-    /// binding filter options from the <c>All:Filter</c> section of the provided
+    /// binding filter options from the <c>OtelEvents:Filter</c> section of the provided
     /// <see cref="IConfiguration"/>.
     /// </summary>
     /// <param name="builder">The <see cref="LoggerProviderBuilder"/> to configure.</param>
     /// <param name="configuration">
     /// The configuration root (e.g., from <c>appsettings.json</c> or environment variables).
-    /// Options are read from the <c>All:Filter</c> section.
+    /// Options are read from the <c>OtelEvents:Filter</c> section.
     /// </param>
     /// <param name="innerProcessor">
     /// The downstream processor to forward passing records to.
@@ -73,7 +73,7 @@ public static class OtelEventsSeverityFilterExtensions
     /// </exception>
     /// <remarks>
     /// Environment variable overrides use the standard .NET double-underscore convention:
-    /// <c>ALL__Filter__MinSeverity=Warning</c> maps to <c>All:Filter:MinSeverity</c>.
+    /// <c>OTELEVENTS__Filter__MinSeverity=Warning</c> maps to <c>OtelEvents:Filter:MinSeverity</c>.
     /// </remarks>
     /// <example>
     /// <code>
@@ -99,7 +99,7 @@ public static class OtelEventsSeverityFilterExtensions
         ArgumentNullException.ThrowIfNull(innerProcessor);
 
         var options = new OtelEventsSeverityFilterOptions();
-        configuration.GetSection("All:Filter").Bind(options);
+        configuration.GetSection("OtelEvents:Filter").Bind(options);
 
         return builder.AddProcessor(
             new OtelEventsSeverityFilterProcessor(options, innerProcessor));

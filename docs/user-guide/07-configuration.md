@@ -10,7 +10,7 @@ otel-events uses two primary configuration sections under the `All` root key:
 
 ```json
 {
-  "All": {
+  "OtelEvents": {
     "Exporter": {
       "Output": "Stdout",
       "SchemaVersion": "1.0.0",
@@ -32,17 +32,17 @@ otel-events uses two primary configuration sections under the `All` root key:
 The `AddOtelEventsJsonExporter` and `AddAllSeverityFilter` extension methods accept an `IConfiguration` instance and call `.Bind()` on the appropriate section:
 
 ```csharp
-// Exporter — binds "All:Exporter" section
+// Exporter — binds "OtelEvents:Exporter" section
 builder.AddOtelEventsJsonExporter(configuration);
 
-// Filter — binds "All:Filter" section
+// Filter — binds "OtelEvents:Filter" section
 builder.AddAllSeverityFilter(configuration, innerProcessor);
 ```
 
 Under the hood, this reads the section and maps JSON properties to the options class:
 
 ```csharp
-var section = configuration.GetSection("All:Exporter");
+var section = configuration.GetSection("OtelEvents:Exporter");
 var options = new OtelEventsJsonExporterOptions();
 section.Bind(options);
 ```
@@ -57,22 +57,22 @@ Rate limiting and sampling are configured **programmatically only** (not from ap
 
 | Environment Variable | Overrides Config Path |
 |---|---|
-| `ALL__Exporter__Output` | `All:Exporter:Output` |
-| `ALL__Exporter__FilePath` | `All:Exporter:FilePath` |
-| `ALL__Exporter__EnvironmentProfile` | `All:Exporter:EnvironmentProfile` |
-| `ALL__Exporter__ExceptionDetailLevel` | `All:Exporter:ExceptionDetailLevel` |
-| `ALL__Exporter__EmitHostInfo` | `All:Exporter:EmitHostInfo` |
-| `ALL__Exporter__MaxAttributeValueLength` | `All:Exporter:MaxAttributeValueLength` |
-| `ALL__Exporter__SchemaVersion` | `All:Exporter:SchemaVersion` |
-| `ALL__Filter__MinSeverity` | `All:Filter:MinSeverity` |
+| `OTELEVENTS__Exporter__Output` | `OtelEvents:Exporter:Output` |
+| `OTELEVENTS__Exporter__FilePath` | `OtelEvents:Exporter:FilePath` |
+| `OTELEVENTS__Exporter__EnvironmentProfile` | `OtelEvents:Exporter:EnvironmentProfile` |
+| `OTELEVENTS__Exporter__ExceptionDetailLevel` | `OtelEvents:Exporter:ExceptionDetailLevel` |
+| `OTELEVENTS__Exporter__EmitHostInfo` | `OtelEvents:Exporter:EmitHostInfo` |
+| `OTELEVENTS__Exporter__MaxAttributeValueLength` | `OtelEvents:Exporter:MaxAttributeValueLength` |
+| `OTELEVENTS__Exporter__SchemaVersion` | `OtelEvents:Exporter:SchemaVersion` |
+| `OTELEVENTS__Filter__MinSeverity` | `OtelEvents:Filter:MinSeverity` |
 
 ### Example: Override Output Target in Production
 
 ```bash
 # In appsettings.json: Output = "Stdout"
 # Override at deploy time:
-export ALL__Exporter__Output=File
-export ALL__Exporter__FilePath=/var/log/events.jsonl
+export OTELEVENTS__Exporter__Output=File
+export OTELEVENTS__Exporter__FilePath=/var/log/events.jsonl
 ```
 
 ### Precedence Order (Highest → Lowest)
@@ -182,7 +182,7 @@ internal ExceptionDetailLevel ResolvedExceptionDetailLevel =>
 
 ```json
 {
-  "All": {
+  "OtelEvents": {
     "Filter": {
       "MinSeverity": "Warning"
     }
@@ -288,7 +288,7 @@ builder.AddAllSampler(
 
 ```json
 {
-  "All": {
+  "OtelEvents": {
     "Exporter": {
       "Output": "Stdout",
       "SchemaVersion": "1.0.0",

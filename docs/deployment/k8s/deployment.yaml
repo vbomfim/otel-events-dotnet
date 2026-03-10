@@ -56,9 +56,9 @@ spec:
               cpu: 500m
               memory: 512Mi
           env:
-            - name: ALL__EnvironmentProfile
+            - name: OTELEVENTS__EnvironmentProfile
               value: "Production"
-            - name: ALL__EmitHostInfo
+            - name: OTELEVENTS__EmitHostInfo
               value: "false"
             - name: OTEL_SERVICE_NAME
               value: "my-service"

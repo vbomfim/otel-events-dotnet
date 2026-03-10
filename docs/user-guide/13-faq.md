@@ -273,11 +273,11 @@ Yes. otel-events binds to the `OtelEvents` configuration section:
 }
 ```
 
-Environment variables override `appsettings.json` using the `ALL__` prefix:
+Environment variables override `appsettings.json` using the `OTELEVENTS__` prefix:
 
 ```bash
-ALL__EnvironmentProfile=Production
-ALL__EmitHostInfo=false
+OTELEVENTS__EnvironmentProfile=Production
+OTELEVENTS__EmitHostInfo=false
 ```
 
 ### How do I filter out noisy events?

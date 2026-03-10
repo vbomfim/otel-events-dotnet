@@ -32,12 +32,12 @@ public static class OtelEventsJsonExporterExtensions
 
     /// <summary>
     /// Adds the otel-events JSON exporter to the logging pipeline, binding options
-    /// from the <c>All:Exporter</c> section of the provided <see cref="IConfiguration"/>.
+    /// from the <c>OtelEvents:Exporter</c> section of the provided <see cref="IConfiguration"/>.
     /// </summary>
     /// <param name="builder">The <see cref="LoggerProviderBuilder"/> to configure.</param>
     /// <param name="configuration">
     /// The configuration root (e.g., from <c>appsettings.json</c> or environment variables).
-    /// Options are read from the <c>All:Exporter</c> section.
+    /// Options are read from the <c>OtelEvents:Exporter</c> section.
     /// </param>
     /// <returns>The <see cref="LoggerProviderBuilder"/> for chaining.</returns>
     /// <remarks>
@@ -49,7 +49,7 @@ public static class OtelEventsJsonExporterExtensions
     /// </para>
     /// <para>
     /// Environment variable overrides use the standard .NET double-underscore convention:
-    /// <c>ALL__Exporter__Output=Stderr</c> maps to <c>All:Exporter:Output</c>.
+    /// <c>OTELEVENTS__Exporter__Output=Stderr</c> maps to <c>OtelEvents:Exporter:Output</c>.
     /// </para>
     /// </remarks>
     /// <example>
@@ -77,7 +77,7 @@ public static class OtelEventsJsonExporterExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var section = configuration.GetSection("All:Exporter");
+        var section = configuration.GetSection("OtelEvents:Exporter");
         var options = new OtelEventsJsonExporterOptions();
         section.Bind(options);
 
