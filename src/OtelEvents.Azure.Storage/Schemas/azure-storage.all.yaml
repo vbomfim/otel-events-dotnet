@@ -53,6 +53,44 @@ fields:
     type: int
     description: "Number of messages received from a queue"
 
+  # ─── Infrastructure Event Fields ─────────────────────────────────────
+
+  endpoint:
+    type: string
+    description: "Storage endpoint hostname"
+
+  errorMessage:
+    type: string
+    description: "Exception message for connection failures"
+
+  failureReason:
+    type: string
+    description: "Classified failure reason (HttpRequestException, SocketException, Timeout, etc.)"
+    index: true
+
+  httpStatusCode:
+    type: int
+    description: "HTTP status code for auth/throttling failures"
+    index: true
+
+  authScheme:
+    type: string
+    description: "Authentication scheme detected (SharedKey, SAS, Bearer, Anonymous, Unknown)"
+    index: true
+
+  identityHint:
+    type: string
+    description: "SHA-256 hash (first 16 hex chars) of the identity portion, for correlation without PII"
+
+  retryAfterMs:
+    type: long
+    description: "Retry-After value in milliseconds, clamped to 300000 (5 min)"
+    unit: "ms"
+
+  currentLimit:
+    type: string
+    description: "Current rate limit information, if available from response headers"
+
 events:
   storage.blob.uploaded:
     id: 10301
@@ -166,3 +204,47 @@ events:
         unit: "errors"
         labels: [storageQueueName, storageStatusCode]
     tags: [storage, queue, error]
+
+  # ─── Infrastructure Events ───────────────────────────────────────────
+
+  storage.connection.failed:
+    id: 10308
+    severity: ERROR
+    exception: true
+    description: "Storage connection failed (DNS, socket, or timeout). No HTTP response received."
+    message: "Storage connection to {endpoint} failed after {durationMs}ms: {failureReason}"
+    fields: [endpoint, storageAccountName, durationMs, errorType, errorMessage, failureReason]
+    metrics:
+      otel.storage.connection.failed.count:
+        type: counter
+        unit: "failures"
+        labels: [storageAccountName]
+    tags: [storage, infrastructure, error]
+
+  storage.auth.failed:
+    id: 10309
+    severity: ERROR
+    exception: true
+    description: "Storage authentication/authorization failed (HTTP 401 or 403)."
+    message: "Storage auth failed for {storageAccountName} with {httpStatusCode} ({authScheme})"
+    fields: [httpStatusCode, storageAccountName, authScheme, identityHint]
+    metrics:
+      otel.storage.auth.failed.count:
+        type: counter
+        unit: "failures"
+        labels: [storageAccountName, authScheme]
+    tags: [storage, infrastructure, auth, error]
+
+  storage.throttled:
+    id: 10310
+    severity: WARN
+    exception: true
+    description: "Storage request was throttled (HTTP 429 or 503)."
+    message: "Storage request to {storageAccountName} was throttled ({httpStatusCode})"
+    fields: [httpStatusCode, storageAccountName, retryAfterMs, currentLimit]
+    metrics:
+      otel.storage.throttled.count:
+        type: counter
+        unit: "events"
+        labels: [storageAccountName, httpStatusCode]
+    tags: [storage, infrastructure, throttle]
