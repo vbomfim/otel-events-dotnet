@@ -93,7 +93,7 @@ public sealed class GenerateCommandTests : IDisposable
         var exitCode = GenerateCommand.Execute(path, outputDir, _stdout, _stderr);
 
         Assert.Equal(1, exitCode);
-        Assert.Contains("ALL_SCHEMA_", _stderr.ToString());
+        Assert.Contains("OTEL_SCHEMA_", _stderr.ToString());
     }
 
     [Fact]

@@ -97,7 +97,7 @@ public sealed class ValidateCommandTests : IDisposable
 
         Assert.Equal(1, exitCode);
         var stderrOutput = _stderr.ToString();
-        Assert.Contains("ALL_SCHEMA_", stderrOutput);
+        Assert.Contains("OTEL_SCHEMA_", stderrOutput);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public sealed class ValidateCommandTests : IDisposable
         var exitCode = ValidateCommand.Execute(path, _stdout, _stderr);
 
         Assert.Equal(1, exitCode);
-        Assert.Contains("ALL_SCHEMA_012", _stderr.ToString());
+        Assert.Contains("OTEL_SCHEMA_012", _stderr.ToString());
     }
 
     // ═══════════════════════════════════════════════════════════════

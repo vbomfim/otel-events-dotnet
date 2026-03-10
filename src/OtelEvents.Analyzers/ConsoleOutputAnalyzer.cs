@@ -7,13 +7,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL001: Detects Console.Write*, Console.WriteLine, Console.Error.Write*
+    /// OTEL001: Detects Console.Write*, Console.WriteLine, Console.Error.Write*
     /// usage and suggests using otel-events generated events instead.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class ConsoleOutputAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL001";
+        public const string DiagnosticId = "OTEL001";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -23,7 +23,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "Console.Write, Console.WriteLine, Console.Error.Write detected. Use otel-events generated events instead.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL001.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL001.md");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(Rule);

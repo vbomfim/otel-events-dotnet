@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL007 — Debug.Write and Trace.Write detection.
+/// Tests for OTEL007 — Debug.Write and Trace.Write detection.
 /// Validates that Debug.Write*, Trace.Write* are flagged.
 /// </summary>
 public class DebugWriteAnalyzerTests
@@ -31,7 +31,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL007", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL007", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Debug.WriteLine"));
         await test.RunAsync();
@@ -57,7 +57,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL007", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL007", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Debug.Write"));
         await test.RunAsync();
@@ -83,7 +83,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL007", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL007", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Trace.WriteLine"));
         await test.RunAsync();
@@ -109,7 +109,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL007", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL007", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Trace.TraceError"));
         await test.RunAsync();

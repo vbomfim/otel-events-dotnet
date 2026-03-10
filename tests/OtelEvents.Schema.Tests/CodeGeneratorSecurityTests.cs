@@ -44,7 +44,7 @@ public class CodeGeneratorSecurityTests
     [InlineData("a\nb")]             // newline
     [InlineData("val\"ue")]          // quote
     [InlineData("")]                 // empty
-    public void Validate_InvalidEnumValue_ReturnsALL_SCHEMA_019(string value)
+    public void Validate_InvalidEnumValue_ReturnsOTEL_SCHEMA_019(string value)
     {
         var doc = CreateDocWithEnum("Status", [value]);
 
@@ -114,7 +114,7 @@ public class CodeGeneratorSecurityTests
     [InlineData("123.Invalid")]             // starts with digit
     [InlineData("")]                        // empty
     [InlineData("Has Space.Bad")]           // space
-    public void Validate_InvalidNamespace_ReturnsALL_SCHEMA_020(string ns)
+    public void Validate_InvalidNamespace_ReturnsOTEL_SCHEMA_020(string ns)
     {
         var doc = CreateMinimalDoc(ns: ns);
 
@@ -146,7 +146,7 @@ public class CodeGeneratorSecurityTests
     [InlineData("Bad;Name")]                 // semicolon
     [InlineData("123Name")]                  // starts with digit
     [InlineData("Name{Evil}")]               // braces
-    public void Validate_InvalidSchemaName_ReturnsALL_SCHEMA_021(string name)
+    public void Validate_InvalidSchemaName_ReturnsOTEL_SCHEMA_021(string name)
     {
         var doc = CreateMinimalDoc(name: name);
 

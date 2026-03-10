@@ -17,7 +17,7 @@ public sealed class SchemaSignatureOptions
     ///   <item><see cref="SchemaSignatureKeySource.AzureKeyVault"/> — Key Vault secret URI</item>
     /// </list>
     /// </summary>
-    public string KeyReference { get; set; } = "ALL_SCHEMA_SIGNING_KEY";
+    public string KeyReference { get; set; } = "OTEL_SCHEMA_SIGNING_KEY";
 
     /// <summary>
     /// Resolves the raw HMAC key bytes from the configured key source.

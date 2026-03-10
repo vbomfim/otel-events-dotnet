@@ -7,13 +7,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL003: Detects string interpolation ($"...") passed to log or ALL-generated
+    /// OTEL003: Detects string interpolation ($"...") passed to log or otel-events generated
     /// event methods. otel-events handles message interpolation — pass raw values only.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class StringInterpolationAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL003";
+        public const string DiagnosticId = "OTEL003";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -23,7 +23,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: "String interpolation ($\"...\") passed to an otel-events-generated event method parameter. otel-events handles message interpolation — pass raw values only.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL003.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL003.md");
 
         private static readonly ImmutableHashSet<string> LogMethodNames = ImmutableHashSet.Create(
             "LogTrace",

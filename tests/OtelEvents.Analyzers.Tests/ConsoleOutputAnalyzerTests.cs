@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL001 — Console output detection.
+/// Tests for OTEL001 — Console output detection.
 /// Validates that Console.Write*, Console.Error.Write* are flagged.
 /// </summary>
 public class ConsoleOutputAnalyzerTests
@@ -28,7 +28,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL001", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL001", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Console.WriteLine"));
         await test.RunAsync();
@@ -51,7 +51,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL001", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL001", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Console.Write"));
         await test.RunAsync();
@@ -74,7 +74,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL001", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL001", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("Console.Error.WriteLine"));
         await test.RunAsync();

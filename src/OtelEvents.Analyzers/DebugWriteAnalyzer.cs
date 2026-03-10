@@ -7,13 +7,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL007: Detects Debug.Write*, Debug.WriteLine, Trace.Write*, Trace.WriteLine,
+    /// OTEL007: Detects Debug.Write*, Debug.WriteLine, Trace.Write*, Trace.WriteLine,
     /// Trace.TraceInformation, etc. and suggests using otel-events generated events instead.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class DebugWriteAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL007";
+        public const string DiagnosticId = "OTEL007";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -23,7 +23,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "Debug.Write*, Trace.Write* detected. Use otel-events generated events instead.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL007.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL007.md");
 
         private static readonly ImmutableHashSet<string> DebugMethods = ImmutableHashSet.Create(
             "Write",

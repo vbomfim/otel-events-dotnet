@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL003 — String interpolation in event field detection.
+/// Tests for OTEL003 — String interpolation in event field detection.
 /// Validates that $"..." in log/emit methods is flagged as Error.
 /// </summary>
 public class StringInterpolationAnalyzerTests
@@ -33,7 +33,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL003", DiagnosticSeverity.Error)
+            new DiagnosticResult("OTEL003", DiagnosticSeverity.Error)
                 .WithLocation(0)
                 .WithArguments("LogInformation"));
         await test.RunAsync();
@@ -61,7 +61,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL003", DiagnosticSeverity.Error)
+            new DiagnosticResult("OTEL003", DiagnosticSeverity.Error)
                 .WithLocation(0)
                 .WithArguments("EmitOrderCreated"));
         await test.RunAsync();
@@ -131,7 +131,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL003", DiagnosticSeverity.Error)
+            new DiagnosticResult("OTEL003", DiagnosticSeverity.Error)
                 .WithLocation(0)
                 .WithArguments("LogError"));
         await test.RunAsync();

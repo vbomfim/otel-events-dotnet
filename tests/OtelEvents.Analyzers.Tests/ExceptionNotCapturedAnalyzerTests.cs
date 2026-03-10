@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL006 — Exception not captured detection.
+/// Tests for OTEL006 — Exception not captured detection.
 /// Validates that catch blocks without exception usage are flagged.
 /// </summary>
 public class ExceptionNotCapturedAnalyzerTests
@@ -33,7 +33,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL006", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL006", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("ex"));
         await test.RunAsync();
@@ -58,7 +58,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL006", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL006", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("exception"));
         await test.RunAsync();

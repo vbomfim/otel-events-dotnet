@@ -8,14 +8,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL009: Detects PII field names used in telemetry or logging contexts without
+    /// OTEL009: Detects PII field names used in telemetry or logging contexts without
     /// a redaction policy. Schema fields with sensitivity: pii or sensitivity: credential
     /// should have EnvironmentProfile or RedactPatterns configured.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class PiiWithoutRedactionAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL009";
+        public const string DiagnosticId = "OTEL009";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -25,7 +25,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "Schema field with sensitivity: pii or sensitivity: credential is used in code but no redaction policy is configured. Configure EnvironmentProfile or explicit RedactPatterns.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL009.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL009.md");
 
         // Common PII-indicating patterns in field/tag names (lowercase)
         private static readonly string[] PiiPatterns = new[]

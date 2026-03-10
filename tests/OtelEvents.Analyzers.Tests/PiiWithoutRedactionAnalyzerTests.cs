@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL009 — PII field without redaction policy detection.
+/// Tests for OTEL009 — PII field without redaction policy detection.
 /// Validates that PII-indicating field names in telemetry contexts are flagged.
 /// </summary>
 public class PiiWithoutRedactionAnalyzerTests
@@ -32,7 +32,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL009", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL009", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("user.email"));
         await test.RunAsync();
@@ -59,7 +59,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL009", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL009", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("customer.ssn"));
         await test.RunAsync();
@@ -86,7 +86,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL009", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL009", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("user.password"));
         await test.RunAsync();
@@ -161,7 +161,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL009", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL009", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("payment.credit_card"));
         await test.RunAsync();

@@ -204,7 +204,7 @@ Schema signing provides HMAC-SHA256 integrity verification for multi-team enviro
 
 ```bash
 # Sign using an environment variable (base64-encoded key)
-dotnet otel-events sign events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+dotnet otel-events sign events.otel.yaml --key-env OTEL_SCHEMA_SIGNING_KEY
 
 # Produces: events.otel.yaml.sig
 ```
@@ -213,7 +213,7 @@ dotnet otel-events sign events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 ```bash
 # Verify in CI pipeline
-dotnet otel-events verify events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+dotnet otel-events verify events.otel.yaml --key-env OTEL_SCHEMA_SIGNING_KEY
 
 # Exit code 0 = valid, 1 = invalid or missing signature
 ```
@@ -222,7 +222,7 @@ dotnet otel-events verify events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 
 | Source | Flag | Example |
 |--------|------|---------|
-| Environment variable | `--key-env` | `--key-env ALL_SCHEMA_SIGNING_KEY` |
+| Environment variable | `--key-env` | `--key-env OTEL_SCHEMA_SIGNING_KEY` |
 | File | `--key-file` | `--key-file /secrets/schema-key.bin` |
 
 > **Never hardcode signing keys.** Use environment variables sourced from a secret manager (Azure Key Vault, AWS Secrets Manager, HashiCorp Vault).
@@ -232,9 +232,9 @@ dotnet otel-events verify events.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
 ```yaml
 # GitHub Actions — verify schemas before build
 - name: Verify schema signatures
-  run: dotnet otel-events verify schemas/*.otel.yaml --key-env ALL_SCHEMA_SIGNING_KEY
+  run: dotnet otel-events verify schemas/*.otel.yaml --key-env OTEL_SCHEMA_SIGNING_KEY
   env:
-    ALL_SCHEMA_SIGNING_KEY: ${{ secrets.SCHEMA_SIGNING_KEY }}
+    OTEL_SCHEMA_SIGNING_KEY: ${{ secrets.SCHEMA_SIGNING_KEY }}
 ```
 
 ---
@@ -313,15 +313,15 @@ Analyzers activate automatically when the package is referenced.
 
 | Rule | Severity | Title | Description |
 |------|----------|-------|-------------|
-| **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use otel-events generated events instead. |
-| **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.LogInformation`, `ILogger.LogError`, etc. without using an otel-events-generated extension method. |
-| **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events-generated method parameter. Pass raw values — otel-events handles message interpolation. |
-| **ALL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
-| **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
-| **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an otel-events event with the caught exception. |
-| **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
-| **ALL008** | Error | Reserved prefix usage | Code uses `otel_events.` prefix in field names — reserved for library metadata. |
-| **ALL009** | Warning | PII field without redaction | Schema field with `sensitivity: pii` or `sensitivity: credential` used but no redaction policy configured. |
+| **OTEL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use otel-events generated events instead. |
+| **OTEL002** | Warning | Untyped ILogger usage | Direct `ILogger.LogInformation`, `ILogger.LogError`, etc. without using an otel-events-generated extension method. |
+| **OTEL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events-generated method parameter. Pass raw values — otel-events handles message interpolation. |
+| **OTEL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
+| **OTEL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
+| **OTEL006** | Warning | Exception not captured | `catch` block doesn't emit an otel-events event with the caught exception. |
+| **OTEL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
+| **OTEL008** | Error | Reserved prefix usage | Code uses `otel_events.` prefix in field names — reserved for library metadata. |
+| **OTEL009** | Warning | PII field without redaction | Schema field with `sensitivity: pii` or `sensitivity: credential` used but no redaction policy configured. |
 
 ### Severity overrides
 
@@ -330,23 +330,23 @@ Override analyzer severity in `.editorconfig`:
 ```editorconfig
 # Promote Console.Write to error in production code
 [src/**/*.cs]
-dotnet_diagnostic.ALL001.severity = error
+dotnet_diagnostic.OTEL001.severity = error
 
 # Allow direct ILogger in specific adapter files
 [src/**/Adapters/**/*.cs]
-dotnet_diagnostic.ALL002.severity = none
+dotnet_diagnostic.OTEL002.severity = none
 
 # Keep string interpolation as error everywhere
-dotnet_diagnostic.ALL003.severity = error
+dotnet_diagnostic.OTEL003.severity = error
 ```
 
 ### Suppression
 
 ```csharp
 // Explicit suppression when needed (e.g., test code, infrastructure)
-#pragma warning disable ALL001 // Console output in test assertion
+#pragma warning disable OTEL001 // Console output in test assertion
 Console.WriteLine(capturedOutput);
-#pragma warning restore ALL001
+#pragma warning restore OTEL001
 ```
 
 ---

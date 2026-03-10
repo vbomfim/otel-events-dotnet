@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL008 — Reserved "otel_events." prefix detection.
+/// Tests for OTEL008 — Reserved "otel_events." prefix detection.
 /// Validates that string literals with "otel_events." prefix in field name contexts are flagged as Error.
 /// </summary>
 public class ReservedPrefixAnalyzerTests
@@ -32,7 +32,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL008", DiagnosticSeverity.Error)
+            new DiagnosticResult("OTEL008", DiagnosticSeverity.Error)
                 .WithLocation(0)
                 .WithArguments("otel_events.version"));
         await test.RunAsync();
@@ -59,7 +59,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL008", DiagnosticSeverity.Error)
+            new DiagnosticResult("OTEL008", DiagnosticSeverity.Error)
                 .WithLocation(0)
                 .WithArguments("otel_events.event_id"));
         await test.RunAsync();

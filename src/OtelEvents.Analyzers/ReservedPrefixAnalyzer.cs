@@ -8,13 +8,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL008: Detects string literals using the reserved "otel_events." prefix in field names.
+    /// OTEL008: Detects string literals using the reserved "otel_events." prefix in field names.
     /// This prefix is reserved for otel-events library metadata and must not be used in application code.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class ReservedPrefixAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL008";
+        public const string DiagnosticId = "OTEL008";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -24,7 +24,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: "Code uses 'otel_events.' prefix in field names — this prefix is reserved for library metadata.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL008.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL008.md");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(Rule);

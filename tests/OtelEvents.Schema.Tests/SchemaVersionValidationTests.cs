@@ -5,14 +5,14 @@ using OtelEvents.Schema.Validation;
 namespace OtelEvents.Schema.Tests;
 
 /// <summary>
-/// Tests for schema version compatibility validation (ALL_SCHEMA_025).
+/// Tests for schema version compatibility validation (OTEL_SCHEMA_025).
 /// When merging multiple schemas, all must share the same major version.
 /// </summary>
 public class SchemaVersionValidationTests
 {
     private readonly SchemaValidator _validator = new();
 
-    // ── ALL_SCHEMA_025: Schema version compatibility ────────────────────
+    // ── OTEL_SCHEMA_025: Schema version compatibility ────────────────────
 
     [Fact]
     public void Validate_SameMajorVersion_NoError()
@@ -27,7 +27,7 @@ public class SchemaVersionValidationTests
     }
 
     [Fact]
-    public void Validate_DifferentMajorVersions_ReturnsALL_SCHEMA_025()
+    public void Validate_DifferentMajorVersions_ReturnsOTEL_SCHEMA_025()
     {
         var doc1 = CreateDoc("1.0.0");
         var doc2 = CreateDoc("2.0.0");

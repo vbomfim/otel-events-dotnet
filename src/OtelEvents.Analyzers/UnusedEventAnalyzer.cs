@@ -5,14 +5,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL005: Detects events defined in the schema that are never called in the codebase.
+    /// OTEL005: Detects events defined in the schema that are never called in the codebase.
     /// TODO: Requires cross-file schema analysis and whole-project scanning.
     /// Currently registered but never fires — awaiting schema-aware infrastructure.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UnusedEventAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL005";
+        public const string DiagnosticId = "OTEL005";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -22,7 +22,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Info,
             isEnabledByDefault: true,
             description: "Schema defines an event that is never called in the codebase.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL005.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL005.md");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(Rule);

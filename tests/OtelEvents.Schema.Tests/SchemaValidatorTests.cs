@@ -5,7 +5,7 @@ using OtelEvents.Schema.Validation;
 namespace OtelEvents.Schema.Tests;
 
 /// <summary>
-/// Tests for schema validation rules ALL_SCHEMA_001 through ALL_SCHEMA_018.
+/// Tests for schema validation rules OTEL_SCHEMA_001 through OTEL_SCHEMA_018.
 /// Each test targets a specific error code.
 /// </summary>
 public class SchemaValidatorTests
@@ -23,10 +23,10 @@ public class SchemaValidatorTests
         return _validator.Validate(parseResult.Document!);
     }
 
-    // ── ALL_SCHEMA_001: Unique event names ──────────────────────────────
+    // ── OTEL_SCHEMA_001: Unique event names ──────────────────────────────
 
     [Fact]
-    public void Validate_DuplicateEventName_ReturnsALL_SCHEMA_001()
+    public void Validate_DuplicateEventName_ReturnsOTEL_SCHEMA_001()
     {
         var doc1 = CreateMinimalDoc(events:
         [
@@ -43,7 +43,7 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.DuplicateEventName);
     }
 
-    // ── ALL_SCHEMA_002: Valid severity ───────────────────────────────────
+    // ── OTEL_SCHEMA_002: Valid severity ───────────────────────────────────
 
     [Fact]
     public void Validate_InvalidSeverity_ParseReturnsError()
@@ -66,10 +66,10 @@ public class SchemaValidatorTests
         Assert.Contains(parseResult.Errors, e => e.Code == ErrorCodes.InvalidSeverity);
     }
 
-    // ── ALL_SCHEMA_003: Message template match ──────────────────────────
+    // ── OTEL_SCHEMA_003: Message template match ──────────────────────────
 
     [Fact]
-    public void Validate_MessagePlaceholderNotMatchingField_ReturnsALL_SCHEMA_003()
+    public void Validate_MessagePlaceholderNotMatchingField_ReturnsOTEL_SCHEMA_003()
     {
         var yaml = """
             schema:
@@ -122,10 +122,10 @@ public class SchemaValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // ── ALL_SCHEMA_004: Ref resolution ──────────────────────────────────
+    // ── OTEL_SCHEMA_004: Ref resolution ──────────────────────────────────
 
     [Fact]
-    public void Validate_UnresolvedRef_ReturnsALL_SCHEMA_004()
+    public void Validate_UnresolvedRef_ReturnsOTEL_SCHEMA_004()
     {
         var yaml = """
             schema:
@@ -207,10 +207,10 @@ public class SchemaValidatorTests
         Assert.True(result.IsValid);
     }
 
-    // ── ALL_SCHEMA_005: Type validity ───────────────────────────────────
+    // ── OTEL_SCHEMA_005: Type validity ───────────────────────────────────
 
     [Fact]
-    public void Validate_InvalidFieldType_ReturnsALL_SCHEMA_005()
+    public void Validate_InvalidFieldType_ReturnsOTEL_SCHEMA_005()
     {
         var yaml = """
             schema:
@@ -234,7 +234,7 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.InvalidType);
     }
 
-    // ── ALL_SCHEMA_006: Event name format ───────────────────────────────
+    // ── OTEL_SCHEMA_006: Event name format ───────────────────────────────
 
     [Theory]
     [InlineData("NotLowerCase")]
@@ -242,7 +242,7 @@ public class SchemaValidatorTests
     [InlineData("singleword")]
     [InlineData("has spaces")]
     [InlineData("123.starts.with.number")]
-    public void Validate_InvalidEventNameFormat_ReturnsALL_SCHEMA_006(string eventName)
+    public void Validate_InvalidEventNameFormat_ReturnsOTEL_SCHEMA_006(string eventName)
     {
         var doc = CreateMinimalDoc(events:
         [
@@ -272,10 +272,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidEventNameFormat);
     }
 
-    // ── ALL_SCHEMA_007: Required field completeness ─────────────────────
+    // ── OTEL_SCHEMA_007: Required field completeness ─────────────────────
 
     [Fact]
-    public void Validate_RequiredFieldWithoutTypeOrRef_ReturnsALL_SCHEMA_007()
+    public void Validate_RequiredFieldWithoutTypeOrRef_ReturnsOTEL_SCHEMA_007()
     {
         var yaml = """
             schema:
@@ -298,10 +298,10 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.RequiredFieldMissingType);
     }
 
-    // ── ALL_SCHEMA_008: Metric type validity ────────────────────────────
+    // ── OTEL_SCHEMA_008: Metric type validity ────────────────────────────
 
     [Fact]
-    public void Validate_InvalidMetricType_ReturnsALL_SCHEMA_008()
+    public void Validate_InvalidMetricType_ReturnsOTEL_SCHEMA_008()
     {
         var yaml = """
             schema:
@@ -352,10 +352,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidMetricType);
     }
 
-    // ── ALL_SCHEMA_009: Enum non-empty ──────────────────────────────────
+    // ── OTEL_SCHEMA_009: Enum non-empty ──────────────────────────────────
 
     [Fact]
-    public void Validate_EmptyEnum_ReturnsALL_SCHEMA_009()
+    public void Validate_EmptyEnum_ReturnsOTEL_SCHEMA_009()
     {
         var yaml = """
             schema:
@@ -374,7 +374,7 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.EmptyEnum);
     }
 
-    // ── ALL_SCHEMA_010: Semver version ──────────────────────────────────
+    // ── OTEL_SCHEMA_010: Semver version ──────────────────────────────────
 
     [Theory]
     [InlineData("not-semver")]
@@ -382,7 +382,7 @@ public class SchemaValidatorTests
     [InlineData("v1.0.0")]
     [InlineData("1")]
     [InlineData("abc")]
-    public void Validate_InvalidSemver_ReturnsALL_SCHEMA_010(string version)
+    public void Validate_InvalidSemver_ReturnsOTEL_SCHEMA_010(string version)
     {
         var doc = CreateMinimalDoc(version: version);
 
@@ -407,10 +407,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidSemver);
     }
 
-    // ── ALL_SCHEMA_011: Reserved prefix ─────────────────────────────────
+    // ── OTEL_SCHEMA_011: Reserved prefix ─────────────────────────────────
 
     [Fact]
-    public void Validate_EventNameWithReservedPrefix_ReturnsALL_SCHEMA_011()
+    public void Validate_EventNameWithReservedPrefix_ReturnsOTEL_SCHEMA_011()
     {
         var doc = CreateMinimalDoc(events:
         [
@@ -424,7 +424,7 @@ public class SchemaValidatorTests
     }
 
     [Fact]
-    public void Validate_FieldNameWithReservedPrefix_ReturnsALL_SCHEMA_011()
+    public void Validate_FieldNameWithReservedPrefix_ReturnsOTEL_SCHEMA_011()
     {
         var yaml = """
             schema:
@@ -447,10 +447,10 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.ReservedPrefix);
     }
 
-    // ── ALL_SCHEMA_012: Unique numeric IDs ──────────────────────────────
+    // ── OTEL_SCHEMA_012: Unique numeric IDs ──────────────────────────────
 
     [Fact]
-    public void Validate_DuplicateEventId_ReturnsALL_SCHEMA_012()
+    public void Validate_DuplicateEventId_ReturnsOTEL_SCHEMA_012()
     {
         var doc = CreateMinimalDoc(events:
         [
@@ -464,14 +464,14 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.DuplicateEventId);
     }
 
-    // ── ALL_SCHEMA_013: Meter name valid ────────────────────────────────
+    // ── OTEL_SCHEMA_013: Meter name valid ────────────────────────────────
 
     [Theory]
     [InlineData("123invalid")]
     [InlineData("has spaces")]
     [InlineData(".starts.with.dot")]
     [InlineData("ends.with.dot.")]
-    public void Validate_InvalidMeterName_ReturnsALL_SCHEMA_013(string meterName)
+    public void Validate_InvalidMeterName_ReturnsOTEL_SCHEMA_013(string meterName)
     {
         var doc = CreateMinimalDoc(meterName: meterName);
 
@@ -494,10 +494,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidMeterName);
     }
 
-    // ── ALL_SCHEMA_014: Sensitivity validity ────────────────────────────
+    // ── OTEL_SCHEMA_014: Sensitivity validity ────────────────────────────
 
     [Fact]
-    public void Validate_InvalidSensitivity_ReturnsALL_SCHEMA_014()
+    public void Validate_InvalidSensitivity_ReturnsOTEL_SCHEMA_014()
     {
         var yaml = """
             schema:
@@ -551,10 +551,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidSensitivity);
     }
 
-    // ── ALL_SCHEMA_015: Max length validity ─────────────────────────────
+    // ── OTEL_SCHEMA_015: Max length validity ─────────────────────────────
 
     [Fact]
-    public void Validate_InvalidMaxLength_Zero_ReturnsALL_SCHEMA_015()
+    public void Validate_InvalidMaxLength_Zero_ReturnsOTEL_SCHEMA_015()
     {
         var yaml = """
             schema:
@@ -580,7 +580,7 @@ public class SchemaValidatorTests
     }
 
     [Fact]
-    public void Validate_InvalidMaxLength_Negative_ReturnsALL_SCHEMA_015()
+    public void Validate_InvalidMaxLength_Negative_ReturnsOTEL_SCHEMA_015()
     {
         var yaml = """
             schema:
@@ -606,7 +606,7 @@ public class SchemaValidatorTests
     }
 
     [Fact]
-    public void Validate_InvalidMaxLength_NonNumeric_ReturnsALL_SCHEMA_015()
+    public void Validate_InvalidMaxLength_NonNumeric_ReturnsOTEL_SCHEMA_015()
     {
         var yaml = """
             schema:
@@ -656,10 +656,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidMaxLength);
     }
 
-    // ── ALL_SCHEMA_016: File size limit ─────────────────────────────────
+    // ── OTEL_SCHEMA_016: File size limit ─────────────────────────────────
 
     [Fact]
-    public void Validate_FileSizeExceedsLimit_ReturnsALL_SCHEMA_016()
+    public void Validate_FileSizeExceedsLimit_ReturnsOTEL_SCHEMA_016()
     {
         var yaml = """
             schema:
@@ -674,10 +674,10 @@ public class SchemaValidatorTests
         Assert.Contains(result.Errors, e => e.Code == ErrorCodes.FileSizeExceeded);
     }
 
-    // ── ALL_SCHEMA_017: Event count limit ───────────────────────────────
+    // ── OTEL_SCHEMA_017: Event count limit ───────────────────────────────
 
     [Fact]
-    public void Validate_EventCountExceedsLimit_ReturnsALL_SCHEMA_017()
+    public void Validate_EventCountExceedsLimit_ReturnsOTEL_SCHEMA_017()
     {
         var events = new List<EventDefinition>();
         for (int i = 0; i < 501; i++)
@@ -707,10 +707,10 @@ public class SchemaValidatorTests
         Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.EventCountExceeded);
     }
 
-    // ── ALL_SCHEMA_018: Field count limit ───────────────────────────────
+    // ── OTEL_SCHEMA_018: Field count limit ───────────────────────────────
 
     [Fact]
-    public void Validate_FieldCountExceedsLimit_ReturnsALL_SCHEMA_018()
+    public void Validate_FieldCountExceedsLimit_ReturnsOTEL_SCHEMA_018()
     {
         var fields = new List<FieldDefinition>();
         for (int i = 0; i < 51; i++)

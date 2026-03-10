@@ -263,7 +263,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
                     continue;
                 }
 
-                // Strip reserved otel_events.* prefix from non-ALL attributes
+                // Strip reserved otel_events.* prefix from non-otel-events attributes
                 if (attr.Key.StartsWith("otel_events.", StringComparison.Ordinal)
                     && !AllowedAllPrefixKeys.Contains(attr.Key))
                 {

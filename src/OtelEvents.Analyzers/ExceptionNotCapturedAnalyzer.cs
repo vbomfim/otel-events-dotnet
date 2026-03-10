@@ -8,14 +8,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL006: Detects catch blocks that don't capture the exception in an event emission.
+    /// OTEL006: Detects catch blocks that don't capture the exception in an event emission.
     /// Flags catch clauses where the declared exception variable is never referenced,
     /// suggesting the exception is swallowed without proper logging or event emission.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class ExceptionNotCapturedAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL006";
+        public const string DiagnosticId = "OTEL006";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -25,7 +25,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "catch block doesn't emit an otel-events event with the caught exception.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL006.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL006.md");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(Rule);

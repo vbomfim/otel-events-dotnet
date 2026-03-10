@@ -234,12 +234,12 @@ otel-events caps inner exception serialization at **5 levels** of nesting. This 
 
 ---
 
-## Roslyn Analyzer: ALL009
+## Roslyn Analyzer: OTEL009
 
-The `ALL009` analyzer provides **compile-time** PII detection. It scans for string literals that match common PII field names:
+The `OTEL009` analyzer provides **compile-time** PII detection. It scans for string literals that match common PII field names:
 
 ```csharp
-// ⚠️ ALL009: PII field without redaction policy
+// ⚠️ OTEL009: PII field without redaction policy
 activity.SetTag("user.email", email);
 span.AddTag("customer.ssn", ssn);
 ```
@@ -251,13 +251,13 @@ span.AddTag("customer.ssn", ssn);
 ### Configuring Severity
 
 ```editorconfig
-# .editorconfig — promote ALL009 to error in production code
+# .editorconfig — promote OTEL009 to error in production code
 [src/**/*.cs]
-dotnet_diagnostic.ALL009.severity = error
+dotnet_diagnostic.OTEL009.severity = error
 
 # Suppress in test code
 [tests/**/*.cs]
-dotnet_diagnostic.ALL009.severity = none
+dotnet_diagnostic.OTEL009.severity = none
 ```
 
 ---

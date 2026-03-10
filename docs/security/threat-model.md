@@ -87,7 +87,7 @@ Values matching these patterns are replaced with `"[REDACTED:pattern]"`. This sa
 
 ## Reserved Prefix Runtime Enforcement
 
-At build time, the schema validator rejects field names starting with `otel_events.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
+At build time, the schema validator rejects field names starting with `otel_events.` (rule `OTEL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
 
 1. During `Export()`, iterate over `LogRecord.Attributes`.
 2. Any attribute with key starting with `otel_events.` that was **not** set by `OtelEventsCausalityProcessor` or `OtelEventsJsonExporter` itself is **stripped**.

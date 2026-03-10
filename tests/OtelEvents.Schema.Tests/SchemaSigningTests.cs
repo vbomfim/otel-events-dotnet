@@ -460,7 +460,7 @@ public sealed class SchemaSigningTests : IDisposable
         var options = new SchemaSignatureOptions();
 
         Assert.Equal(SchemaSignatureKeySource.EnvironmentVariable, options.KeySource);
-        Assert.Equal("ALL_SCHEMA_SIGNING_KEY", options.KeyReference);
+        Assert.Equal("OTEL_SCHEMA_SIGNING_KEY", options.KeyReference);
     }
 
     // ── SchemaVerificationResult — Result Type ──────────────────────────

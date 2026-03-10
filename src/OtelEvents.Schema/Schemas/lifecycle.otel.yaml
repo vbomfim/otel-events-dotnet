@@ -1,6 +1,6 @@
 # ─── Built-in Lifecycle Events Schema ────────────────────────────────────────
 # Application lifecycle and health events for OpenTelemetry-based observability.
-# Part of the ALL (Another Logging Library) built-in schemas.
+# Part of the otel-events built-in schemas.
 # See: SPECIFICATION.md §3 Feature 2.4
 
 schema:

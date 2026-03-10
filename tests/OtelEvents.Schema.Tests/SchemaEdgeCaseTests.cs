@@ -268,11 +268,11 @@ public class SchemaEdgeCaseTests
     {
         var error = new SchemaError
         {
-            Code = "ALL_SCHEMA_001",
+            Code = "OTEL_SCHEMA_001",
             Message = "Duplicate event name"
         };
 
-        Assert.Equal("ALL_SCHEMA_001: Duplicate event name", error.ToString());
+        Assert.Equal("OTEL_SCHEMA_001: Duplicate event name", error.ToString());
     }
 
     [Fact]

@@ -123,7 +123,7 @@ Features required for production use and team adoption.
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 2.1 | **Roslyn analyzers** | Detect `Console.Write*`, direct untyped `ILogger` usage, string interpolation in event messages, PII sensitivity warnings (ALL009) |
+| 2.1 | **Roslyn analyzers** | Detect `Console.Write*`, direct untyped `ILogger` usage, string interpolation in event messages, PII sensitivity warnings (OTEL009) |
 | 2.2 | **Configuration** | `appsettings.json` / env-var configuration for JSON exporter output target, severity filtering, metric batching, `EnvironmentProfile` |
 | 2.3 | **Schema versioning** | `otel_events.v` field, compatibility validation between schema versions |
 | 2.4 | **Health/readiness events** | Built-in schema for application lifecycle events: startup, ready, degraded, shutdown |
@@ -186,10 +186,10 @@ Advanced features for large-scale adoption.
 │                                                                     │
 │  ┌────────────────────────────────────────────────────────────┐     │
 │  │  Roslyn Analyzers                                          │     │
-│  │  • ALL001: Console.Write detected                          │     │
-│  │  • ALL002: Untyped ILogger usage (not via otel-events extension)   │     │
-│  │  • ALL003: String interpolation in event field             │     │
-│  │  • ALL004: Undefined event name                            │     │
+│  │  • OTEL001: Console.Write detected                          │     │
+│  │  • OTEL002: Untyped ILogger usage (not via otel-events extension)   │     │
+│  │  • OTEL003: String interpolation in event field             │     │
+│  │  • OTEL004: Undefined event name                            │     │
 │  └────────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────┘
 
@@ -606,7 +606,7 @@ fields:
 | `public` | Safe to emit in all environments. Default if not specified. | No redaction |
 | `internal` | Internal infrastructure details (hostnames, paths, process IDs). | Redacted in `Production` profile; visible in `Development`/`Staging` |
 | `pii` | Personally Identifiable Information (user IDs, emails, IP addresses, user agents). | Redacted in `Production`/`Staging` unless explicitly opted in; visible in `Development` |
-| `credential` | Secrets, tokens, API keys, connection strings. | **Always redacted** in all environments. Analyzer ALL009 warns if no redaction policy is applied. |
+| `credential` | Secrets, tokens, API keys, connection strings. | **Always redacted** in all environments. Analyzer OTEL009 warns if no redaction policy is applied. |
 
 Redaction replaces the value with `"[REDACTED:{sensitivity}]"` (e.g., `"[REDACTED:pii]"`). The field key is still present in the JSON envelope — only the value is replaced.
 
@@ -651,24 +651,24 @@ When a value exceeds `maxLength`, it is truncated with the suffix `"…[truncate
 
 | Rule | Error Code | Description |
 |------|-----------|-------------|
-| Unique event IDs | `ALL_SCHEMA_001` | No duplicate event names within merged schemas |
-| Valid severity | `ALL_SCHEMA_002` | Severity must be one of: TRACE, DEBUG, INFO, WARN, ERROR, FATAL |
-| Message template match | `ALL_SCHEMA_003` | All `{placeholders}` in message must match a field name |
-| Ref resolution | `ALL_SCHEMA_004` | All `ref` values must resolve to a defined field or enum |
-| Type validity | `ALL_SCHEMA_005` | Field types must be from the supported type list |
-| Event name format | `ALL_SCHEMA_006` | Event names must be dot-namespaced, lowercase, alphanumeric + dots only |
-| Required field completeness | `ALL_SCHEMA_007` | Required fields must have a type (directly or via ref) |
-| Metric type validity | `ALL_SCHEMA_008` | Metric types must be: counter, histogram, gauge |
-| Enum non-empty | `ALL_SCHEMA_009` | Enum definitions must have at least one value |
-| Semver version | `ALL_SCHEMA_010` | Schema version must be valid semver |
-| Reserved prefix | `ALL_SCHEMA_011` | Event names and field names must not start with `otel_events.` |
-| Unique numeric IDs | `ALL_SCHEMA_012` | Each event `id` must be a unique integer (used as `[LoggerMessage]` EventId) |
-| Meter name valid | `ALL_SCHEMA_013` | Meter name must be a valid .NET identifier (dot-separated) |
-| Sensitivity validity | `ALL_SCHEMA_014` | `sensitivity` must be one of: `public`, `internal`, `pii`, `credential` |
-| Max length validity | `ALL_SCHEMA_015` | `maxLength` must be a positive integer when specified |
-| Schema file size limit | `ALL_SCHEMA_016` | Individual schema files must not exceed 1 MB |
-| Event count limit | `ALL_SCHEMA_017` | Merged schemas must not define more than 500 events total |
-| Field count limit | `ALL_SCHEMA_018` | Individual events must not define more than 50 fields |
+| Unique event IDs | `OTEL_SCHEMA_001` | No duplicate event names within merged schemas |
+| Valid severity | `OTEL_SCHEMA_002` | Severity must be one of: TRACE, DEBUG, INFO, WARN, ERROR, FATAL |
+| Message template match | `OTEL_SCHEMA_003` | All `{placeholders}` in message must match a field name |
+| Ref resolution | `OTEL_SCHEMA_004` | All `ref` values must resolve to a defined field or enum |
+| Type validity | `OTEL_SCHEMA_005` | Field types must be from the supported type list |
+| Event name format | `OTEL_SCHEMA_006` | Event names must be dot-namespaced, lowercase, alphanumeric + dots only |
+| Required field completeness | `OTEL_SCHEMA_007` | Required fields must have a type (directly or via ref) |
+| Metric type validity | `OTEL_SCHEMA_008` | Metric types must be: counter, histogram, gauge |
+| Enum non-empty | `OTEL_SCHEMA_009` | Enum definitions must have at least one value |
+| Semver version | `OTEL_SCHEMA_010` | Schema version must be valid semver |
+| Reserved prefix | `OTEL_SCHEMA_011` | Event names and field names must not start with `otel_events.` |
+| Unique numeric IDs | `OTEL_SCHEMA_012` | Each event `id` must be a unique integer (used as `[LoggerMessage]` EventId) |
+| Meter name valid | `OTEL_SCHEMA_013` | Meter name must be a valid .NET identifier (dot-separated) |
+| Sensitivity validity | `OTEL_SCHEMA_014` | `sensitivity` must be one of: `public`, `internal`, `pii`, `credential` |
+| Max length validity | `OTEL_SCHEMA_015` | `maxLength` must be a positive integer when specified |
+| Schema file size limit | `OTEL_SCHEMA_016` | Individual schema files must not exceed 1 MB |
+| Event count limit | `OTEL_SCHEMA_017` | Merged schemas must not define more than 500 events total |
+| Field count limit | `OTEL_SCHEMA_018` | Individual events must not define more than 50 fields |
 
 ### Schema Parsing Resource Limits
 
@@ -682,7 +682,7 @@ To prevent denial-of-service via malicious or excessively large schema files, th
 | Max YAML nesting depth | 20 | Prevents stack overflow in parser |
 | Safe YAML loading | Enabled | YamlDotNet configured with `LoadingMode.Safe` — disables YAML tags, aliases, and anchors that could cause expansion attacks |
 
-These limits are enforced at parse time (build time). Violations produce clear build errors with the corresponding `ALL_SCHEMA_*` error code.
+These limits are enforced at parse time (build time). Violations produce clear build errors with the corresponding `OTEL_SCHEMA_*` error code.
 
 
 ---
@@ -1461,15 +1461,15 @@ All analyzers are delivered as a NuGet analyzer package. They activate automatic
 
 | Rule ID | Severity | Title | Description |
 |---------|----------|-------|-------------|
-| **ALL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use otel-events generated events instead. |
-| **ALL002** | Warning | Untyped ILogger usage | Direct `ILogger.Log*`, `ILogger.LogInformation`, etc. detected in application code without using an otel-events generated extension method. Use schema-defined events instead. |
-| **ALL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events generated event method parameter. ALL handles message interpolation — pass raw values only. |
-| **ALL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
-| **ALL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
-| **ALL006** | Warning | Exception not captured | `catch` block doesn't emit an ALL event with the caught exception. |
-| **ALL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
-| **ALL008** | Error | Reserved prefix usage | Code uses `otel_events.` prefix in field names — this prefix is reserved for library metadata. |
-| **ALL009** | Warning | PII field without redaction policy | Schema field with `sensitivity: pii` or `sensitivity: credential` is used in code but no redaction policy is configured in `OtelEventsJsonExporterOptions`. Configure `EnvironmentProfile` or explicit `RedactPatterns`. |
+| **OTEL001** | Warning | Console output detected | `Console.Write`, `Console.WriteLine`, `Console.Error.Write` detected. Use otel-events generated events instead. |
+| **OTEL002** | Warning | Untyped ILogger usage | Direct `ILogger.Log*`, `ILogger.LogInformation`, etc. detected in application code without using an otel-events generated extension method. Use schema-defined events instead. |
+| **OTEL003** | Error | String interpolation in event field | `$"..."` string interpolation passed to an otel-events generated event method parameter. otel-events handles message interpolation — pass raw values only. |
+| **OTEL004** | Warning | Undefined event name | String literal that looks like an event name doesn't match any schema-defined event. |
+| **OTEL005** | Info | Unused event definition | Schema defines an event that is never called in the codebase. |
+| **OTEL006** | Warning | Exception not captured | `catch` block doesn't emit an otel-events event with the caught exception. |
+| **OTEL007** | Warning | Debug.Write detected | `Debug.Write*`, `Trace.Write*` detected. Use otel-events generated events instead. |
+| **OTEL008** | Error | Reserved prefix usage | Code uses `otel_events.` prefix in field names — this prefix is reserved for library metadata. |
+| **OTEL009** | Warning | PII field without redaction policy | Schema field with `sensitivity: pii` or `sensitivity: credential` is used in code but no redaction policy is configured in `OtelEventsJsonExporterOptions`. Configure `EnvironmentProfile` or explicit `RedactPatterns`. |
 
 ### Analyzer Configuration
 
@@ -1478,23 +1478,23 @@ All analyzers are delivered as a NuGet analyzer package. They activate automatic
 
 # Promote Console.Write to error in production code
 [src/**/*.cs]
-dotnet_diagnostic.ALL001.severity = error
+dotnet_diagnostic.OTEL001.severity = error
 
 # Allow direct ILogger in specific adapter files
 [src/**/Adapters/**/*.cs]
-dotnet_diagnostic.ALL002.severity = none
+dotnet_diagnostic.OTEL002.severity = none
 
 # Keep string interpolation as error everywhere
-dotnet_diagnostic.ALL003.severity = error
+dotnet_diagnostic.OTEL003.severity = error
 ```
 
 ### Suppression
 
 ```csharp
 // Explicit suppression when needed (e.g., test code, infrastructure)
-#pragma warning disable ALL001 // Console output in test assertion
+#pragma warning disable OTEL001 // Console output in test assertion
 Console.WriteLine(capturedOutput);
-#pragma warning restore ALL001
+#pragma warning restore OTEL001
 ```
 
 ---
@@ -1969,14 +1969,14 @@ otel-events-dotnet/
 │   │
 │   ├── OtelEvents.Analyzers/
 │   │   ├── OtelEvents.Analyzers.csproj
-│   │   ├── ConsoleWriteAnalyzer.cs           # ALL001
-│   │   ├── UntypedILoggerAnalyzer.cs         # ALL002
-│   │   ├── StringInterpolationAnalyzer.cs    # ALL003
-│   │   ├── UndefinedEventAnalyzer.cs         # ALL004
-│   │   ├── UnusedEventAnalyzer.cs            # ALL005
-│   │   ├── UncapturedExceptionAnalyzer.cs    # ALL006
-│   │   ├── DebugWriteAnalyzer.cs             # ALL007
-│   │   └── ReservedPrefixAnalyzer.cs         # ALL008
+│   │   ├── ConsoleWriteAnalyzer.cs           # OTEL001
+│   │   ├── UntypedILoggerAnalyzer.cs         # OTEL002
+│   │   ├── StringInterpolationAnalyzer.cs    # OTEL003
+│   │   ├── UndefinedEventAnalyzer.cs         # OTEL004
+│   │   ├── UnusedEventAnalyzer.cs            # OTEL005
+│   │   ├── UncapturedExceptionAnalyzer.cs    # OTEL006
+│   │   ├── DebugWriteAnalyzer.cs             # OTEL007
+│   │   └── ReservedPrefixAnalyzer.cs         # OTEL008
 │   │
 │   └── OtelEvents.Testing/
 │       ├── OtelEvents.Testing.csproj
@@ -2240,7 +2240,7 @@ logging.AddOtelEventsJsonExporter(options =>
 
 ### 16.4 Reserved Prefix Runtime Enforcement
 
-At build time, the schema validator rejects field names starting with `otel_events.` (rule `ALL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
+At build time, the schema validator rejects field names starting with `otel_events.` (rule `OTEL_SCHEMA_011`). At runtime, the exporter enforces this for non-otel-events `LogRecord`s:
 
 1. During `Export()`, iterate over `LogRecord.Attributes`.
 2. Any attribute with key starting with `otel_events.` that was NOT set by `OtelEventsCausalityProcessor` or `OtelEventsJsonExporter` itself is **stripped** (removed from the exported envelope).

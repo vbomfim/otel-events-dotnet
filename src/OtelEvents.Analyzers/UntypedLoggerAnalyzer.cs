@@ -7,13 +7,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL002: Detects direct ILogger.Log*, ILogger.LogInformation, etc.
+    /// OTEL002: Detects direct ILogger.Log*, ILogger.LogInformation, etc.
     /// usage and suggests using otel-events schema-defined events instead.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UntypedLoggerAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL002";
+        public const string DiagnosticId = "OTEL002";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -23,7 +23,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "Direct ILogger.Log*, ILogger.LogInformation, etc. detected in application code. Use schema-defined events instead.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL002.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL002.md");
 
         private static readonly ImmutableHashSet<string> LogMethodNames = ImmutableHashSet.Create(
             "LogTrace",

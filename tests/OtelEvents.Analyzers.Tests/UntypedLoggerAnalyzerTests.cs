@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace OtelEvents.Analyzers.Tests;
 
 /// <summary>
-/// Tests for ALL002 — Untyped ILogger usage detection.
+/// Tests for OTEL002 — Untyped ILogger usage detection.
 /// Validates that direct ILogger.LogXxx calls are flagged.
 /// </summary>
 public class UntypedLoggerAnalyzerTests
@@ -32,7 +32,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL002", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL002", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("LogInformation"));
         await test.RunAsync();
@@ -59,7 +59,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL002", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL002", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("LogError"));
         await test.RunAsync();
@@ -86,7 +86,7 @@ class Test
 }",
         };
         test.ExpectedDiagnostics.Add(
-            new DiagnosticResult("ALL002", DiagnosticSeverity.Warning)
+            new DiagnosticResult("OTEL002", DiagnosticSeverity.Warning)
                 .WithLocation(0)
                 .WithArguments("LogWarning"));
         await test.RunAsync();

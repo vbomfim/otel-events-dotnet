@@ -385,24 +385,24 @@ The schema parser validates at build time. Violations produce clear build errors
 
 | Error Code | Description |
 |-----------|-------------|
-| `ALL_SCHEMA_001` | Duplicate event name within merged schemas |
-| `ALL_SCHEMA_002` | Invalid severity (must be TRACE, DEBUG, INFO, WARN, ERROR, FATAL) |
-| `ALL_SCHEMA_003` | Message template `{placeholder}` does not match any field name |
-| `ALL_SCHEMA_004` | Unresolved `ref` (field or enum reference not found) |
-| `ALL_SCHEMA_005` | Invalid field type |
-| `ALL_SCHEMA_006` | Invalid event name format (must be lowercase, dot-namespaced) |
-| `ALL_SCHEMA_007` | Required field missing type (directly or via ref) |
-| `ALL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
-| `ALL_SCHEMA_009` | Empty enum definition (must have at least one value) |
-| `ALL_SCHEMA_010` | Invalid semver version |
-| `ALL_SCHEMA_011` | Reserved `otel_events.` prefix used in event or field name |
-| `ALL_SCHEMA_012` | Duplicate numeric event ID |
-| `ALL_SCHEMA_013` | Invalid meter name (must be valid .NET dot-separated identifier) |
-| `ALL_SCHEMA_014` | Invalid sensitivity value |
-| `ALL_SCHEMA_015` | Invalid `maxLength` value (must be positive integer) |
-| `ALL_SCHEMA_016` | Schema file exceeds 1 MB size limit |
-| `ALL_SCHEMA_017` | Merged schemas exceed 500 event limit |
-| `ALL_SCHEMA_018` | Event exceeds 50 field limit |
+| `OTEL_SCHEMA_001` | Duplicate event name within merged schemas |
+| `OTEL_SCHEMA_002` | Invalid severity (must be TRACE, DEBUG, INFO, WARN, ERROR, FATAL) |
+| `OTEL_SCHEMA_003` | Message template `{placeholder}` does not match any field name |
+| `OTEL_SCHEMA_004` | Unresolved `ref` (field or enum reference not found) |
+| `OTEL_SCHEMA_005` | Invalid field type |
+| `OTEL_SCHEMA_006` | Invalid event name format (must be lowercase, dot-namespaced) |
+| `OTEL_SCHEMA_007` | Required field missing type (directly or via ref) |
+| `OTEL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
+| `OTEL_SCHEMA_009` | Empty enum definition (must have at least one value) |
+| `OTEL_SCHEMA_010` | Invalid semver version |
+| `OTEL_SCHEMA_011` | Reserved `otel_events.` prefix used in event or field name |
+| `OTEL_SCHEMA_012` | Duplicate numeric event ID |
+| `OTEL_SCHEMA_013` | Invalid meter name (must be valid .NET dot-separated identifier) |
+| `OTEL_SCHEMA_014` | Invalid sensitivity value |
+| `OTEL_SCHEMA_015` | Invalid `maxLength` value (must be positive integer) |
+| `OTEL_SCHEMA_016` | Schema file exceeds 1 MB size limit |
+| `OTEL_SCHEMA_017` | Merged schemas exceed 500 event limit |
+| `OTEL_SCHEMA_018` | Event exceeds 50 field limit |
 
 ---
 

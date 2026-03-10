@@ -71,7 +71,7 @@ Yes. otel-events is designed for Native AOT:
 Schema errors are caught at **build time** with clear error codes and messages. The build fails with a descriptive error:
 
 ```
-error ALL_SCHEMA_003: Message template placeholder '{userId}' does not match any field name
+error OTEL_SCHEMA_003: Message template placeholder '{userId}' does not match any field name
   in event 'order.placed' at events.otel.yaml:15
 ```
 

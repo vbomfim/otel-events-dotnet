@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace OtelEvents.Analyzers
 {
     /// <summary>
-    /// ALL004: Detects string literals that look like event names but don't match
+    /// OTEL004: Detects string literals that look like event names but don't match
     /// any schema-defined event.
     /// TODO: Requires schema context integration to validate against .otel.yaml definitions.
     /// Currently registered but never fires — awaiting schema-aware infrastructure.
@@ -13,7 +13,7 @@ namespace OtelEvents.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UndefinedEventNameAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "ALL004";
+        public const string DiagnosticId = "OTEL004";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
@@ -23,7 +23,7 @@ namespace OtelEvents.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "String literal that looks like an event name doesn't match any schema-defined event.",
-            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL004.md");
+            helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/OTEL004.md");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(Rule);

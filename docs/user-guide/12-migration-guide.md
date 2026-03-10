@@ -53,7 +53,7 @@ dotnet add package OtelEvents.Causality
 dotnet add package OtelEvents.Analyzers
 ```
 
-> **Tip:** Hold off on `OtelEvents.Analyzers` until you've migrated a few event categories. Adding it immediately will flag every existing `ILogger` call as `ALL002`, which creates noise during migration.
+> **Tip:** Hold off on `OtelEvents.Analyzers` until you've migrated a few event categories. Adding it immediately will flag every existing `ILogger` call as `OTEL002`, which creates noise during migration.
 
 ---
 
@@ -338,22 +338,22 @@ Start with warnings, then promote to errors as migration completes:
 
 # Phase 1: Warn about Console.Write (easy wins)
 [src/**/*.cs]
-dotnet_diagnostic.ALL001.severity = warning
+dotnet_diagnostic.OTEL001.severity = warning
 
 # Phase 2: Warn about untyped ILogger (after most events migrated)
-dotnet_diagnostic.ALL002.severity = warning
+dotnet_diagnostic.OTEL002.severity = warning
 
 # Phase 3: Error on string interpolation (always bad)
-dotnet_diagnostic.ALL003.severity = error
+dotnet_diagnostic.OTEL003.severity = error
 ```
 
 ### Suppress for unmigrated code
 
 ```csharp
 // Temporary suppression — remove after migrating this event
-#pragma warning disable ALL002 // Will be replaced with otel-events generated event in sprint 14
+#pragma warning disable OTEL002 // Will be replaced with otel-events generated event in sprint 14
 _logger.LogWarning("Legacy event: {Detail}", detail);
-#pragma warning restore ALL002
+#pragma warning restore OTEL002
 ```
 
 ---
@@ -382,8 +382,8 @@ Use this checklist to track your migration progress:
 
 ### Phase 3 — Enforcement (Sprint 4+)
 
-- [ ] Promote `ALL001` (Console.Write) to error
-- [ ] Promote `ALL002` (untyped ILogger) to error for migrated namespaces
+- [ ] Promote `OTEL001` (Console.Write) to error
+- [ ] Promote `OTEL002` (untyped ILogger) to error for migrated namespaces
 - [ ] Remove remaining `#pragma warning disable` suppressions
 - [ ] Configure `EnvironmentProfile = Production` for production deployments
 - [ ] Set up rate limiting / sampling for high-volume events

@@ -4,7 +4,7 @@ using OtelEvents.Schema.Models;
 namespace OtelEvents.Schema.Validation;
 
 /// <summary>
-/// Validates <see cref="SchemaDocument"/> instances against ALL_SCHEMA_001–025 rules.
+/// Validates <see cref="SchemaDocument"/> instances against OTEL_SCHEMA_001–025 rules.
 /// Operates on already-parsed documents (post-parse validation).
 /// </summary>
 public sealed partial class SchemaValidator
@@ -62,17 +62,17 @@ public sealed partial class SchemaValidator
 
         foreach (var doc in documents)
         {
-            // ALL_SCHEMA_010: Semver version
+            // OTEL_SCHEMA_010: Semver version
             ValidateSemver(doc.Schema.Version, errors);
 
-            // ALL_SCHEMA_013: Meter name
+            // OTEL_SCHEMA_013: Meter name
             var meterName = doc.Schema.MeterName ?? doc.Schema.Namespace;
             ValidateMeterName(meterName, errors);
 
-            // ALL_SCHEMA_021: Namespace validation
+            // OTEL_SCHEMA_021: Namespace validation
             ValidateNamespace(doc.Schema.Namespace, errors);
 
-            // ALL_SCHEMA_022: Schema name validation
+            // OTEL_SCHEMA_022: Schema name validation
             ValidateSchemaName(doc.Schema.Name, errors);
 
             // Collect shared fields
@@ -81,7 +81,7 @@ public sealed partial class SchemaValidator
                 allSharedFields[field.Name] = field;
             }
 
-            // ALL_SCHEMA_009: Enum non-empty + collect
+            // OTEL_SCHEMA_009: Enum non-empty + collect
             foreach (var enumDef in doc.Enums)
             {
                 if (enumDef.Values.Count == 0)
@@ -93,7 +93,7 @@ public sealed partial class SchemaValidator
                     });
                 }
 
-                // ALL_SCHEMA_020: Duplicate enum values
+                // OTEL_SCHEMA_020: Duplicate enum values
                 var distinctValues = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var value in enumDef.Values)
                 {
@@ -106,7 +106,7 @@ public sealed partial class SchemaValidator
                         });
                     }
 
-                    // ALL_SCHEMA_023: Enum value must be valid C# identifier
+                    // OTEL_SCHEMA_023: Enum value must be valid C# identifier
                     ValidateEnumValue(value, enumDef.Name, errors);
                 }
 
@@ -118,7 +118,7 @@ public sealed partial class SchemaValidator
             {
                 totalEvents++;
 
-                // ALL_SCHEMA_001: Unique event names
+                // OTEL_SCHEMA_001: Unique event names
                 if (!allEventNames.Add(evt.Name))
                 {
                     errors.Add(new SchemaError
@@ -128,7 +128,7 @@ public sealed partial class SchemaValidator
                     });
                 }
 
-                // ALL_SCHEMA_012: Unique event IDs
+                // OTEL_SCHEMA_012: Unique event IDs
                 if (!allEventIds.Add(evt.Id))
                 {
                     errors.Add(new SchemaError
@@ -138,16 +138,16 @@ public sealed partial class SchemaValidator
                     });
                 }
 
-                // ALL_SCHEMA_006: Event name format
+                // OTEL_SCHEMA_006: Event name format
                 ValidateEventNameFormat(evt.Name, errors);
 
-                // ALL_SCHEMA_011: Reserved prefix on event name
+                // OTEL_SCHEMA_011: Reserved prefix on event name
                 ValidateReservedPrefix(evt.Name, "Event name", errors);
 
-                // ALL_SCHEMA_003: Message template placeholders match fields
+                // OTEL_SCHEMA_003: Message template placeholders match fields
                 ValidateMessageTemplate(evt, errors);
 
-                // ALL_SCHEMA_018: Field count limit
+                // OTEL_SCHEMA_018: Field count limit
                 if (evt.Fields.Count > MaxFieldsPerEvent)
                 {
                     errors.Add(new SchemaError
@@ -171,7 +171,7 @@ public sealed partial class SchemaValidator
             }
         }
 
-        // ALL_SCHEMA_017: Event count limit (across merged schemas)
+        // OTEL_SCHEMA_017: Event count limit (across merged schemas)
         if (totalEvents > MaxEventCount)
         {
             errors.Add(new SchemaError
@@ -181,7 +181,7 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // ALL_SCHEMA_025: Schema version compatibility (same major version required)
+        // OTEL_SCHEMA_025: Schema version compatibility (same major version required)
         ValidateVersionCompatibility(documents, errors);
 
         return errors.Count == 0
@@ -267,7 +267,7 @@ public sealed partial class SchemaValidator
         Dictionary<string, EnumDefinition> enums,
         List<SchemaError> errors)
     {
-        // ALL_SCHEMA_011: Reserved prefix on field name
+        // OTEL_SCHEMA_011: Reserved prefix on field name
         if (field.Name.StartsWith("otel_events.", StringComparison.OrdinalIgnoreCase))
         {
             errors.Add(new SchemaError
@@ -277,7 +277,7 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // ALL_SCHEMA_005: Type validity (if raw type was provided but didn't parse)
+        // OTEL_SCHEMA_005: Type validity (if raw type was provided but didn't parse)
         if (field.RawType is not null && field.Type is null && field.Ref is null)
         {
             errors.Add(new SchemaError
@@ -287,7 +287,7 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // ALL_SCHEMA_004: Ref resolution
+        // OTEL_SCHEMA_004: Ref resolution
         if (field.Ref is not null)
         {
             if (!sharedFields.ContainsKey(field.Ref) && !enums.ContainsKey(field.Ref))
@@ -300,7 +300,7 @@ public sealed partial class SchemaValidator
             }
         }
 
-        // ALL_SCHEMA_007: Required field must have a type (directly or via ref)
+        // OTEL_SCHEMA_007: Required field must have a type (directly or via ref)
         if (field.Required && field.Type is null && field.Ref is null)
         {
             errors.Add(new SchemaError
@@ -310,7 +310,7 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // ALL_SCHEMA_014: Sensitivity validity
+        // OTEL_SCHEMA_014: Sensitivity validity
         if (field.RawSensitivity is not null &&
             !SensitivityExtensions.TryParseSensitivity(field.RawSensitivity, out _))
         {
@@ -321,7 +321,7 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // ALL_SCHEMA_015: maxLength validity
+        // OTEL_SCHEMA_015: maxLength validity
         if (field.RawMaxLength is not null)
         {
             if (!int.TryParse(field.RawMaxLength, out var ml) || ml <= 0)
@@ -337,7 +337,7 @@ public sealed partial class SchemaValidator
 
     private static void ValidateMetric(MetricDefinition metric, string eventName, List<SchemaError> errors)
     {
-        // ALL_SCHEMA_008: Metric type validity
+        // OTEL_SCHEMA_008: Metric type validity
         if (metric.RawType is not null && !MetricTypeExtensions.TryParseMetricType(metric.RawType, out _))
         {
             errors.Add(new SchemaError
@@ -393,7 +393,7 @@ public sealed partial class SchemaValidator
 
         var firstMajor = ExtractMajorVersion(documents[0].Schema.Version);
         if (firstMajor < 0)
-            return; // Invalid semver already reported by ALL_SCHEMA_010
+            return; // Invalid semver already reported by OTEL_SCHEMA_010
 
         for (var i = 1; i < documents.Count; i++)
         {
