@@ -61,7 +61,7 @@ namespace OtelEvents.Analyzers
                 return false;
 
             // Ensure what follows "otel_events." is an identifier character (not whitespace or punctuation)
-            char afterPrefix = value[4];
+            char afterPrefix = value["otel_events.".Length];
             return char.IsLetterOrDigit(afterPrefix) || afterPrefix == '_';
         }
 
