@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="otel-events" width="480"/>
+  <img src="assets/logo.svg" alt="otel-events" width="720"/>
 </p>
 
 <p align="center">
