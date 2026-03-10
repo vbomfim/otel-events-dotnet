@@ -58,6 +58,8 @@ internal sealed class OtelEventsGrpcClientInterceptor : Interceptor
             causalScope = OtelEventsCausalityContext.SetParent(Uuid7.FormatEventId());
         }
 
+        var endpoint = context.Host;
+        var requestMetadata = context.Options.Headers;
         var sw = Stopwatch.StartNew();
 
         try
@@ -66,7 +68,8 @@ internal sealed class OtelEventsGrpcClientInterceptor : Interceptor
 
             // Wrap the response task to emit completed/failed on completion
             var wrappedResponseAsync = WrapResponseAsync(
-                call.ResponseAsync, serviceName, methodName, sw, causalScope);
+                call.ResponseAsync, serviceName, methodName, sw, causalScope,
+                endpoint, requestMetadata);
 
             return new AsyncUnaryCall<TResponse>(
                 wrappedResponseAsync,
@@ -79,6 +82,9 @@ internal sealed class OtelEventsGrpcClientInterceptor : Interceptor
         {
             sw.Stop();
             EmitFailed(serviceName, methodName, (int)ex.StatusCode, ex.Status.Detail, sw.Elapsed.TotalMilliseconds, ex);
+            GrpcInfrastructureEvents.TryEmitInfrastructureEvent(
+                _logger, _options, serviceName, methodName, Side, ex,
+                sw.Elapsed.TotalMilliseconds, endpoint, requestMetadata);
             causalScope?.Dispose();
             throw;
         }
@@ -122,7 +128,9 @@ internal sealed class OtelEventsGrpcClientInterceptor : Interceptor
         string serviceName,
         string methodName,
         Stopwatch sw,
-        IDisposable? causalScope)
+        IDisposable? causalScope,
+        string? endpoint,
+        Metadata? requestMetadata)
     {
         try
         {
@@ -142,6 +150,9 @@ internal sealed class OtelEventsGrpcClientInterceptor : Interceptor
         {
             sw.Stop();
             EmitFailed(serviceName, methodName, (int)ex.StatusCode, ex.Status.Detail, sw.Elapsed.TotalMilliseconds, ex);
+            GrpcInfrastructureEvents.TryEmitInfrastructureEvent(
+                _logger, _options, serviceName, methodName, Side, ex,
+                sw.Elapsed.TotalMilliseconds, endpoint, requestMetadata);
             throw;
         }
         catch (Exception ex)
