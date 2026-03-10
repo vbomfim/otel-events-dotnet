@@ -24,4 +24,9 @@ internal static class SubscriptionMetrics
         Meter.CreateCounter<long>(
             "otel_events.subscription.channel_full",
             description: "Total events dropped or displaced due to channel capacity");
+
+    internal static readonly Counter<long> HandlerTimeouts =
+        Meter.CreateCounter<long>(
+            "otel_events.subscription.handler_timeouts",
+            description: "Total handler invocations cancelled due to timeout");
 }

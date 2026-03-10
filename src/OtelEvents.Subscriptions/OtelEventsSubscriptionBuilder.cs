@@ -42,19 +42,22 @@ public sealed class OtelEventsSubscriptionBuilder
     /// with a trailing <c>*</c> (e.g., <c>"cosmosdb.*"</c>).
     /// </param>
     /// <param name="handler">The async handler delegate to invoke when an event matches.</param>
-    /// <returns>This builder for chaining.</returns>
+    /// <returns>
+    /// An <see cref="IDisposable"/> that, when disposed, removes this subscription registration.
+    /// </returns>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="eventPattern"/> is null or empty.
     /// </exception>
-    public OtelEventsSubscriptionBuilder On(
+    public IDisposable On(
         string eventPattern,
         Func<OtelEventContext, CancellationToken, Task> handler)
     {
         ValidatePattern(eventPattern);
         ArgumentNullException.ThrowIfNull(handler);
 
-        Registrations.Add(new SubscriptionRegistration(eventPattern, handler));
-        return this;
+        var registration = new SubscriptionRegistration(eventPattern, handler);
+        Registrations.Add(registration);
+        return new SubscriptionDisposable(registration, Registrations);
     }
 
     /// <summary>
@@ -68,11 +71,13 @@ public sealed class OtelEventsSubscriptionBuilder
     /// <param name="eventPattern">
     /// Exact event name or wildcard pattern with a trailing <c>*</c>.
     /// </param>
-    /// <returns>This builder for chaining.</returns>
+    /// <returns>
+    /// An <see cref="IDisposable"/> that, when disposed, removes this subscription registration.
+    /// </returns>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="eventPattern"/> is null or empty.
     /// </exception>
-    public OtelEventsSubscriptionBuilder AddHandler<THandler>(string eventPattern)
+    public IDisposable AddHandler<THandler>(string eventPattern)
         where THandler : class, IOtelEventHandler
     {
         ValidatePattern(eventPattern);
@@ -80,8 +85,9 @@ public sealed class OtelEventsSubscriptionBuilder
         // Auto-register the handler type as transient if not already registered
         _services.TryAddTransient<THandler>();
 
-        Registrations.Add(new SubscriptionRegistration(eventPattern, typeof(THandler)));
-        return this;
+        var registration = new SubscriptionRegistration(eventPattern, typeof(THandler));
+        Registrations.Add(registration);
+        return new SubscriptionDisposable(registration, Registrations);
     }
 
     private static void ValidatePattern(string eventPattern)
@@ -99,6 +105,36 @@ public sealed class OtelEventsSubscriptionBuilder
                 "Bare wildcard \"*\" is not allowed. Use a qualified "
                 + "prefix wildcard like \"health.*\".",
                 nameof(eventPattern));
+        }
+    }
+}
+
+/// <summary>
+/// Removes a <see cref="SubscriptionRegistration"/> from the registrations list when disposed.
+/// Safe to dispose multiple times — subsequent calls are no-ops.
+/// </summary>
+internal sealed class SubscriptionDisposable : IDisposable
+{
+    private SubscriptionRegistration? _registration;
+    private readonly List<SubscriptionRegistration> _registrations;
+
+    public SubscriptionDisposable(
+        SubscriptionRegistration registration,
+        List<SubscriptionRegistration> registrations)
+    {
+        _registration = registration;
+        _registrations = registrations;
+    }
+
+    public void Dispose()
+    {
+        var registration = Interlocked.Exchange(ref _registration, null);
+        if (registration is not null)
+        {
+            lock (_registrations)
+            {
+                _registrations.Remove(registration);
+            }
         }
     }
 }

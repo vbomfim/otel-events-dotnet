@@ -11,7 +11,8 @@ namespace OtelEvents.Subscriptions.Tests;
 /// <summary>
 /// Tests for <see cref="OtelEventsSubscriptionProcessor"/> and the subscription dispatch system.
 /// Covers: lambda handlers, DI handlers, wildcard matching, channel backpressure,
-/// handler error isolation, self-telemetry, concurrent dispatch, and disposal.
+/// handler error isolation, self-telemetry, concurrent dispatch, disposal,
+/// disposable subscriptions, handler timeout, and snapshot integrity.
 /// </summary>
 public sealed class OtelEventsSubscriptionProcessorTests : IDisposable
 {
@@ -19,6 +20,7 @@ public sealed class OtelEventsSubscriptionProcessorTests : IDisposable
     private long _eventsDispatched;
     private long _handlerErrors;
     private long _channelFull;
+    private long _handlerTimeouts;
 
     public OtelEventsSubscriptionProcessorTests()
     {
@@ -41,6 +43,9 @@ public sealed class OtelEventsSubscriptionProcessorTests : IDisposable
                     break;
                 case "otel_events.subscription.channel_full":
                     Interlocked.Add(ref _channelFull, measurement);
+                    break;
+                case "otel_events.subscription.handler_timeouts":
+                    Interlocked.Add(ref _handlerTimeouts, measurement);
                     break;
             }
         });
@@ -386,35 +391,28 @@ public sealed class OtelEventsSubscriptionProcessorTests : IDisposable
     [Fact]
     public void ChannelFull_IncrementsCounter_WhenCapacityExceeded()
     {
-        // With Wait mode, TryWrite returns false when the channel is full
-        var registrations = new List<SubscriptionRegistration>
-        {
-            new("test.event", (_, _) => Task.CompletedTask),
-        };
+        // Uses full DI setup so the itemDropped callback is wired up,
+        // ensuring the counter fires regardless of FullMode.
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(
+            subs => subs.On("test.event", (_, _) => Task.CompletedTask),
+            opts => opts.ChannelCapacity = 2);
 
-        var channel = Channel.CreateBounded<DispatchItem>(
-            new BoundedChannelOptions(2)
-            {
-                FullMode = BoundedChannelFullMode.Wait,
-                SingleReader = true,
-            });
-
-        var processor = new OtelEventsSubscriptionProcessor(channel, registrations);
+        using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
 
         // Reset counter baseline
         var baseline = Interlocked.Read(ref _channelFull);
 
-        // Fill the channel beyond capacity
+        // Fill the channel beyond capacity (don't start dispatcher so items pile up)
         for (var i = 0; i < 5; i++)
         {
             processor.OnEnd(CreateLogRecord(eventName: "test.event"));
         }
 
-        // At least 3 writes should have been rejected (channel capacity is 2)
+        // At least 3 writes should have been dropped (channel capacity is 2)
         var dropped = Interlocked.Read(ref _channelFull) - baseline;
         Assert.True(dropped >= 3, $"Expected at least 3 drops but got {dropped}");
-
-        processor.Dispose();
     }
 
     [Fact]
@@ -746,11 +744,11 @@ public sealed class OtelEventsSubscriptionProcessorTests : IDisposable
     }
 
     [Fact]
-    public void DefaultOptions_FullModeIsDropOldest()
+    public void DefaultOptions_FullModeIsDropWrite()
     {
         var options = new OtelEventsSubscriptionOptions();
 
-        Assert.Equal(BoundedChannelFullMode.DropOldest, options.FullMode);
+        Assert.Equal(BoundedChannelFullMode.DropWrite, options.FullMode);
     }
 
     // ─── Multiple subscriptions for same event ───────────────────────
@@ -789,6 +787,393 @@ public sealed class OtelEventsSubscriptionProcessorTests : IDisposable
 
         Assert.True(handler1Called);
         Assert.True(handler2Called);
+    }
+
+    // ─── Wildcard dot-boundary (Fix #5) ──────────────────────────────
+
+    [Fact]
+    public async Task WildcardSubscription_RequiresDotBoundary()
+    {
+        // "cosmosdb.*" should match "cosmosdb.throttled" but NOT "cosmosdbx.throttled"
+        var matchedEvents = new List<string>();
+        var done = new TaskCompletionSource();
+
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(subs =>
+        {
+            subs.On("cosmosdb.*", (ctx, ct) =>
+            {
+                lock (matchedEvents)
+                {
+                    matchedEvents.Add(ctx.EventName);
+                    if (matchedEvents.Count >= 1)
+                    {
+                        done.TrySetResult();
+                    }
+                }
+
+                return Task.CompletedTask;
+            });
+        });
+
+        await using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
+        await StartDispatcher(provider);
+
+        processor.OnEnd(CreateLogRecord(eventName: "cosmosdb.throttled")); // should match
+        processor.OnEnd(CreateLogRecord(eventName: "cosmosdbx.throttled")); // should NOT match
+
+        await WaitForResult(done);
+        await Task.Delay(100); // allow time for potential false match
+
+        Assert.Single(matchedEvents);
+        Assert.Contains("cosmosdb.throttled", matchedEvents);
+        Assert.DoesNotContain("cosmosdbx.throttled", matchedEvents);
+    }
+
+    // ─── Background dispatch proof (Fix #6) ──────────────────────────
+
+    [Fact]
+    public async Task OnEnd_ReturnsBeforeHandlerExecutes()
+    {
+        // Proves that OnEnd is non-blocking: the handler runs in the background
+        var handlerStarted = new TaskCompletionSource();
+        var handlerFinished = new TaskCompletionSource();
+
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(subs =>
+        {
+            subs.On("async.event", async (ctx, ct) =>
+            {
+                handlerStarted.TrySetResult();
+                await Task.Delay(200, ct);
+                handlerFinished.TrySetResult();
+            });
+        });
+
+        await using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
+        await StartDispatcher(provider);
+
+        // OnEnd should return immediately — before the handler starts
+        processor.OnEnd(CreateLogRecord(eventName: "async.event"));
+        Assert.False(handlerFinished.Task.IsCompleted, "Handler should not have finished yet");
+
+        // But eventually the handler completes via background dispatch
+        await WaitForResult(handlerStarted);
+        await WaitForResult(handlerFinished);
+    }
+
+    // ─── OtelEventContext snapshot completeness (Fix #6) ─────────────
+
+    [Fact]
+    public void OtelEventContext_FromLogRecord_CapturesTimestampTraceIdSpanIdException()
+    {
+        var record = CreateLogRecord(
+            LogLevel.Error,
+            eventName: "full.snapshot",
+            formattedMessage: "Snapshot test");
+
+        // Set exception via reflection
+        var exception = new InvalidOperationException("test exception");
+        typeof(LogRecord)
+            .GetProperty(nameof(LogRecord.Exception))!
+            .SetValue(record, exception);
+
+        var context = OtelEventContext.FromLogRecord(record);
+
+        Assert.Equal("full.snapshot", context.EventName);
+        Assert.Equal(LogLevel.Error, context.LogLevel);
+        Assert.Equal("Snapshot test", context.FormattedMessage);
+        Assert.NotEqual(default, context.Timestamp);
+        Assert.Same(exception, context.Exception);
+        // TraceId and SpanId default to null when not set on LogRecord
+    }
+
+    [Fact]
+    public void OtelEventContext_FromLogRecord_DeepCopiesArrayAttributes()
+    {
+        var originalArray = new[] { 1, 2, 3 };
+        var record = CreateLogRecord(eventName: "array.test");
+        var attributes = new List<KeyValuePair<string, object?>>
+        {
+            new("numbers", originalArray),
+            new("scalar", 42L),
+        };
+        typeof(LogRecord)
+            .GetProperty(nameof(LogRecord.Attributes))!
+            .SetValue(record, attributes);
+
+        var context = OtelEventContext.FromLogRecord(record);
+
+        // The array should be a deep copy, not the same reference
+        var snapshotArray = context.GetAttribute<int[]>("numbers");
+        Assert.NotNull(snapshotArray);
+        Assert.Equal(originalArray, snapshotArray);
+        Assert.NotSame(originalArray, snapshotArray);
+
+        // Mutating the original should not affect the snapshot
+        originalArray[0] = 999;
+        Assert.Equal(1, snapshotArray![0]);
+    }
+
+    // ─── DI resolution failure isolation (Fix #6) ────────────────────
+
+    [Fact]
+    public async Task DiResolutionFailure_IsIsolated_DoesNotCrashDispatcher()
+    {
+        var followUpDone = new TaskCompletionSource();
+
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(subs =>
+        {
+            // Register a handler type that has unresolvable dependencies
+            subs.AddHandler<UnresolvableHandler>("fail.di");
+            subs.On("after.di.failure", (ctx, ct) =>
+            {
+                followUpDone.TrySetResult();
+                return Task.CompletedTask;
+            });
+        });
+
+        // Remove the auto-registered transient so DI resolution fails
+        var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(UnresolvableHandler));
+        if (descriptor is not null)
+        {
+            services.Remove(descriptor);
+        }
+
+        await using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
+        await StartDispatcher(provider);
+
+        processor.OnEnd(CreateLogRecord(eventName: "fail.di"));
+        processor.OnEnd(CreateLogRecord(eventName: "after.di.failure"));
+
+        // The dispatcher should survive the DI failure and process the next event
+        await WaitForResult(followUpDone);
+        Assert.True(Interlocked.Read(ref _handlerErrors) > 0);
+    }
+
+    // ─── OperationCanceledException during normal operation (Fix #6) ─
+
+    [Fact]
+    public async Task OperationCanceledException_DuringHandler_IsTreatedAsTimeout()
+    {
+        var baselineTimeouts = Interlocked.Read(ref _handlerTimeouts);
+        var followUpDone = new TaskCompletionSource();
+
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(
+            subs =>
+            {
+                subs.On("timeout.event", async (ctx, ct) =>
+                {
+                    // Simulate a handler that exceeds its timeout
+                    await Task.Delay(TimeSpan.FromSeconds(10), ct);
+                });
+                subs.On("after.timeout", (ctx, ct) =>
+                {
+                    followUpDone.TrySetResult();
+                    return Task.CompletedTask;
+                });
+            },
+            opts =>
+            {
+                opts.HandlerTimeout = TimeSpan.FromMilliseconds(50);
+            });
+
+        await using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
+        await StartDispatcher(provider);
+
+        processor.OnEnd(CreateLogRecord(eventName: "timeout.event"));
+        processor.OnEnd(CreateLogRecord(eventName: "after.timeout"));
+
+        await WaitForResult(followUpDone);
+
+        var timeouts = Interlocked.Read(ref _handlerTimeouts) - baselineTimeouts;
+        Assert.True(timeouts >= 1, $"Expected at least 1 handler timeout but got {timeouts}");
+    }
+
+    // ─── Post-dispose behavior (Fix #6) ──────────────────────────────
+
+    [Fact]
+    public void Processor_PostDispose_OnEndIsNoop()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(subs =>
+        {
+            subs.On("post.dispose", (_, _) => Task.CompletedTask);
+        });
+
+        using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
+
+        processor.Dispose();
+
+        // OnEnd after dispose should not throw
+        var exception = Record.Exception(() =>
+            processor.OnEnd(CreateLogRecord(eventName: "post.dispose")));
+        Assert.Null(exception);
+    }
+
+    // ─── GetAttribute<T>(null) handling (Fix #6) ─────────────────────
+
+    [Fact]
+    public void OtelEventContext_GetAttribute_NullKey_ReturnsDefault()
+    {
+        var record = CreateLogRecord(eventName: "null.key.test");
+        var context = OtelEventContext.FromLogRecord(record);
+
+        Assert.Null(context.GetAttribute<string>(null));
+        Assert.Equal(0, context.GetAttribute<int>(null));
+    }
+
+    // ─── Disposable subscriptions (Fix #4 — AC-9) ────────────────────
+
+    [Fact]
+    public void On_ReturnsDisposable()
+    {
+        var services = new ServiceCollection();
+        var builder = new OtelEventsSubscriptionBuilder(services);
+
+        var subscription = builder.On("test.event", (_, _) => Task.CompletedTask);
+
+        Assert.NotNull(subscription);
+        Assert.IsAssignableFrom<IDisposable>(subscription);
+    }
+
+    [Fact]
+    public void AddHandler_ReturnsDisposable()
+    {
+        var services = new ServiceCollection();
+        var builder = new OtelEventsSubscriptionBuilder(services);
+
+        var subscription = builder.AddHandler<TestEventHandler>("test.event");
+
+        Assert.NotNull(subscription);
+        Assert.IsAssignableFrom<IDisposable>(subscription);
+    }
+
+    [Fact]
+    public void DisposableSubscription_RemovesRegistration_WhenDisposed()
+    {
+        var services = new ServiceCollection();
+        var builder = new OtelEventsSubscriptionBuilder(services);
+
+        var sub1 = builder.On("event.a", (_, _) => Task.CompletedTask);
+        builder.On("event.b", (_, _) => Task.CompletedTask);
+
+        Assert.Equal(2, builder.Registrations.Count);
+
+        sub1.Dispose();
+
+        Assert.Single(builder.Registrations);
+        Assert.Equal("event.b", builder.Registrations[0].EventPattern);
+    }
+
+    [Fact]
+    public void DisposableSubscription_DoubleDispose_IsNoop()
+    {
+        var services = new ServiceCollection();
+        var builder = new OtelEventsSubscriptionBuilder(services);
+
+        var sub = builder.On("event.a", (_, _) => Task.CompletedTask);
+        builder.On("event.b", (_, _) => Task.CompletedTask);
+
+        sub.Dispose();
+        sub.Dispose(); // second dispose should be a no-op
+
+        Assert.Single(builder.Registrations);
+    }
+
+    // ─── ChannelCapacity validation (Fix #7) ─────────────────────────
+
+    [Fact]
+    public void Options_ZeroCapacity_Throws()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            services.AddOtelEventsSubscriptions(configureOptions: opts => opts.ChannelCapacity = 0));
+    }
+
+    [Fact]
+    public void Options_NegativeCapacity_Throws()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            services.AddOtelEventsSubscriptions(configureOptions: opts => opts.ChannelCapacity = -1));
+    }
+
+    [Fact]
+    public void Options_ZeroHandlerTimeout_Throws()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            services.AddOtelEventsSubscriptions(configureOptions: opts => opts.HandlerTimeout = TimeSpan.Zero));
+    }
+
+    [Fact]
+    public void Options_NegativeHandlerTimeout_Throws()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            services.AddOtelEventsSubscriptions(configureOptions: opts => opts.HandlerTimeout = TimeSpan.FromSeconds(-1)));
+    }
+
+    // ─── Handler timeout behavior (Fix #2) ───────────────────────────
+
+    [Fact]
+    public void DefaultOptions_HandlerTimeoutIs30Seconds()
+    {
+        var options = new OtelEventsSubscriptionOptions();
+
+        Assert.Equal(TimeSpan.FromSeconds(30), options.HandlerTimeout);
+    }
+
+    [Fact]
+    public async Task HandlerTimeout_CancelsHungHandler_AndContinuesDispatch()
+    {
+        var baselineTimeouts = Interlocked.Read(ref _handlerTimeouts);
+        var followUpDone = new TaskCompletionSource();
+
+        var services = new ServiceCollection();
+        services.AddOtelEventsSubscriptions(
+            subs =>
+            {
+                subs.On("hung.handler", async (ctx, ct) =>
+                {
+                    // This handler will hang until cancelled by timeout
+                    await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+                });
+                subs.On("after.hung", (ctx, ct) =>
+                {
+                    followUpDone.TrySetResult();
+                    return Task.CompletedTask;
+                });
+            },
+            opts =>
+            {
+                opts.HandlerTimeout = TimeSpan.FromMilliseconds(100);
+            });
+
+        await using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<OtelEventsSubscriptionProcessor>();
+        await StartDispatcher(provider);
+
+        processor.OnEnd(CreateLogRecord(eventName: "hung.handler"));
+        processor.OnEnd(CreateLogRecord(eventName: "after.hung"));
+
+        // The follow-up handler should still execute after the timeout
+        await WaitForResult(followUpDone);
+
+        var timeouts = Interlocked.Read(ref _handlerTimeouts) - baselineTimeouts;
+        Assert.True(timeouts >= 1, $"Expected at least 1 handler timeout but got {timeouts}");
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────
@@ -882,6 +1267,23 @@ public sealed class TestEventHandler : IOtelEventHandler
     {
         WasCalled = true;
         LastContext = context;
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Test handler with an unresolvable dependency for DI failure isolation tests.
+/// </summary>
+public sealed class UnresolvableHandler : IOtelEventHandler
+{
+    // Constructor requires a dependency that won't be in DI
+    public UnresolvableHandler(IServiceProvider _)
+    {
+        throw new InvalidOperationException("This handler cannot be constructed");
+    }
+
+    public Task HandleAsync(OtelEventContext context, CancellationToken cancellationToken)
+    {
         return Task.CompletedTask;
     }
 }

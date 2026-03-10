@@ -2,28 +2,33 @@ using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace OtelEvents.Subscriptions;
 
 /// <summary>
 /// Background hosted service that reads from the dispatch channel and invokes
 /// subscription handlers. Each handler invocation is wrapped in try-catch
-/// so handler errors never crash the service.
+/// so handler errors never crash the service. Individual handler calls are
+/// subject to <see cref="OtelEventsSubscriptionOptions.HandlerTimeout"/>.
 /// </summary>
 internal sealed class OtelEventsSubscriptionDispatcher : BackgroundService
 {
     private readonly Channel<DispatchItem> _channel;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<OtelEventsSubscriptionDispatcher> _logger;
+    private readonly OtelEventsSubscriptionOptions _options;
 
     public OtelEventsSubscriptionDispatcher(
         Channel<DispatchItem> channel,
         IServiceProvider serviceProvider,
-        ILogger<OtelEventsSubscriptionDispatcher> logger)
+        ILogger<OtelEventsSubscriptionDispatcher> logger,
+        IOptions<OtelEventsSubscriptionOptions> options)
     {
         _channel = channel;
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _options = options.Value;
     }
 
     /// <inheritdoc/>
@@ -33,7 +38,9 @@ internal sealed class OtelEventsSubscriptionDispatcher : BackgroundService
         {
             foreach (var registration in item.Registrations)
             {
-                await InvokeHandlerAsync(registration, item.Context, stoppingToken);
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                timeoutCts.CancelAfter(_options.HandlerTimeout);
+                await InvokeHandlerAsync(registration, item.Context, timeoutCts.Token, stoppingToken);
             }
         }
     }
@@ -41,7 +48,8 @@ internal sealed class OtelEventsSubscriptionDispatcher : BackgroundService
     private async Task InvokeHandlerAsync(
         SubscriptionRegistration registration,
         OtelEventContext context,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        CancellationToken stoppingToken)
     {
         try
         {
@@ -59,10 +67,17 @@ internal sealed class OtelEventsSubscriptionDispatcher : BackgroundService
 
             SubscriptionMetrics.EventsDispatched.Add(1);
         }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Graceful shutdown — not a timeout, don't inflate metrics
+        }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // Graceful shutdown — don't meter this as an error
-            throw;
+            // Genuine handler timeout
+            _logger.LogWarning(
+                "Subscription handler for pattern '{EventPattern}' timed out on event '{EventName}'",
+                registration.EventPattern, context.EventName);
+            SubscriptionMetrics.HandlerTimeouts.Add(1);
         }
         catch (Exception ex)
         {

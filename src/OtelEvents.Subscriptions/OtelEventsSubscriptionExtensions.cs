@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 
@@ -22,9 +23,13 @@ public static class OtelEventsSubscriptionExtensions
     /// </param>
     /// <param name="configureOptions">
     /// Optional action to configure <see cref="OtelEventsSubscriptionOptions"/>
-    /// (channel capacity, backpressure policy).
+    /// (channel capacity, backpressure policy, handler timeout).
     /// </param>
     /// <returns>The <paramref name="services"/> for chaining.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <see cref="OtelEventsSubscriptionOptions.ChannelCapacity"/> is less than or equal to zero
+    /// or when <see cref="OtelEventsSubscriptionOptions.HandlerTimeout"/> is not positive.
+    /// </exception>
     /// <example>
     /// <code>
     /// builder.Services.AddOtelEventsSubscriptions(
@@ -52,11 +57,22 @@ public static class OtelEventsSubscriptionExtensions
 
         var options = new OtelEventsSubscriptionOptions();
         configureOptions?.Invoke(options);
+        options.Validate();
+
+        // Register options as IOptions<T> for the dispatcher to consume
+        services.Configure<OtelEventsSubscriptionOptions>(opts =>
+        {
+            opts.ChannelCapacity = options.ChannelCapacity;
+            opts.FullMode = options.FullMode;
+            opts.HandlerTimeout = options.HandlerTimeout;
+        });
 
         var builder = new OtelEventsSubscriptionBuilder(services);
         configureSubscriptions?.Invoke(builder);
 
-        // Create the bounded channel with configured capacity and backpressure policy
+        // Create the bounded channel with configured capacity and backpressure policy.
+        // The itemDropped callback fires whenever the channel drops an item in Drop* modes,
+        // ensuring the channel_full counter is accurate regardless of FullMode.
         var channel = Channel.CreateBounded<DispatchItem>(
             new BoundedChannelOptions(options.ChannelCapacity)
             {
@@ -64,7 +80,8 @@ public static class OtelEventsSubscriptionExtensions
                 SingleReader = true,
                 SingleWriter = false,
                 AllowSynchronousContinuations = false,
-            });
+            },
+            itemDropped: _ => SubscriptionMetrics.ChannelFull.Add(1));
 
         // Register the channel as a singleton for processor and dispatcher to share
         services.AddSingleton(channel);

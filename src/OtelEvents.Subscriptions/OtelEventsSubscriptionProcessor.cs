@@ -86,11 +86,11 @@ public sealed class OtelEventsSubscriptionProcessor : BaseProcessor<LogRecord>
         var context = OtelEventContext.FromLogRecord(data);
         var item = new DispatchItem(context, matchingRegistrations);
 
-        // TryWrite is non-blocking — never blocks the OTEL pipeline
-        if (!_channel.Writer.TryWrite(item))
-        {
-            SubscriptionMetrics.ChannelFull.Add(1);
-        }
+        // TryWrite is non-blocking — never blocks the OTEL pipeline.
+        // Drop metering is handled by the channel's itemDropped callback
+        // configured in OtelEventsSubscriptionExtensions, ensuring the
+        // channel_full counter fires for all FullMode policies.
+        _channel.Writer.TryWrite(item);
     }
 
     /// <inheritdoc/>

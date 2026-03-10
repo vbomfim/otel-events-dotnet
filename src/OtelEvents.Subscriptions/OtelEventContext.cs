@@ -70,8 +70,13 @@ public sealed class OtelEventContext
     /// <typeparam name="T">The expected attribute value type.</typeparam>
     /// <param name="key">The attribute key.</param>
     /// <returns>The attribute value cast to <typeparamref name="T"/>, or <c>default</c>.</returns>
-    public T? GetAttribute<T>(string key)
+    public T? GetAttribute<T>(string? key)
     {
+        if (key is null)
+        {
+            return default;
+        }
+
         if (Attributes.TryGetValue(key, out var value) && value is T typed)
         {
             return typed;
@@ -91,7 +96,9 @@ public sealed class OtelEventContext
         {
             foreach (var kvp in record.Attributes)
             {
-                attributes[kvp.Key] = kvp.Value;
+                // Deep-copy array values to avoid sharing mutable state
+                // with recycled LogRecord instances
+                attributes[kvp.Key] = kvp.Value is Array arr ? arr.Clone() : kvp.Value;
             }
         }
 
