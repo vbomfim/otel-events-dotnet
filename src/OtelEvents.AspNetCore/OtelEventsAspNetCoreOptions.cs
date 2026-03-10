@@ -55,4 +55,12 @@ public sealed class OtelEventsAspNetCoreOptions
     /// Default: 256.
     /// </summary>
     public int MaxPathLength { get; set; } = 256;
+
+    /// <summary>
+    /// Emit supplemental infrastructure events for connection failures (10004),
+    /// authentication failures (10005), and throttling (10006).
+    /// These events fire IN ADDITION to the standard operation events (10001–10003).
+    /// Default: true.
+    /// </summary>
+    public bool EmitInfrastructureEvents { get; set; } = true;
 }
