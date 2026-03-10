@@ -382,6 +382,15 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
         {
             if (allowed)
             {
+                // Credential fields cannot be overridden — always redacted per §16.2
+                if (_sensitivityRegistry.TryGetSensitivity(key, out var s)
+                    && s == OtelEventsSensitivity.Credential)
+                {
+                    writer.WriteString(key, SensitivityRegistry.GetRedactedValue(OtelEventsSensitivity.Credential));
+                    ExporterMetrics.SensitivityRedacted.Add(1);
+                    return true;
+                }
+
                 return false; // Override: allow despite classification
             }
 
