@@ -53,6 +53,7 @@ public sealed class OtelEventsCosmosDbOptionsTests
             CaptureRegion = false,
             RuThreshold = 10.0,
             LatencyThresholdMs = 100.0,
+            EmitInfrastructureEvents = true,
         };
 
         Assert.True(options.CaptureQueryText);
@@ -60,5 +61,13 @@ public sealed class OtelEventsCosmosDbOptionsTests
         Assert.False(options.CaptureRegion);
         Assert.Equal(10.0, options.RuThreshold);
         Assert.Equal(100.0, options.LatencyThresholdMs);
+        Assert.True(options.EmitInfrastructureEvents);
+    }
+
+    [Fact]
+    public void Defaults_EmitInfrastructureEvents_IsFalse()
+    {
+        var options = new OtelEventsCosmosDbOptions();
+        Assert.False(options.EmitInfrastructureEvents);
     }
 }
