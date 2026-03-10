@@ -1,6 +1,6 @@
 # otel-events — Another Logging Library
 
-[![CI](https://github.com/all4dotnet/otel-events-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/all4dotnet/otel-events-dotnet/actions/workflows/ci.yml)
+[![CI](https://github.com/vbomfim/otel-events-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/vbomfim/otel-events-dotnet/actions/workflows/ci.yml)
 
 **An extension to the OpenTelemetry .NET SDK** — schema-driven code generation, AI-optimized JSON export, causal event linking, and compile-time consistency enforcement.
 
