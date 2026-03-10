@@ -9,7 +9,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.3" />
-    <PackageVersion Include="Azure.Core" Version="1.44.1" />
+    <PackageVersion Include="Azure.Core" Version="1.51.1" />
     <PackageVersion Include="OpenTelemetry" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.3" />
