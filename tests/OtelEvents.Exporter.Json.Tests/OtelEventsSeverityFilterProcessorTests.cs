@@ -497,12 +497,14 @@ public sealed class OtelEventsSeverityFilterProcessorTests : IDisposable
         var options = new OtelEventsSeverityFilterOptions { MinSeverity = LogLevel.Error };
         using var processor = new OtelEventsSeverityFilterProcessor(options, _innerProcessor);
 
+        var baseline = Interlocked.Read(ref _passedCount);
+
         processor.OnEnd(CreateLogRecord(LogLevel.Debug));
         processor.OnEnd(CreateLogRecord(LogLevel.Information));
 
         _meterListener.RecordObservableInstruments();
 
-        Assert.Equal(0, Interlocked.Read(ref _passedCount));
+        Assert.Equal(0, Interlocked.Read(ref _passedCount) - baseline);
     }
 
     // ─── Options validation ──────────────────────────────────────────
