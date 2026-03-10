@@ -1,4 +1,4 @@
-# NetworkPolicy for ALL-based .NET services.
+# NetworkPolicy for otel-events-based .NET services.
 #
 # Restricts egress to:
 #   - OTEL Collector (port 4317/TCP) in the monitoring namespace

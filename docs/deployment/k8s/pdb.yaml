@@ -1,4 +1,4 @@
-# PodDisruptionBudget for ALL-based .NET services.
+# PodDisruptionBudget for otel-events-based .NET services.
 #
 # Ensures at least 2 pods remain available during voluntary disruptions
 # (node drains, rolling updates, cluster maintenance).

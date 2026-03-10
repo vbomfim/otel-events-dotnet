@@ -325,7 +325,7 @@ public class CodeGeneratorTests
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // 3. ALL 12 C# TYPE MAPPINGS IN GENERATED CODE
+    // 3. all 12 C# TYPE MAPPINGS IN GENERATED CODE
     // ═══════════════════════════════════════════════════════════════
 
     [Fact]

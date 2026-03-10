@@ -1,4 +1,4 @@
-# HorizontalPodAutoscaler for ALL-based .NET services.
+# HorizontalPodAutoscaler for otel-events-based .NET services.
 #
 # Scales between 3 and 20 replicas based on CPU and memory utilization.
 # Adjust thresholds based on your service's resource profile.

@@ -8,7 +8,7 @@ namespace OtelEvents.Analyzers
 {
     /// <summary>
     /// ALL002: Detects direct ILogger.Log*, ILogger.LogInformation, etc.
-    /// usage and suggests using ALL schema-defined events instead.
+    /// usage and suggests using otel-events schema-defined events instead.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UntypedLoggerAnalyzer : DiagnosticAnalyzer

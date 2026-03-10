@@ -1,9 +1,9 @@
-# OTEL Collector configuration for ALL (Another Logging Library) envelope.
+# OTEL Collector configuration for otel-events envelope.
 #
 # This configuration sets up the OTEL Collector with:
 #   - filelog receiver: reads container stdout from /var/log/pods/
 #   - CRI format parsing: extracts log line from container runtime wrapper
-#   - ALL JSON envelope parsing: extracts event name, severity, timestamp
+#   - otel-events JSON envelope parsing: extracts event name, severity, timestamp
 #   - OTLP and Loki exporters: forwards logs to backend systems
 #
 # Deploy as a DaemonSet on each Kubernetes node.
@@ -20,13 +20,13 @@ receivers:
         timestamp:
           parse_from: attributes.time
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
-      # Parse ALL JSON envelope
+      # Parse otel-events JSON envelope
       - type: json_parser
         parse_from: attributes.log
         timestamp:
           parse_from: attributes.timestamp
           layout: '%Y-%m-%dT%H:%M:%S.%fZ'
-      # Move ALL envelope fields to OTEL LogRecord attributes
+      # Move otel-events envelope fields to OTEL LogRecord attributes
       - type: move
         from: attributes.event
         to: attributes["event.name"]

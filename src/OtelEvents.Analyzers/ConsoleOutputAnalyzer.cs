@@ -8,7 +8,7 @@ namespace OtelEvents.Analyzers
 {
     /// <summary>
     /// ALL001: Detects Console.Write*, Console.WriteLine, Console.Error.Write*
-    /// usage and suggests using ALL-generated events instead.
+    /// usage and suggests using otel-events generated events instead.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class ConsoleOutputAnalyzer : DiagnosticAnalyzer
@@ -18,11 +18,11 @@ namespace OtelEvents.Analyzers
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
             title: "Console output detected",
-            messageFormat: "'{0}' detected. Use ALL-generated events instead of console output.",
+            messageFormat: "'{0}' detected. Use otel-events generated events instead of console output.",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "Console.Write, Console.WriteLine, Console.Error.Write detected. Use ALL-generated events instead.",
+            description: "Console.Write, Console.WriteLine, Console.Error.Write detected. Use otel-events generated events instead.",
             helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL001.md");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>

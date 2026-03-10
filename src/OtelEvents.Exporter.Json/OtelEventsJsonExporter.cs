@@ -21,7 +21,7 @@ public sealed class OtelEventsJsonExporter : BaseExporter<LogRecord>
     private const string RedactedTimeoutValue = "[REDACTED:timeout]";
     private const string FallbackEventName = "dotnet.ilogger";
 
-    /// <summary>Known ALL-component attribute keys that are NOT stripped.</summary>
+    /// <summary>Known otel-events component attribute keys that are NOT stripped.</summary>
     private static readonly HashSet<string> AllowedAllPrefixKeys = new(StringComparer.Ordinal)
     {
         "all.event_id",

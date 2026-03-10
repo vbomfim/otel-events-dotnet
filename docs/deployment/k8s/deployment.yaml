@@ -1,4 +1,4 @@
-# Kubernetes Deployment manifest for .NET services using ALL.
+# Kubernetes Deployment manifest for .NET services using otel-events.
 #
 # Security features:
 #   - runAsNonRoot with explicit UID/GID

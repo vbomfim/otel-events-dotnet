@@ -8,7 +8,7 @@ namespace OtelEvents.Analyzers
 {
     /// <summary>
     /// ALL007: Detects Debug.Write*, Debug.WriteLine, Trace.Write*, Trace.WriteLine,
-    /// Trace.TraceInformation, etc. and suggests using ALL-generated events instead.
+    /// Trace.TraceInformation, etc. and suggests using otel-events generated events instead.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class DebugWriteAnalyzer : DiagnosticAnalyzer
@@ -18,11 +18,11 @@ namespace OtelEvents.Analyzers
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
             title: "Debug.Write detected",
-            messageFormat: "'{0}' detected. Use ALL-generated events instead of debug/trace output.",
+            messageFormat: "'{0}' detected. Use otel-events generated events instead of debug/trace output.",
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "Debug.Write*, Trace.Write* detected. Use ALL-generated events instead.",
+            description: "Debug.Write*, Trace.Write* detected. Use otel-events generated events instead.",
             helpLinkUri: "https://github.com/otel-events-dotnet/blob/main/docs/analyzers/ALL007.md");
 
         private static readonly ImmutableHashSet<string> DebugMethods = ImmutableHashSet.Create(
