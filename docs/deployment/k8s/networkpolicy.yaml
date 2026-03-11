@@ -18,6 +18,7 @@ spec:
     matchLabels:
       app: my-service
   policyTypes:
+    - Ingress
     - Egress
   egress:
     - to:
@@ -37,3 +38,12 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+  ingress:
+    # Allow traffic from ingress controller only
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress
+      ports:
+        - protocol: TCP
+          port: 8080

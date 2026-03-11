@@ -103,3 +103,4 @@ spec:
           emptyDir:
             sizeLimit: 100Mi
       terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
