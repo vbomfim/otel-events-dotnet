@@ -30,5 +30,21 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-      - name: Test
-        run: dotnet test --no-build -c Release --verbosity minimal
+      - name: Test with coverage
+        run: dotnet test --no-build -c Release --verbosity minimal --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Check for vulnerable packages
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerability-report.txt
+          if grep -q "has the following vulnerable packages" vulnerability-report.txt; then
+            echo "::error::Vulnerable NuGet packages detected. See output above."
+            exit 1
+          fi
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-${{ matrix.dotnet-version }}
+          path: ./coverage/**/coverage.cobertura.xml
+          retention-days: 30
