@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <NoWarn>CA1002;CA1032;CA1064;CA1305;CA1307;CA1720;CA1822;CA1062;CA1859</NoWarn>
+    <NoWarn>CA1002;CA1032;CA1064;CA1305;CA1307;CA1720;CA1822;CA1062;CA1859;CA1819</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
