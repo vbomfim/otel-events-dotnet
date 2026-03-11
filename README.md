@@ -159,6 +159,7 @@ otel-events-dotnet/
 ├── docs/
 │   ├── user-guide/                     # 12-chapter user guide
 │   ├── security/                       # Threat model, PII classification, OWASP mapping
+│   ├── observability/                  # SLI/SLO recommendations, alerting guides
 │   └── deployment/                     # K8s manifests, OTEL Collector config, Dockerfile
 ├── Directory.Build.props               # Shared MSBuild properties
 ├── Directory.Packages.props            # Central package management
@@ -175,6 +176,13 @@ See [docs/security/](docs/security/) for standalone security documentation, incl
 - [OWASP Mapping](docs/security/owasp-mapping.md) — OWASP Top 10 (2021) reference mapping
 
 For vulnerability reporting, see [SECURITY.md](SECURITY.md).
+
+## Observability
+
+See [docs/observability/](docs/observability/) for operational guidance:
+
+- [SLI/SLO Recommendations](docs/observability/sli-slo.md) — Service Level Indicators mapped to otel-events metrics, SLO targets by service tier, multi-window burn-rate alerting, and Grafana alert examples
+- [Performance Dashboards](docs/dashboards/README.md) — Pre-built Grafana dashboard and OTEL Collector configuration
 
 ## User Guide
 
