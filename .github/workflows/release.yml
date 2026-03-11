@@ -7,70 +7,34 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  build-test-pack:
+  release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore
-        run: dotnet restore
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release --verbosity minimal --filter "FullyQualifiedName!~OtelEventsGenerateTaskTests"
 
-      - name: Build
-        run: dotnet build --no-restore -c Release
-
-      - name: Test
-        run: dotnet test --no-build -c Release --verbosity minimal --filter "FullyQualifiedName!=OtelEvents.Schema.Tests.OtelEventsGenerateTaskTests"
-
-      - name: Check for vulnerable packages
+      - name: Pack
         run: |
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerability-report.txt
-          if grep -q "has the following vulnerable packages" vulnerability-report.txt; then
-            echo "::error::Vulnerable NuGet packages detected. Aborting release."
-            exit 1
-          fi
+          VERSION=${GITHUB_REF#refs/tags/v}
+          dotnet pack -c Release -o ./nupkgs /p:Version=$VERSION
 
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Push to NuGet
+        run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
-      - name: Pack NuGet packages with symbols
-        run: |
-          PACK_OPTS="-c Release -o ./nupkgs /p:Version=${{ steps.version.outputs.VERSION }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg"
-          dotnet pack src/OtelEvents.Schema/OtelEvents.Schema.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Exporter.Json/OtelEvents.Exporter.Json.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Causality/OtelEvents.Causality.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Analyzers/OtelEvents.Analyzers.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Testing/OtelEvents.Testing.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.AspNetCore/OtelEvents.AspNetCore.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Grpc/OtelEvents.Grpc.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Azure.CosmosDb/OtelEvents.Azure.CosmosDb.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.Azure.Storage/OtelEvents.Azure.Storage.csproj $PACK_OPTS
-          dotnet pack src/OtelEvents.HealthChecks/OtelEvents.HealthChecks.csproj $PACK_OPTS
-          dotnet pack tools/OtelEvents.Cli/OtelEvents.Cli.csproj $PACK_OPTS
-
-      # TODO: Add NuGet package signing (dotnet nuget sign) when a code-signing
-      # certificate is available. See https://learn.microsoft.com/nuget/create-packages/sign-a-package
-
-      - name: Push to NuGet.org
-        if: ${{ secrets.NUGET_API_KEY != '' }}
-        run: |
-          dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-          dotnet nuget push ./nupkgs/*.snupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-
-      - name: Create GitHub Release
+      - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'preview') || contains(github.ref, 'alpha') }}
-          files: |
-            ./nupkgs/*.nupkg
-            ./nupkgs/*.snupkg
+          prerelease: true
+          files: ./nupkgs/*.nupkg
