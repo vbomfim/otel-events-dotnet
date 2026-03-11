@@ -255,7 +255,9 @@ internal static partial class StorageInfrastructureEvents
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(identity);
         var hash = System.Security.Cryptography.SHA256.HashData(bytes);
-        return Convert.ToHexStringLower(hash)[..16]; // First 16 hex chars for brevity
+#pragma warning disable CA1308 // Lowercase hex is intentional for identity hashing
+        return Convert.ToHexString(hash).ToLowerInvariant()[..16]; // First 16 hex chars for brevity
+#pragma warning restore CA1308
     }
 
     /// <summary>

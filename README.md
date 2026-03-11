@@ -136,7 +136,16 @@ logger.EmitOrderPlaced(orderId, customerId, amount);
 
 ## Prerequisites
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) or later
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) (builds both net8.0 and net10.0 targets)
+
+### Supported Target Frameworks
+
+| Package | Targets |
+|---------|---------|
+| Library packages (`OtelEvents.*`) | `net8.0`, `net10.0` |
+| `OtelEvents.Analyzers` | `netstandard2.0` (Roslyn requirement) |
+| `OtelEvents.Cli` | `net10.0` |
+| Test projects | `net10.0` |
 
 ## Project Structure
 

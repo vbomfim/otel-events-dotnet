@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <!-- Roslyn analyzers must target netstandard2.0 -->
+    <TargetFrameworks />
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
