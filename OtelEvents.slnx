@@ -26,6 +26,7 @@
     <Project Path="tests/OtelEvents.Schema.Tests/OtelEvents.Schema.Tests.csproj" />
     <Project Path="tests/OtelEvents.Subscriptions.Tests/OtelEvents.Subscriptions.Tests.csproj" />
     <Project Path="tests/OtelEvents.Testing.Tests/OtelEvents.Testing.Tests.csproj" />
+    <Project Path="tests/OtelEvents.Integration.Tests/OtelEvents.Integration.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/OtelEvents.Cli/OtelEvents.Cli.csproj" />
