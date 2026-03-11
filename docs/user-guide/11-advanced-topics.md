@@ -1,6 +1,6 @@
 # Chapter 11 — Advanced Topics
 
-This chapter covers advanced otel-events features for production-scale deployments: rate limiting, event sampling, schema versioning, schema sharing, schema signing, DI-based metrics, Roslyn analyzers, and dashboard generation.
+This chapter covers advanced otel-events features for production-scale deployments: rate limiting, event sampling, schema versioning, schema sharing, schema signing, DI-based metrics, Roslyn analyzers, dashboard generation, and event subscriptions.
 
 ---
 
@@ -380,6 +380,180 @@ Pre-built Grafana templates are available in the repository's `docs/dashboards/`
 
 ---
 
+## Event Subscriptions
+
+The `OtelEvents.Subscriptions` package lets you react to events inside the OTEL pipeline — trigger side-effects (circuit breakers, token refresh, cache invalidation) when specific events are emitted, without coupling business logic to the emitting code.
+
+### Install
+
+```bash
+dotnet add package OtelEvents.Subscriptions
+```
+
+### Registration
+
+Register the subscription system in your DI container. The `AddOtelEventsSubscriptions` extension adds a `BaseProcessor<LogRecord>` that dispatches matching events to handlers via a bounded channel and background hosted service:
+
+```csharp
+using OtelEvents.Subscriptions;
+
+builder.Services.AddOtelEventsSubscriptions(
+    subs =>
+    {
+        // Lambda handlers — inline reactions
+        subs.On("cosmosdb.throttled", async (ctx, ct) =>
+        {
+            var retryMs = ctx.GetAttribute<long>("retryAfterMs");
+            await circuitBreaker.OpenAsync(TimeSpan.FromMilliseconds(retryMs), ct);
+        });
+
+        // DI-resolved handlers — full dependency injection support
+        subs.AddHandler<TokenRefreshHandler>("auth.token.expired");
+
+        // Wildcard patterns — trailing * matches any suffix
+        subs.On("health.*", async (ctx, ct) =>
+        {
+            await healthAggregator.RecordAsync(ctx.EventName, ctx.LogLevel, ct);
+        });
+    },
+    opts =>
+    {
+        opts.ChannelCapacity = 2048;                  // Default: 1024
+        opts.HandlerTimeout = TimeSpan.FromSeconds(10); // Default: 30s
+    });
+```
+
+After registering subscriptions, add the processor to the OTEL pipeline:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithLogging(logging =>
+    {
+        // Resolve the processor registered by AddOtelEventsSubscriptions
+        logging.AddProcessor(sp => sp.GetRequiredService<OtelEventsSubscriptionProcessor>());
+    });
+```
+
+### Lambda Handlers
+
+Use `subs.On()` for simple, inline reactions:
+
+```csharp
+subs.On("cosmosdb.throttled", async (ctx, ct) =>
+{
+    var retryMs = ctx.GetAttribute<long>("retryAfterMs");
+    var statusCode = ctx.GetAttribute<int>("statusCode");
+
+    logger.LogWarning("CosmosDB throttled (HTTP {Status}), backing off {Ms}ms",
+        statusCode, retryMs);
+
+    await circuitBreaker.OpenAsync(TimeSpan.FromMilliseconds(retryMs), ct);
+});
+```
+
+The handler receives an `OtelEventContext` (immutable snapshot of the `LogRecord`) and a `CancellationToken` that fires if the handler exceeds the configured `HandlerTimeout`.
+
+### DI-Resolved Handlers
+
+For handlers that need injected dependencies, implement `IOtelEventHandler` and register with `subs.AddHandler<T>()`:
+
+```csharp
+public class TokenRefreshHandler : IOtelEventHandler
+{
+    private readonly ITokenService _tokenService;
+    private readonly ILogger<TokenRefreshHandler> _logger;
+
+    public TokenRefreshHandler(ITokenService tokenService, ILogger<TokenRefreshHandler> logger)
+    {
+        _tokenService = tokenService;
+        _logger = logger;
+    }
+
+    public async Task HandleAsync(OtelEventContext context, CancellationToken cancellationToken)
+    {
+        var tenantId = context.GetAttribute<string>("tenantId");
+        _logger.LogInformation("Refreshing token for tenant {TenantId}", tenantId);
+        await _tokenService.RefreshAsync(tenantId, cancellationToken);
+    }
+}
+```
+
+Register with a pattern:
+
+```csharp
+subs.AddHandler<TokenRefreshHandler>("auth.token.expired");
+```
+
+The handler class is auto-registered as transient in DI if not already registered. It is resolved from the service provider per invocation.
+
+### OtelEventContext
+
+Handlers receive an `OtelEventContext` — an immutable snapshot of the `LogRecord` that is safe to use asynchronously after the OTEL pipeline has recycled the original record:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `EventName` | `string` | Event name from `LogRecord.EventId.Name` |
+| `LogLevel` | `LogLevel` | Severity (Trace through Critical) |
+| `FormattedMessage` | `string?` | Interpolated message string |
+| `Attributes` | `IReadOnlyDictionary<string, object?>` | Immutable copy of all key-value attributes |
+| `Timestamp` | `DateTimeOffset` | UTC timestamp |
+| `TraceId` | `string?` | W3C trace ID (hex), or null |
+| `SpanId` | `string?` | W3C span ID (hex), or null |
+| `Exception` | `Exception?` | Associated exception, if any |
+
+Use `GetAttribute<T>()` for typed attribute access:
+
+```csharp
+var orderId = ctx.GetAttribute<string>("orderId");     // returns string? — null if missing
+var amount = ctx.GetAttribute<double>("amount");       // returns double — default(double) if missing
+var retryMs = ctx.GetAttribute<long>("retryAfterMs");  // returns long — 0 if missing
+```
+
+### Disposable Subscriptions
+
+Both `On()` and `AddHandler<T>()` return `IDisposable`. Dispose to remove the subscription:
+
+```csharp
+var sub = subs.On("debug.*", async (ctx, ct) =>
+{
+    await debugCollector.CaptureAsync(ctx, ct);
+});
+
+// Later — remove the subscription
+sub.Dispose();
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `ChannelCapacity` | `int` | `1024` | Bounded channel capacity for event dispatch |
+| `FullMode` | `BoundedChannelFullMode` | `DropWrite` | Backpressure policy when the channel is full |
+| `HandlerTimeout` | `TimeSpan` | `30s` | Maximum time for a single handler invocation |
+
+### Self-Telemetry
+
+The subscription system emits its own metrics:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `otel_events.subscription.channel_full` | Counter | Events dropped due to channel backpressure |
+| `otel_events.subscription.handler_timeouts` | Counter | Handler invocations cancelled due to timeout |
+
+### Use Cases
+
+| Scenario | Pattern | Event |
+|----------|---------|-------|
+| Circuit breaker on CosmosDB throttle | `subs.On("cosmosdb.throttled", ...)` | Back off when 429 responses spike |
+| Token refresh on auth failure | `subs.AddHandler<TokenRefreshHandler>("auth.token.expired")` | Proactively refresh expired tokens |
+| Cache invalidation | `subs.On("order.status.changed", ...)` | Evict stale cache entries on state change |
+| Health aggregation | `subs.On("health.*", ...)` | Aggregate health check results across components |
+| Audit logging | `subs.AddHandler<AuditHandler>("admin.*")` | Write admin actions to audit store |
+
+> **When to use:** Subscriptions are for **in-process side-effects** — lightweight reactions to events within the same service. For cross-service event processing, use a message broker (Service Bus, Kafka) instead.
+
+---
+
 ## Summary
 
 | Feature | Phase | Use Case |
@@ -392,6 +566,7 @@ Pre-built Grafana templates are available in the repository's `docs/dashboards/`
 | IMeterFactory DI Mode | 2.9 | Testable, disposable meters for DI scenarios |
 | Roslyn Analyzers | 2.1 | Compile-time logging hygiene enforcement |
 | Dashboard Generation | 3.5 | Auto-generated Grafana dashboards from schema metrics |
+| Event Subscriptions | 3.11 | In-process side-effects (circuit breakers, token refresh, cache invalidation) |
 
 ---
 
