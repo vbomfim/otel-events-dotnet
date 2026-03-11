@@ -6,6 +6,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <Description>Roslyn analyzers for logging hygiene — detects Console.Write, untyped ILogger, string interpolation, PII without redaction</Description>
     <NoWarn>CA1062;CA1303;CA1307;CA1310;CA1707;CA1822</NoWarn>
   </PropertyGroup>
 
@@ -20,6 +21,10 @@
   <ItemGroup>
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>In-process event bus for OpenTelemetry .NET — subscribe to events with lambda or DI handlers</Description>
     <NoWarn>CA1031;CA1062;CA1711;CA1822;CA2000;CA2007;CA1848</NoWarn>
   </PropertyGroup>
 
@@ -12,6 +13,10 @@
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

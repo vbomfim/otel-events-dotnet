@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Zero-code Azure CosmosDB instrumentation with RU tracking, auth, and throttle events</Description>
     <NoWarn>CA1031;CA1062;CA1822;CA2000;SYSLIB1015</NoWarn>
   </PropertyGroup>
 
@@ -21,6 +22,10 @@
     <EmbeddedResource Include="Schemas\cosmosdb.otel.yaml">
       <LogicalName>OtelEvents.Azure.CosmosDb.cosmosdb.otel.yaml</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

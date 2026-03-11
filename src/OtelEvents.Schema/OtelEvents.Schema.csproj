@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Schema-driven event code generator for OpenTelemetry .NET — parses .otel.yaml schemas and generates type-safe C# logging + metrics code</Description>
     <NoWarn>CA1002;CA1032;CA1064;CA1305;CA1307;CA1720;CA1822;CA1062;CA1859;CA1819</NoWarn>
   </PropertyGroup>
 
@@ -20,6 +21,10 @@
   <!-- Include MSBuild targets for NuGet schema packaging (auto-imported by consumers) -->
   <ItemGroup>
     <None Include="Build\OtelEvents.Schema.targets" Pack="true" PackagePath="buildTransitive\OtelEvents.Schema.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

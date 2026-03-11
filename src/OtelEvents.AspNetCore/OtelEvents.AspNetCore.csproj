@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Zero-code HTTP request instrumentation for ASP.NET Core with connection, auth, and throttle events</Description>
     <NoWarn>CA1031;CA1062;CA1308;CA1822;CA2000;CA2007;CA2227;SYSLIB1015</NoWarn>
   </PropertyGroup>
 
@@ -24,6 +25,10 @@
     <EmbeddedResource Include="Schemas\aspnetcore.otel.yaml">
       <LogicalName>OtelEvents.AspNetCore.aspnetcore.otel.yaml</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

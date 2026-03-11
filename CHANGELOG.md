@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-11
+
+### Fixed
+
+- NuGet package metadata (README, description, license, tags)
+- All user guide chapters reviewed and corrected
+- Deployment docs fixes (HEALTHCHECK, SDK version, Collector config)
+- CI hardening (vulnerability scanning, coverage, symbol packages)
+- MSBuild auto-codegen (schemas generate on build)
+
+### Added
+
+- CHANGELOG.md and CONTRIBUTING.md
+- global.json for SDK pinning
+- SLI/SLO recommendation docs
+
 ## [0.1.0] - 2026-03-11
 
 ### Added
@@ -89,5 +105,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ~1,500 unit tests across 12 test projects using xUnit, covering all packages,
   edge cases, and error paths.
 
-[unreleased]: https://github.com/vbomfim/otel-events-dotnet/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/vbomfim/otel-events-dotnet/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/vbomfim/otel-events-dotnet/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vbomfim/otel-events-dotnet/releases/tag/v0.1.0

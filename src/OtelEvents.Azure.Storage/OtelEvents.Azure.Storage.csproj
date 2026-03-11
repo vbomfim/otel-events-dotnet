@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Zero-code Azure Blob/Queue Storage instrumentation with connection, auth, and throttle events</Description>
     <NoWarn>CA1062;CA1822;CA2000;CA2007;CA2227;SYSLIB1015</NoWarn>
   </PropertyGroup>
 
@@ -22,6 +23,10 @@
     <EmbeddedResource Include="Schemas\azure-storage.otel.yaml">
       <LogicalName>OtelEvents.Azure.Storage.azure-storage.otel.yaml</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
