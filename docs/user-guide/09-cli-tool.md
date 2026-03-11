@@ -69,7 +69,7 @@ dotnet otel-events generate schemas/orders.otel.yaml -o src/Generated/
 **Success output:**
 
 ```
-Generated: src/Generated/OrderEventSource.g.cs
+Generated: src/Generated/OrderEventsEventSource.g.cs
 Generated: src/Generated/OrderStatus.g.cs
 Generated: src/Generated/OrderEventsMetrics.g.cs
 

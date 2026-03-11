@@ -249,7 +249,7 @@ using MyCompany.MyService.Events;
 
 public class OrderService
 {
-    private readonly ILogger<OrderEventSource> _logger;  // Changed: category type
+    private readonly ILogger<MyServiceEventSource> _logger;  // Changed: category type
 
     public async Task PlaceOrder(OrderRequest request)
     {
@@ -267,7 +267,7 @@ public class OrderService
 
 | Aspect | Before | After |
 |--------|--------|-------|
-| Logger category | `ILogger<OrderService>` | `ILogger<OrderEventSource>` |
+| Logger category | `ILogger<OrderService>` | `ILogger<MyServiceEventSource>` |
 | Method call | `_logger.LogInformation("Order {OrderId}...")` | `_logger.OrderPlaced(orderId, userId, amount)` |
 | Metrics | Manually created Counter/Histogram | Automatically recorded by generated code |
 | Type safety | String template — typos compile fine | Typed parameters — typos won't compile |

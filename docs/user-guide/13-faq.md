@@ -156,7 +156,7 @@ Set a breakpoint in the generated extension method. If the method isn't being ca
 private readonly ILogger<OrderController> _logger;
 
 // Right — uses the generated event source type
-private readonly ILogger<OrderEventSource> _logger;
+private readonly ILogger<OrderEventsEventSource> _logger;
 ```
 
 **5. Check for rate limiting or sampling:**

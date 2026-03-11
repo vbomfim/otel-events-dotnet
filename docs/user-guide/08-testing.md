@@ -57,7 +57,6 @@ public sealed class InMemoryLogExporter : BaseExporter<LogRecord>
 public static class OtelEventsTestHost
 {
     public static (ILoggerFactory Factory, InMemoryLogExporter Exporter) Create();
-    public static (ILoggerFactory Factory, InMemoryLogExporter Exporter) CreateWithCausality();
 }
 ```
 
@@ -85,19 +84,41 @@ factory.Dispose();
 
 ### With Causality
 
-`CreateWithCausality()` adds the `OtelEventsCausalityProcessor` to the pipeline, so `otel_events.event_id` and `otel_events.parent_event_id` attributes are populated:
+`OtelEventsTestHost.Create()` builds a minimal pipeline. To test causal linking (`otel_events.event_id`, `otel_events.parent_event_id`), manually add the `OtelEventsCausalityProcessor` before the exporter:
 
 ```csharp
-var (factory, exporter) = OtelEventsTestHost.CreateWithCausality();
+using OtelEvents.Causality;
+
+var exporter = new InMemoryLogExporter();
+
+var factory = LoggerFactory.Create(builder =>
+{
+    builder.SetMinimumLevel(LogLevel.Trace);
+    builder.AddOpenTelemetry(options =>
+    {
+        options.IncludeFormattedMessage = true;
+        options.ParseStateValues = true;
+
+        // Add causality processor BEFORE the exporter
+        options.AddProcessor(new OtelEventsCausalityProcessor());
+        options.AddProcessor(new SimpleLogRecordExportProcessor(exporter));
+    });
+});
+
 var logger = factory.CreateLogger("TestCategory");
 
+using var scope = OtelEventsCausalScope.Begin();
 logger.LogInformation(new EventId(1, "order.placed"), "Order placed");
 
 var record = exporter.LogRecords[0];
 var eventId = record.Attributes["otel_events.event_id"] as string;
 Assert.NotNull(eventId);
 Assert.StartsWith("evt_", eventId);
+
+factory.Dispose();
 ```
+
+> **Key point:** Processor order matters. `OtelEventsCausalityProcessor` must be added **before** the `SimpleLogRecordExportProcessor` so the causal attributes are present when the exporter snapshots the record.
 
 ---
 
@@ -217,9 +238,9 @@ This example demonstrates a full test for a service that uses otel-events genera
 ```csharp
 public class OrderService
 {
-    private readonly ILogger<OrderEventSource> _logger;
+    private readonly ILogger<OrderEventsEventSource> _logger;
 
-    public OrderService(ILogger<OrderEventSource> logger)
+    public OrderService(ILogger<OrderEventsEventSource> logger)
     {
         _logger = logger;
     }
@@ -258,7 +279,7 @@ public class OrderServiceTests : IDisposable
         // Set up the test pipeline
         (_factory, _exporter) = OtelEventsTestHost.Create();
 
-        var logger = _factory.CreateLogger<OrderEventSource>();
+        var logger = _factory.CreateLogger<OrderEventsEventSource>();
         _service = new OrderService(logger);
     }
 
@@ -320,7 +341,7 @@ public class OrderServiceTests : IDisposable
 public void ProcessOrder_EmitsMultipleEvents()
 {
     var (factory, exporter) = OtelEventsTestHost.Create();
-    var logger = factory.CreateLogger<OrderEventSource>();
+    var logger = factory.CreateLogger<OrderEventsEventSource>();
 
     // Emit multiple events
     logger.OrderPlaced(orderId: "ORD-1", customerId: "C-1", amount: 100m);
@@ -344,7 +365,7 @@ public void ProcessOrder_EmitsMultipleEvents()
 public void FailedOperation_EmitsErrorEventWithException()
 {
     var (factory, exporter) = OtelEventsTestHost.Create();
-    var logger = factory.CreateLogger<OrderEventSource>();
+    var logger = factory.CreateLogger<OrderEventsEventSource>();
 
     var exception = new InvalidOperationException("Out of stock");
     logger.OrderFailed(orderId: "ORD-1", reason: "Out of stock", exception: exception);
