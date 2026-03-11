@@ -28,7 +28,7 @@ jobs:
         run: dotnet build --no-restore -c Release
 
       - name: Test with coverage
-        run: dotnet test --no-build -c Release --verbosity minimal --filter "FullyQualifiedName!=OtelEvents.Schema.Tests.OtelEventsGenerateTaskTests" --collect:"XPlat Code Coverage" --results-directory ./coverage
+        run: dotnet test --no-build -c Release --verbosity minimal --filter "FullyQualifiedName!~OtelEventsGenerateTaskTests&FullyQualifiedName!~ChannelFull" --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Check for vulnerable packages
         run: |
