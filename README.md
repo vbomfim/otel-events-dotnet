@@ -1,11 +1,7 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="otel-events" width="720"/>
-</p>
+![otel-events](https://raw.githubusercontent.com/vbomfim/otel-events-dotnet/main/assets/logo.svg)
 
-<p align="center">
-  <a href="https://github.com/vbomfim/otel-events-dotnet/actions/workflows/ci.yml"><img src="https://github.com/vbomfim/otel-events-dotnet/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-  <a href="https://www.nuget.org/packages?q=OtelEvents"><img src="https://img.shields.io/nuget/v/OtelEvents.Schema?label=NuGet&color=blue" alt="NuGet"/></a>
-</p>
+[![CI](https://github.com/vbomfim/otel-events-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/vbomfim/otel-events-dotnet/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/OtelEvents.Schema?label=NuGet&color=blue)](https://www.nuget.org/packages?q=OtelEvents)
 
 **Schema-driven event logging for OpenTelemetry .NET** — define events in YAML, get type-safe C# code with metrics, causal linking, and AI-optimized JSON export.
 
@@ -132,7 +128,7 @@ using var scope = OtelEventsCausalScope.Begin();
 logger.EmitOrderPlaced(orderId, customerId, amount);
 ```
 
-📖 See the full [User Guide](docs/user-guide/README.md) for detailed tutorials.
+📖 See the full [User Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/README.md) for detailed tutorials.
 
 ## Prerequisites
 
@@ -177,40 +173,40 @@ otel-events-dotnet/
 
 ## Security & Privacy
 
-See [docs/security/](docs/security/) for standalone security documentation, including:
+See [docs/security/](https://github.com/vbomfim/otel-events-dotnet/tree/main/docs/security) for standalone security documentation, including:
 
-- [Threat Model](docs/security/threat-model.md) — Trust boundaries, threat vectors, and mitigations
-- [PII Classification](docs/security/pii-classification.md) — Sensitivity levels and redaction matrix
-- [Environment Profiles](docs/security/environment-profiles.md) — Development, Staging, and Production defaults
-- [OWASP Mapping](docs/security/owasp-mapping.md) — OWASP Top 10 (2021) reference mapping
+- [Threat Model](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/security/threat-model.md) — Trust boundaries, threat vectors, and mitigations
+- [PII Classification](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/security/pii-classification.md) — Sensitivity levels and redaction matrix
+- [Environment Profiles](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/security/environment-profiles.md) — Development, Staging, and Production defaults
+- [OWASP Mapping](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/security/owasp-mapping.md) — OWASP Top 10 (2021) reference mapping
 
-For vulnerability reporting, see [SECURITY.md](SECURITY.md).
+For vulnerability reporting, see [SECURITY.md](https://github.com/vbomfim/otel-events-dotnet/blob/main/SECURITY.md).
 
 ## Observability
 
-See [docs/observability/](docs/observability/) for operational guidance:
+See [docs/observability/](https://github.com/vbomfim/otel-events-dotnet/tree/main/docs/observability) for operational guidance:
 
-- [SLI/SLO Recommendations](docs/observability/sli-slo.md) — Service Level Indicators mapped to otel-events metrics, SLO targets by service tier, multi-window burn-rate alerting, and Grafana alert examples
-- [Performance Dashboards](docs/dashboards/README.md) — Pre-built Grafana dashboard and OTEL Collector configuration
+- [SLI/SLO Recommendations](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/observability/sli-slo.md) — Service Level Indicators mapped to otel-events metrics, SLO targets by service tier, multi-window burn-rate alerting, and Grafana alert examples
+- [Performance Dashboards](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/dashboards/README.md) — Pre-built Grafana dashboard and OTEL Collector configuration
 
 ## User Guide
 
-See the [otel-events User Guide](docs/user-guide/README.md) for comprehensive documentation:
+See the [otel-events User Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/README.md) for comprehensive documentation:
 
-- [Getting Started](docs/user-guide/04-getting-started.md) — 10-minute tutorial
-- [Schema Reference](docs/user-guide/05-schema-reference.md) — Complete YAML grammar
-- [Integration Packs](docs/user-guide/06-integration-packs.md) — ASP.NET Core, gRPC, CosmosDB, Azure Storage, HealthChecks
-- [Configuration](docs/user-guide/07-configuration.md) — All configuration options
-- [Migration Guide](docs/user-guide/12-migration-and-faq.md) — Migrate from plain `ILogger` to otel-events
-- [FAQ](docs/user-guide/12-migration-and-faq.md) — Common questions
+- [Getting Started](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/04-getting-started.md) — 10-minute tutorial
+- [Schema Reference](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/05-schema-reference.md) — Complete YAML grammar
+- [Integration Packs](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/06-integration-packs.md) — ASP.NET Core, gRPC, CosmosDB, Azure Storage, HealthChecks
+- [Configuration](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/07-configuration.md) — All configuration options
+- [Migration Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/12-migration-and-faq.md) — Migrate from plain `ILogger` to otel-events
+- [FAQ](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/12-migration-and-faq.md) — Common questions
 
 ## Specification
 
-See [SPECIFICATION.md](SPECIFICATION.md) for the full project specification, including architecture, YAML schema format, JSON envelope format, and design decisions.
+See [SPECIFICATION.md](https://github.com/vbomfim/otel-events-dotnet/blob/main/SPECIFICATION.md) for the full project specification, including architecture, YAML schema format, JSON envelope format, and design decisions.
 
 ## Deployment
 
-See the [Container & Kubernetes Deployment Guide](docs/deployment/README.md) for:
+See the [Container & Kubernetes Deployment Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/deployment/README.md) for:
 
 - OTEL Collector configuration for otel-events envelope parsing
 - Sample Dockerfile (distroless, non-root, SBOM)
@@ -224,4 +220,4 @@ Contributions are welcome! Please open an issue or pull request.
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](https://github.com/vbomfim/otel-events-dotnet/blob/main/LICENSE) file for details.
