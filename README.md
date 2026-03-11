@@ -136,7 +136,7 @@ logger.EmitOrderPlaced(orderId, customerId, amount);
 
 ## Prerequisites
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) (builds both net8.0 and net10.0 targets)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download) (builds both net8.0 and net10.0 targets)
 
 ### Supported Target Frameworks
 
