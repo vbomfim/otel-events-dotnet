@@ -1,4 +1,4 @@
-# Sample Dockerfile for .NET services using ALL (Another Logging Library).
+# Sample Dockerfile for .NET services using otel-events.
 #
 # Key security properties:
 #   - Distroless base image (chiseled) — minimal attack surface, no shell
@@ -12,7 +12,7 @@
 # See: SPECIFICATION.md §17.3
 
 # ─── Build Stage ─────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Directory.Build.props Directory.Packages.props ./
 COPY src/ src/
@@ -29,15 +29,13 @@ RUN dotnet tool install --global Microsoft.Sbom.DotNetTool
 RUN dotnet sbom generate -b /app -bc src/MyService -pn MyService -pv 1.0.0 -ps MyCompany
 
 # ─── Runtime Stage (distroless, non-root) ────────────────────────
-FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-noble-chiseled-extra AS runtime
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled-extra AS runtime
 
 USER $APP_UID
 WORKDIR /app
 COPY --from=build /app .
 COPY --from=build /app/_manifest /app/_manifest
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
 
 EXPOSE 8080
 ENTRYPOINT ["./MyService"]

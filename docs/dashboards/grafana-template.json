@@ -1,5 +1,5 @@
 {
-  "uid": null,
+  "uid": "otel-events-performance",
   "title": "OtelEvents — Performance Dashboard",
   "description": "Auto-generated Grafana dashboard template for OtelEvents schemas. Covers HTTP request rate, error rate, duration percentiles, and health status. Customize by importing into Grafana or regenerating from your schema with SchemaMetricsDashboardGenerator.",
   "schemaVersion": 39,

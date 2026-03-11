@@ -50,7 +50,7 @@ jobs:
 
       - name: Push to NuGet.org
         run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-        if: env.NUGET_API_KEY != ''
+        if: ${{ secrets.NUGET_API_KEY != '' }} != ''
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
