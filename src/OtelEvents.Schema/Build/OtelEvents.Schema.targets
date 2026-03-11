@@ -1,8 +1,8 @@
 <!--
-  OtelEvents.Schema MSBuild Targets for NuGet Schema Packaging
+  OtelEvents.Schema MSBuild Targets for NuGet Schema Packaging and Code Generation
   
   This targets file is included automatically when a project references the OtelEvents.Schema package.
-  It provides two capabilities:
+  It provides three capabilities:
   
   1. PRODUCER: Automatically packages .otel.yaml files as NuGet content files.
      Schema files are placed in contentFiles/any/any/schemas/ within the NuGet package,
@@ -11,20 +11,29 @@
   2. CONSUMER: Collects schema directories from referenced NuGet packages so that
      SchemaPackageResolver can discover and resolve cross-package imports at build time.
   
+  3. CODE GENERATION: Automatically generates C# source files from .otel.yaml schemas
+     during build. Generated files are placed in $(IntermediateOutputPath)OtelEventsGenerated/
+     and included in compilation. Files are only regenerated when schemas change.
+  
   Usage:
     Producer: Simply place .otel.yaml files in your project directory.
     Consumer: Use "package:PackageName/schema.otel.yaml" in your schema imports.
+    Code Gen: Automatic — any .otel.yaml file triggers generation during build.
   
   Properties:
     EnableOtelEventsSchemaPackaging (default: true) — Set to false to disable auto-packaging.
+    EnableOtelEventsCodeGen (default: true) — Set to false to disable automatic code generation.
     OtelEventsSchemaContentDir (default: schemas) — Subdirectory name within NuGet content.
+    OtelEventsGeneratedDir (default: $(IntermediateOutputPath)OtelEventsGenerated/) — Output directory for generated code.
 -->
 <Project>
 
   <!-- Default property values -->
   <PropertyGroup>
     <EnableOtelEventsSchemaPackaging Condition="'$(EnableOtelEventsSchemaPackaging)' == ''">true</EnableOtelEventsSchemaPackaging>
+    <EnableOtelEventsCodeGen Condition="'$(EnableOtelEventsCodeGen)' == ''">true</EnableOtelEventsCodeGen>
     <OtelEventsSchemaContentDir Condition="'$(OtelEventsSchemaContentDir)' == ''">schemas</OtelEventsSchemaContentDir>
+    <OtelEventsGeneratedDir Condition="'$(OtelEventsGeneratedDir)' == ''">$(IntermediateOutputPath)OtelEventsGenerated/</OtelEventsGeneratedDir>
   </PropertyGroup>
 
   <!--
@@ -55,6 +64,63 @@
       -->
       <_OtelEventsSchemaPackageFiles Include="$(NuGetPackageRoot)/**/contentFiles/any/any/$(OtelEventsSchemaContentDir)/*.otel.yaml" />
       <OtelEventsSchemaPackagePath Include="@(_OtelEventsSchemaPackageFiles->'%(RootDir)%(Directory)')" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    CODE GENERATION: Load the OtelEventsGenerateTask from the package assembly.
+    The task is defined in OtelEvents.Schema.dll shipped alongside this targets file.
+  -->
+  <UsingTask TaskName="OtelEvents.Schema.Build.OtelEventsGenerateTask"
+             AssemblyFile="$(MSBuildThisFileDirectory)../lib/net10.0/OtelEvents.Schema.dll"
+             Condition="'$(EnableOtelEventsCodeGen)' == 'true'" />
+
+  <!--
+    CODE GENERATION: Discover .otel.yaml schema files early (before the target runs)
+    so MSBuild can evaluate Inputs/Outputs for incremental build support.
+  -->
+  <ItemGroup Condition="'$(EnableOtelEventsCodeGen)' == 'true'">
+    <OtelEventsSchema Include="**/*.otel.yaml" Exclude="bin/**;obj/**" />
+  </ItemGroup>
+
+  <!--
+    CODE GENERATION: Generate C# source files from .otel.yaml schemas.
+    
+    Incremental build: uses Inputs/Outputs so files are only regenerated
+    when schema files change. Generated files go to the intermediate output
+    directory (obj/) to keep the project directory clean.
+    
+    The generated files are automatically added to the Compile item group
+    so they participate in compilation without manual intervention.
+  -->
+  <Target Name="OtelEventsCodeGen"
+          BeforeTargets="CoreCompile"
+          AfterTargets="_CollectOtelEventsSchemaPackagePaths"
+          Condition="'$(EnableOtelEventsCodeGen)' == 'true' AND '@(OtelEventsSchema)' != ''"
+          Inputs="@(OtelEventsSchema)"
+          Outputs="@(OtelEventsSchema->'$(OtelEventsGeneratedDir)%(Filename).g.cs')">
+
+    <OtelEventsGenerateTask SchemaFiles="@(OtelEventsSchema)"
+                            OutputDirectory="$(OtelEventsGeneratedDir)">
+      <Output TaskParameter="GeneratedFiles" ItemName="_OtelEventsGeneratedFiles" />
+    </OtelEventsGenerateTask>
+
+    <ItemGroup>
+      <Compile Include="@(_OtelEventsGeneratedFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    CODE GENERATION: On clean builds where the target is skipped (up-to-date),
+    we still need to include any previously generated files in compilation.
+  -->
+  <Target Name="_OtelEventsIncludeGeneratedFiles"
+          BeforeTargets="CoreCompile"
+          AfterTargets="OtelEventsCodeGen"
+          Condition="'$(EnableOtelEventsCodeGen)' == 'true'">
+    <ItemGroup>
+      <Compile Include="$(OtelEventsGeneratedDir)*.g.cs"
+               Condition="Exists('$(OtelEventsGeneratedDir)')" />
     </ItemGroup>
   </Target>
 
