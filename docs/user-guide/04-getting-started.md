@@ -38,9 +38,6 @@ dotnet add package OtelEvents.Causality
 dotnet add package OtelEvents.Analyzers
 ```
 
-Or use the meta-package for everything:
-
-```bash
 dotnet add package OtelEvents
 ```
 
@@ -75,10 +72,6 @@ fields:
     description: "Customer who placed the order"
     index: true
 
-  durationMs:
-    type: double
-    description: "Duration in milliseconds"
-    unit: "ms"
 
 enums:
   OrderStatus:
@@ -229,6 +222,7 @@ Add an endpoint that uses the generated event methods:
 
 ```csharp
 using MyOrderService.Events;
+using OtelEvents.Causality;
 
 // ... after building the app ...
 
@@ -237,6 +231,9 @@ app.MapPost("/orders", (CreateOrderRequest request, ILogger<OrderEventsEventSour
     var orderId = Guid.NewGuid().ToString("N")[..8];
 
     // ─── Type-safe, schema-enforced event ──────────────────────────
+    // Causal scope — auto-generates eventId, tracks elapsed time
+    using var scope = OtelEventsCausalScope.Begin();
+
     logger.OrderPlaced(
         orderId: orderId,
         customerId: request.CustomerId,
@@ -279,7 +276,7 @@ curl -X POST http://localhost:5000/orders \
 You'll see a single JSONL line on stdout:
 
 ```json
-{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":1}
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":1,"otel_events.elapsed_ms":0.42}
 ```
 
 Use `jq` to pretty-print for readability:
@@ -303,6 +300,7 @@ Write a test using `OtelEventsTestHost`:
 ```csharp
 using OtelEvents.Testing;
 using MyOrderService.Events;
+using OtelEvents.Causality;
 
 public class OrderEventTests : IDisposable
 {
@@ -319,7 +317,10 @@ public class OrderEventTests : IDisposable
     {
         var logger = _factory.CreateLogger<OrderEventsEventSource>();
 
-        logger.OrderPlaced(
+        // Causal scope — auto-generates eventId, tracks elapsed time
+    using var scope = OtelEventsCausalScope.Begin();
+
+    logger.OrderPlaced(
             orderId: "ORD-001",
             customerId: "CUST-001",
             amount: 42.00);
