@@ -6,7 +6,7 @@ otel-events components are configured through standard .NET mechanisms: `appsett
 
 ## appsettings.json Structure
 
-otel-events uses two primary configuration sections under the `All` root key:
+otel-events uses two primary configuration sections under the `OtelEvents` root key:
 
 ```json
 {
@@ -77,7 +77,7 @@ export OTELEVENTS__Exporter__FilePath=/var/log/events.jsonl
 
 ### Precedence Order (Highest → Lowest)
 
-1. **Environment variables** (`ALL__*`)
+1. **Environment variables** (`OTELEVENTS__*`)
 2. **appsettings.{Environment}.json** (e.g., `appsettings.Production.json`)
 3. **appsettings.json**
 4. **Programmatic configuration** (`Action<TOptions>`)
@@ -120,7 +120,7 @@ if (section["EnvironmentProfile"] is null)
 
 ## OtelEventsJsonExporterOptions Reference
 
-**Configuration section:** `All:Exporter`
+**Configuration section:** `OtelEvents:Exporter`
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -171,7 +171,7 @@ internal ExceptionDetailLevel ResolvedExceptionDetailLevel =>
 
 ## OtelEventsSeverityFilterOptions Reference
 
-**Configuration section:** `All:Filter`
+**Configuration section:** `OtelEvents:Filter`
 
 | Property | Type | Default | Description |
 |---|---|---|---|

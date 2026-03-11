@@ -96,7 +96,6 @@ otel-events is split into focused packages — use only what you need:
 | Schema-driven events + OTLP export (no JSON stdout) | `OtelEvents.Schema` |
 | Schema-driven events + AI-optimized JSON stdout | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` |
 | Full otel-events experience | `OtelEvents.Schema` + `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.Analyzers` |
-| Greenfield project (everything) | `OtelEvents` (meta-package) |
 
 ---
 

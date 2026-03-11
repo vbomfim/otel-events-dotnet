@@ -138,8 +138,8 @@ dotnet otel-events diff v1/events.otel.yaml v2/events.otel.yaml
 
 | Exit Code | Meaning |
 |-----------|---------|
-| 0 | No changes |
-| 1 | Non-breaking changes only |
+| 0 | Schemas compatible (no breaking changes) |
+| 1 | Error (file not found, parse error) |
 | 2 | Breaking changes detected |
 
 ### Version constraints

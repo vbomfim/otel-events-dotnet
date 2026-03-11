@@ -188,7 +188,7 @@ public class OrderController : ControllerBase
 
         // ─── One call: log + metrics + type safety + IntelliSense ──────
         // Duration is automatic — no durationMs parameter needed!
-        _logger.EmitOrderPlaced(
+        _logger.OrderPlaced(
             orderId: order.Id,
             customerId: request.CustomerId,
             amount: (double)request.Amount);
@@ -198,7 +198,7 @@ public class OrderController : ControllerBase
 }
 ```
 
-That's it. The generated `EmitOrderPlaced` extension method:
+That's it. The generated `OrderPlaced` extension method:
 
 - Calls the `[LoggerMessage]` partial method → creates an OTEL `LogRecord`
 - Records the `order.placed.count` counter

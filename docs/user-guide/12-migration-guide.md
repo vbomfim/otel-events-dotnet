@@ -220,7 +220,7 @@ events:
 Generate the code:
 
 ```bash
-dotnet otel-events generate
+dotnet otel-events generate schemas/events.otel.yaml -o Generated/
 ```
 
 Then replace your existing logging calls one at a time:

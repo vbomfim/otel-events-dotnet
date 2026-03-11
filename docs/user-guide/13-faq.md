@@ -265,7 +265,7 @@ Yes. otel-events binds to the `OtelEvents` configuration section:
 ```json
 {
   "OtelEvents": {
-    "EnvironmentProfile": "Production",
+    "Exporter": { "EnvironmentProfile": "Production" },
     "EmitHostInfo": false,
     "MaxAttributeValueLength": 4096,
     "SchemaVersion": "1.0.0"

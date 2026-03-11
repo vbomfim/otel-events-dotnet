@@ -38,7 +38,6 @@ dotnet add package OtelEvents.Causality
 dotnet add package OtelEvents.Analyzers
 ```
 
-dotnet add package OtelEvents
 ```
 
 ---
