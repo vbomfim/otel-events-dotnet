@@ -1,0 +1,20 @@
+# Kubernetes Service manifest for .NET services using otel-events.
+#
+# Exposes the application within the cluster on port 80,
+# routing traffic to container port 8080.
+#
+# Customize: Replace "my-service" with your service name.
+#
+# See: SPECIFICATION.md §17.4
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: production
+spec:
+  selector:
+    app: my-service
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP

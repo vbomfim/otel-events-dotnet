@@ -46,3 +46,46 @@ receivers:
     include_file_path: true
     storage: file_storage
 
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        tls:
+          cert_file: /etc/otel/certs/tls.crt
+          key_file: /etc/otel/certs/tls.key
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /etc/otel/certs/tls.crt
+          key_file: /etc/otel/certs/tls.key
+
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1000
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+exporters:
+  otlp:
+    endpoint: "otel-gateway.monitoring.svc.cluster.local:4317"
+    tls:
+      insecure: false
+      ca_file: /etc/otel/certs/ca.crt
+  # NOTE: In-cluster traffic. For mTLS, use a service mesh or switch to https://
+  loki:
+    endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [memory_limiter, batch]
+      exporters: [otlp, loki]

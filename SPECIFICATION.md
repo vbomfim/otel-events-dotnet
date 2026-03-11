@@ -2385,6 +2385,10 @@ receivers:
           cert_file: /etc/otel/certs/tls.crt
           key_file: /etc/otel/certs/tls.key
 
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+
 processors:
   batch:
     timeout: 5s
@@ -2400,10 +2404,12 @@ exporters:
     tls:
       insecure: false
       ca_file: /etc/otel/certs/ca.crt
+  # NOTE: In-cluster traffic. For mTLS, use a service mesh or switch to https://
   loki:
     endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
 
 service:
+  extensions: [file_storage]
   pipelines:
     logs:
       receivers: [filelog]

@@ -74,6 +74,10 @@ spec:
             - name: otel-certs
               mountPath: /etc/otel/certs
               readOnly: true
+            - name: otel-ca-cert
+              mountPath: /etc/otel/certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
             - name: tmp
               mountPath: /tmp
           livenessProbe:
@@ -99,8 +103,18 @@ spec:
         - name: otel-certs
           secret:
             secretName: otel-tls-certs
+        - name: otel-ca-cert
+          configMap:
+            name: otel-ca-cert
         - name: tmp
           emptyDir:
             sizeLimit: 100Mi
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: my-service
       terminationGracePeriodSeconds: 30
       automountServiceAccountToken: false
