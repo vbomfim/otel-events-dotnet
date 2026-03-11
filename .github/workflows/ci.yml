@@ -26,5 +26,6 @@ jobs:
         run: |
           dotnet list OtelEvents.slnx package --vulnerable 2>&1 | tee vuln.txt
           if grep -q "has the following vulnerable packages" vuln.txt; then
-            echo "::warning::Vulnerable transitive packages detected (review vuln.txt)"
+            echo "::error::Vulnerable transitive packages detected (review vuln.txt)"
+            exit 1
           fi
