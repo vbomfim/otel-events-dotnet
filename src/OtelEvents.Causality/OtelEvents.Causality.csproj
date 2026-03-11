@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Causal event linking processor for OpenTelemetry .NET — auto-generates eventId/parentEventId with UUID v7</Description>
     <NoWarn>CA1062;CA1822;CA2000</NoWarn>
   </PropertyGroup>
 
@@ -10,6 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="OpenTelemetry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

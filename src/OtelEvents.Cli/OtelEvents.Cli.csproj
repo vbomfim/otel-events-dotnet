@@ -5,7 +5,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>otel-events</ToolCommandName>
     <PackageId>OtelEvents.Cli</PackageId>
-    <Description>CLI tool for OtelEvents Schema — validate, generate, and document event schemas.</Description>
+    <Description>CLI tool for otel-events schema validation, code generation, version comparison, and documentation</Description>
     <NoWarn>CA1303</NoWarn>
   </PropertyGroup>
 
@@ -15,6 +15,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OtelEvents.Schema\OtelEvents.Schema.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

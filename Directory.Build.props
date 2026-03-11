@@ -8,4 +8,17 @@
     <AnalysisLevel>latest-all</AnalysisLevel>
     <NoWarn>CA1873</NoWarn>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- NuGet package metadata -->
+    <Authors>Bomfim</Authors>
+    <Company>otel-events</Company>
+    <PackageProjectUrl>https://github.com/vbomfim/otel-events-dotnet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vbomfim/otel-events-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>opentelemetry;otel;logging;events;observability;dotnet;structured-logging</PackageTags>
+    <Copyright>Copyright (c) 2026 Bomfim</Copyright>
+  </PropertyGroup>
 </Project>
