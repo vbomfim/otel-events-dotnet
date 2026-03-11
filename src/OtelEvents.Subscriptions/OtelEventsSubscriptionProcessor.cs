@@ -87,10 +87,12 @@ public sealed class OtelEventsSubscriptionProcessor : BaseProcessor<LogRecord>
         var item = new DispatchItem(context, matchingRegistrations);
 
         // TryWrite is non-blocking — never blocks the OTEL pipeline.
-        // Drop metering is handled by the channel's itemDropped callback
-        // configured in OtelEventsSubscriptionExtensions, ensuring the
-        // channel_full counter fires for all FullMode policies.
-        _channel.Writer.TryWrite(item);
+        // When the channel is full (DropWrite mode), TryWrite returns false.
+        // We increment the channel_full counter to track dropped events.
+        if (!_channel.Writer.TryWrite(item))
+        {
+            SubscriptionMetrics.ChannelFull.Add(1);
+        }
     }
 
     /// <inheritdoc/>
