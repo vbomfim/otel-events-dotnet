@@ -28,7 +28,9 @@ public sealed class SchemaSigner
         }
 
         var hash = HMACSHA256.HashData(key, schemaContent);
-        return Convert.ToHexStringLower(hash);
+#pragma warning disable CA1308 // Lowercase hex is intentional for hash signatures
+        return Convert.ToHexString(hash).ToLowerInvariant();
+#pragma warning restore CA1308
     }
 
     /// <summary>

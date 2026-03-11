@@ -311,6 +311,8 @@ internal static partial class GrpcInfrastructureEvents
     internal static string HashIdentity(string value)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(value));
-        return Convert.ToHexStringLower(bytes)[..16];
+#pragma warning disable CA1308 // Lowercase hex is intentional for identity hashing
+        return Convert.ToHexString(bytes).ToLowerInvariant()[..16];
+#pragma warning restore CA1308
     }
 }

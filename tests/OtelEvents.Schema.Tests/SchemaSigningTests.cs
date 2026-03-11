@@ -128,7 +128,9 @@ public sealed class SchemaSigningTests : IDisposable
     {
         // Cross-check against .NET's own HMAC-SHA256 to ensure correctness
         var content = Encoding.UTF8.GetBytes(SampleSchema);
-        var expected = Convert.ToHexStringLower(HMACSHA256.HashData(TestKey, content));
+#pragma warning disable CA1308 // Lowercase hex matches SchemaSigner output format
+        var expected = Convert.ToHexString(HMACSHA256.HashData(TestKey, content)).ToLowerInvariant();
+#pragma warning restore CA1308
 
         var actual = SchemaSigner.ComputeSignature(content, TestKey);
 

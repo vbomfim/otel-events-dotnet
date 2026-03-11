@@ -71,6 +71,7 @@ public static class OtelEventsSubscriptionExtensions
         configureSubscriptions?.Invoke(builder);
 
         // Create the bounded channel with configured capacity and backpressure policy.
+#if NET9_0_OR_GREATER
         // The itemDropped callback fires whenever the channel drops an item in Drop* modes,
         // ensuring the channel_full counter is accurate regardless of FullMode.
         var channel = Channel.CreateBounded<DispatchItem>(
@@ -82,6 +83,18 @@ public static class OtelEventsSubscriptionExtensions
                 AllowSynchronousContinuations = false,
             },
             itemDropped: _ => SubscriptionMetrics.ChannelFull.Add(1));
+#else
+        // On .NET 8, the itemDropped callback is not available.
+        // Channel drops are silent — the channel_full counter will not fire.
+        var channel = Channel.CreateBounded<DispatchItem>(
+            new BoundedChannelOptions(options.ChannelCapacity)
+            {
+                FullMode = options.FullMode,
+                SingleReader = true,
+                SingleWriter = false,
+                AllowSynchronousContinuations = false,
+            });
+#endif
 
         // Register the channel as a singleton for processor and dispatcher to share
         services.AddSingleton(channel);
