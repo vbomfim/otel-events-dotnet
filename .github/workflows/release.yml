@@ -61,17 +61,16 @@ jobs:
       # certificate is available. See https://learn.microsoft.com/nuget/create-packages/sign-a-package
 
       - name: Push to NuGet.org
+        if: ${{ secrets.NUGET_API_KEY != '' }}
         run: |
           dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           dotnet nuget push ./nupkgs/*.snupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-        if: ${{ secrets.NUGET_API_KEY != '' }} != ''
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'preview') || contains(github.ref, 'alpha') }}
           files: |
             ./nupkgs/*.nupkg
             ./nupkgs/*.snupkg
