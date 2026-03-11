@@ -71,7 +71,8 @@ public static class OtelEventsSubscriptionExtensions
         configureSubscriptions?.Invoke(builder);
 
         // Create the bounded channel with configured capacity and backpressure policy.
-        // Note: itemDropped callback requires .NET 9+. On .NET 8, channel drops are silent.
+        // Drop detection is handled in OtelEventsSubscriptionProcessor.OnEnd via
+        // TryWrite return value, which works on all .NET versions.
         var channel = Channel.CreateBounded<DispatchItem>(
             new BoundedChannelOptions(options.ChannelCapacity)
             {
