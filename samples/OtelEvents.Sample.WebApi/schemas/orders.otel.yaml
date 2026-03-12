@@ -1,0 +1,107 @@
+# ─── Sample Order Events Schema ──────────────────────────────────────────────
+# Demonstrates custom schema-defined events for a simple order workflow.
+# The C# code in Events/ is pre-generated — you can modify this schema
+# and regenerate using the OtelEvents CLI tool.
+
+schema:
+  name: "Sample.Orders"
+  version: "1.0.0"
+  namespace: "OtelEvents.Sample.WebApi.Events"
+  meterName: "Sample.Events.Orders"
+  description: "Schema-defined order lifecycle events for the sample Web API"
+
+fields:
+  orderId:
+    type: string
+    description: "Unique order identifier"
+    index: true
+
+  customerId:
+    type: string
+    description: "Customer who placed the order"
+    index: true
+
+  amount:
+    type: double
+    description: "Order total amount in USD"
+    unit: "USD"
+
+  status:
+    type: string
+    description: "Order completion status (Shipped, Delivered, etc.)"
+    index: true
+
+  reason:
+    type: string
+    description: "Failure reason or error description"
+
+events:
+  order.placed:
+    id: 20001
+    severity: INFO
+    description: "A new order was placed by a customer."
+    message: "Order {orderId} placed by customer {customerId} for ${amount}"
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      customerId:
+        ref: customerId
+        required: true
+      amount:
+        ref: amount
+        required: true
+    metrics:
+      sample.order.placed.count:
+        type: counter
+        unit: "orders"
+        description: "Total orders placed"
+        labels:
+          - customerId
+      sample.order.placed.amount:
+        type: histogram
+        unit: "USD"
+        description: "Order amount distribution"
+        buckets: [10, 25, 50, 100, 250, 500, 1000, 5000]
+    tags:
+      - orders
+      - business
+
+  order.completed:
+    id: 20002
+    severity: INFO
+    description: "An order was completed successfully."
+    message: "Order {orderId} completed with status {status}"
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      status:
+        ref: status
+        required: true
+    tags:
+      - orders
+      - business
+
+  order.failed:
+    id: 20003
+    severity: ERROR
+    description: "An order failed due to an error."
+    message: "Order {orderId} failed: {reason}"
+    exception: true
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      reason:
+        ref: reason
+        required: true
+    metrics:
+      sample.order.failed.count:
+        type: counter
+        unit: "errors"
+        description: "Total order failures"
+    tags:
+      - orders
+      - business
+      - error
