@@ -1,3 +1,4 @@
+using OtelEvents.Causality;
 using OpenTelemetry.Logs;
 using OtelEvents.AspNetCore;
 using OtelEvents.Exporter.Json;

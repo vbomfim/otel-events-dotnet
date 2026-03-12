@@ -1,14 +1,14 @@
 # ─── Sample Order Events Schema ──────────────────────────────────────────────
-# Demonstrates custom schema-defined events for a simple order workflow.
+# Demonstrates typed transactions for an order lifecycle workflow.
 # The C# code in Events/ is pre-generated — you can modify this schema
 # and regenerate using the OtelEvents CLI tool.
 
 schema:
   name: "Sample.Orders"
-  version: "1.0.0"
+  version: "1.1.0"
   namespace: "OtelEvents.Sample.WebApi.Events"
   meterName: "Sample.Events.Orders"
-  description: "Schema-defined order lifecycle events for the sample Web API"
+  description: "Schema-defined order lifecycle events with typed transactions"
 
 fields:
   orderId:
@@ -35,11 +35,21 @@ fields:
     type: string
     description: "Failure reason or error description"
 
+  carrier:
+    type: string
+    description: "Shipping carrier name"
+
+  trackingNumber:
+    type: string
+    description: "Shipment tracking number"
+
 events:
+  # ── Transaction Start: creates a causal scope + starts timer ──────────────
   order.placed:
     id: 20001
     severity: INFO
-    description: "A new order was placed by a customer."
+    type: start
+    description: "A new order was placed by a customer. Begins the order transaction."
     message: "Order {orderId} placed by customer {customerId} for ${amount}"
     fields:
       orderId:
@@ -67,25 +77,33 @@ events:
       - orders
       - business
 
+  # ── Transaction Success: closes parent scope, records duration ────────────
   order.completed:
     id: 20002
     severity: INFO
-    description: "An order was completed successfully."
-    message: "Order {orderId} completed with status {status}"
+    type: success
+    parent: order.placed
+    description: "An order was completed and shipped successfully."
+    message: "Order {orderId} shipped via {carrier}"
     fields:
       orderId:
         ref: orderId
         required: true
-      status:
-        ref: status
+      carrier:
+        ref: carrier
         required: true
+      trackingNumber:
+        ref: trackingNumber
     tags:
       - orders
       - business
 
+  # ── Transaction Failure: closes parent scope as failure ───────────────────
   order.failed:
     id: 20003
     severity: ERROR
+    type: failure
+    parent: order.placed
     description: "An order failed due to an error."
     message: "Order {orderId} failed: {reason}"
     exception: true
@@ -105,3 +123,20 @@ events:
       - orders
       - business
       - error
+
+  # ── Plain event (no transaction effect) ───────────────────────────────────
+  order.note.added:
+    id: 20004
+    severity: INFO
+    description: "A note was added to an order. No transaction effect."
+    message: "Note added to order {orderId}: {note}"
+    fields:
+      orderId:
+        ref: orderId
+        required: true
+      note:
+        type: string
+        description: "The note text"
+        required: true
+    tags:
+      - orders

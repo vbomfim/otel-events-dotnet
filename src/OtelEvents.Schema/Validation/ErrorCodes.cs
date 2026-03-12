@@ -85,4 +85,16 @@ public static class ErrorCodes
 
     /// <summary>Referenced package schema could not be resolved from NuGet package content.</summary>
     public const string PackageSchemaNotFound = "OTEL_SCHEMA_027";
+
+    /// <summary>Event type must be one of: start, success, failure, event.</summary>
+    public const string InvalidEventType = "OTEL_SCHEMA_028";
+
+    /// <summary>Success and failure events must have a parent field referencing a start event.</summary>
+    public const string MissingParentEvent = "OTEL_SCHEMA_029";
+
+    /// <summary>Parent must reference a valid start event name in the schema.</summary>
+    public const string InvalidParentEvent = "OTEL_SCHEMA_030";
+
+    /// <summary>Start events must not have a parent field.</summary>
+    public const string StartEventWithParent = "OTEL_SCHEMA_031";
 }

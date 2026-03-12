@@ -107,6 +107,7 @@ public sealed class CodeGenerator
         var ns = doc.Schema.Namespace;
         var meterName = doc.Schema.MeterName ?? ns;
         var hasAnyMetrics = doc.Events.Any(e => e.Metrics.Count > 0);
+        var hasTransactions = doc.Events.Any(e => e.EventType != EventType.Event);
         var isDiMode = doc.Schema.MeterLifecycle == MeterLifecycle.DI;
 
         var sb = new StringBuilder();
@@ -119,6 +120,10 @@ public sealed class CodeGenerator
             sb.AppendLine("using System.Diagnostics.Metrics;");
         }
         sb.AppendLine("using Microsoft.Extensions.Logging;");
+        if (hasTransactions)
+        {
+            sb.AppendLine("using OtelEvents.Causality;");
+        }
         sb.AppendLine();
 
         // Namespace
@@ -423,6 +428,33 @@ public sealed class CodeGenerator
         bool isDiMode = false)
     {
         var methodName = NamingHelper.ToMethodName(evt.Name);
+
+        // Dispatch to specialized generators based on event type
+        switch (evt.EventType)
+        {
+            case EventType.Start:
+                GenerateStartEmitMethod(sb, schemaName, evt, methodName, isDiMode);
+                break;
+            case EventType.Success:
+                GenerateOutcomeEmitMethod(sb, schemaName, evt, methodName, isDiMode, isSuccess: true);
+                break;
+            case EventType.Failure:
+                GenerateOutcomeEmitMethod(sb, schemaName, evt, methodName, isDiMode, isSuccess: false);
+                break;
+            default:
+                GenerateDefaultEmitMethod(sb, schemaName, evt, methodName, hasAnyMetrics, isDiMode);
+                break;
+        }
+    }
+
+    private static void GenerateDefaultEmitMethod(
+        StringBuilder sb,
+        string schemaName,
+        EventDefinition evt,
+        string methodName,
+        bool hasAnyMetrics,
+        bool isDiMode)
+    {
         var emitMethodName = $"Emit{methodName}";
 
         // Method signature
@@ -448,6 +480,91 @@ public sealed class CodeGenerator
         {
             sb.AppendLine();
             GenerateMetricRecording(sb, schemaName, evt, isDiMode);
+        }
+
+        sb.AppendLine("    }");
+    }
+
+    private static void GenerateStartEmitMethod(
+        StringBuilder sb,
+        string schemaName,
+        EventDefinition evt,
+        string methodName,
+        bool isDiMode)
+    {
+        var beginMethodName = $"Begin{methodName}";
+
+        // Return OtelEventsTransactionScope instead of void
+        sb.Append($"    public static OtelEventsTransactionScope {beginMethodName}(this ILogger logger");
+
+        if (isDiMode && evt.Metrics.Count > 0)
+        {
+            sb.Append($", {schemaName}Metrics metrics");
+        }
+
+        AppendFieldParameters(sb, evt.Fields, evt.Exception);
+        sb.AppendLine(")");
+        sb.AppendLine("    {");
+
+        // Call LoggerMessage method
+        sb.Append($"        {schemaName}LoggerExtensions.{methodName}(logger");
+        AppendFieldArguments(sb, evt.Fields, evt.Exception);
+        sb.AppendLine(");");
+
+        // Record metrics
+        if (evt.Metrics.Count > 0)
+        {
+            sb.AppendLine();
+            GenerateMetricRecording(sb, schemaName, evt, isDiMode);
+        }
+
+        // Begin transaction scope
+        sb.AppendLine();
+        sb.AppendLine($"        return OtelEventsTransactionScope.Begin(\"{EscapeString(evt.Name)}\");");
+
+        sb.AppendLine("    }");
+    }
+
+    private static void GenerateOutcomeEmitMethod(
+        StringBuilder sb,
+        string schemaName,
+        EventDefinition evt,
+        string methodName,
+        bool isDiMode,
+        bool isSuccess)
+    {
+        var emitMethodName = $"Emit{methodName}";
+
+        // Standard void return
+        sb.Append($"    public static void {emitMethodName}(this ILogger logger");
+
+        if (isDiMode && evt.Metrics.Count > 0)
+        {
+            sb.Append($", {schemaName}Metrics metrics");
+        }
+
+        AppendFieldParameters(sb, evt.Fields, evt.Exception);
+        sb.AppendLine(")");
+        sb.AppendLine("    {");
+
+        // Call LoggerMessage method
+        sb.Append($"        {schemaName}LoggerExtensions.{methodName}(logger");
+        AppendFieldArguments(sb, evt.Fields, evt.Exception);
+        sb.AppendLine(");");
+
+        // Record metrics
+        if (evt.Metrics.Count > 0)
+        {
+            sb.AppendLine();
+            GenerateMetricRecording(sb, schemaName, evt, isDiMode);
+        }
+
+        // Close the parent transaction scope
+        if (evt.ParentEvent is not null)
+        {
+            sb.AppendLine();
+            var resolveMethod = isSuccess ? "TryComplete" : "TryFail";
+            sb.AppendLine($"        OtelEventsTransactionScope.{resolveMethod}(\"{EscapeString(evt.ParentEvent)}\", \"{EscapeString(evt.Name)}\");");
         }
 
         sb.AppendLine("    }");
