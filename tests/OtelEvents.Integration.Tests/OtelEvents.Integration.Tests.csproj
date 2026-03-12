@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <NoWarn>CA1031;CA1307;CA1310;CA1707;CA1848;CA1861;CA2000;CA2007;CA2201;CA2234</NoWarn>
+    <NoWarn>CA1031;CA1307;CA1310;CA1707;CA1848;CA1861;CA2000;CA2007;CA2201;CA2234;CA1873</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
