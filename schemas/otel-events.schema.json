@@ -1,0 +1,217 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/vbomfim/otel-events-dotnet/main/schemas/otel-events.schema.json",
+  "title": "otel-events Schema",
+  "description": "Schema definition for .otel.yaml event definition files used by otel-events-dotnet",
+  "type": "object",
+  "required": ["schema", "events"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "object",
+      "description": "Schema metadata",
+      "required": ["name", "version", "namespace"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Schema name — used for generated class name prefix"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semver version stamped into otel_events.v",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9]+(\\.[a-zA-Z0-9]+)*)?(\\+[a-zA-Z0-9]+(\\.[a-zA-Z0-9]+)*)?$"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "C# namespace for generated code"
+        },
+        "meterName": {
+          "type": "string",
+          "description": "OTEL Meter name for generated metrics (defaults to namespace)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable schema description"
+        }
+      }
+    },
+    "events": {
+      "type": "object",
+      "description": "Event definitions — keys are event names (lowercase, dot-namespaced)",
+      "additionalProperties": {
+        "$ref": "#/definitions/event"
+      }
+    },
+    "enums": {
+      "type": "object",
+      "description": "Enum definitions (optional — generates C# enum types)",
+      "additionalProperties": {
+        "$ref": "#/definitions/enum"
+      }
+    },
+    "imports": {
+      "type": "array",
+      "description": "Import other .otel.yaml files",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "definitions": {
+    "event": {
+      "type": "object",
+      "required": ["id", "severity", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Unique event ID (used as LoggerMessage EventId)",
+          "minimum": 1
+        },
+        "type": {
+          "type": "string",
+          "description": "Event type: start (creates scope), success/failure (closes parent scope), event (default — no scope effect)",
+          "enum": ["start", "success", "failure", "event"],
+          "default": "event"
+        },
+        "parent": {
+          "type": "string",
+          "description": "Parent start event name — required for success and failure types"
+        },
+        "severity": {
+          "type": "string",
+          "description": "Log severity level",
+          "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
+        },
+        "message": {
+          "type": "string",
+          "description": "Message template — use {fieldName} placeholders matching field names"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable event description"
+        },
+        "exception": {
+          "type": "boolean",
+          "description": "If true, generated method accepts an Exception parameter as the root cause",
+          "default": false
+        },
+        "fields": {
+          "type": "array",
+          "description": "Event fields — all strings, required by default. Use { optional: true } for optional fields.",
+          "items": {
+            "$ref": "#/definitions/field"
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "description": "Metrics recorded when this event is emitted",
+          "additionalProperties": {
+            "$ref": "#/definitions/metric"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Static categorization tags — appear in the JSON envelope tags array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "field": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Field name — string type, required by default"
+        },
+        {
+          "type": "object",
+          "description": "Field with annotations",
+          "maxProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "sensitivity": {
+                "type": "string",
+                "description": "Data sensitivity — controls redaction per EnvironmentProfile",
+                "enum": ["public", "internal", "pii", "credential"]
+              },
+              "optional": {
+                "type": "boolean",
+                "description": "If true, field is not required (fields are required by default)",
+                "default": false
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable field description"
+              },
+              "maxLength": {
+                "type": "integer",
+                "description": "Maximum string length — values exceeding this are truncated",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "metric": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Metric instrument type",
+          "enum": ["counter", "histogram", "gauge"]
+        },
+        "field": {
+          "type": "string",
+          "description": "Field whose value is recorded as the metric value (TryParse for histograms)"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (e.g., ms, USD, bytes)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable metric description"
+        },
+        "labels": {
+          "type": "array",
+          "description": "Field names used as filterable metric dimensions (Prometheus labels)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "buckets": {
+          "type": "array",
+          "description": "Histogram bucket boundaries",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "enum": {
+      "type": "object",
+      "required": ["values"],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}
