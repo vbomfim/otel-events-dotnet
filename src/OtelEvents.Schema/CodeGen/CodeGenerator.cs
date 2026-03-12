@@ -134,11 +134,18 @@ public sealed class CodeGenerator
         GenerateMetadataClass(sb, schemaName, doc);
         sb.AppendLine();
 
-        // 1. LoggerMessage partial class
-        GenerateLoggerExtensionsClass(sb, schemaName, doc.Events);
+        // 1. Event constants classes (one per event)
+        foreach (var evt in doc.Events)
+        {
+            GenerateEventConstantsClass(sb, evt, doc.Schema.Prefix);
+            sb.AppendLine();
+        }
+
+        // 2. LoggerMessage partial class
+        GenerateLoggerExtensionsClass(sb, schemaName, doc);
         sb.AppendLine();
 
-        // 2. Metrics class (only if any event has metrics)
+        // 3. Metrics class (only if any event has metrics)
         if (hasAnyMetrics)
         {
             if (isDiMode)
@@ -152,7 +159,7 @@ public sealed class CodeGenerator
             sb.AppendLine();
         }
 
-        // 3. Emit extension methods class
+        // 4. Emit extension methods class
         GenerateEventExtensionsClass(sb, schemaName, doc.Events, hasAnyMetrics, isDiMode);
 
         return new GeneratedFile($"{schemaName}Events.g.cs", sb.ToString());
@@ -178,12 +185,51 @@ public sealed class CodeGenerator
         sb.AppendLine("}");
     }
 
+    // ── Event Constants Classes ─────────────────────────────────────
+
+    /// <summary>
+    /// Computes the event code string for a given event.
+    /// Returns "{prefix}-{id}" if a prefix is available, or just "{id}" otherwise.
+    /// Per-event prefix overrides the schema-level prefix.
+    /// </summary>
+    internal static string ComputeEventCode(EventDefinition evt, string? schemaPrefix)
+    {
+        var effectivePrefix = evt.Prefix ?? schemaPrefix;
+        return effectivePrefix is not null
+            ? $"{effectivePrefix}-{evt.Id}"
+            : evt.Id.ToString();
+    }
+
+    private static void GenerateEventConstantsClass(
+        StringBuilder sb,
+        EventDefinition evt,
+        string? schemaPrefix)
+    {
+        var className = NamingHelper.ToMethodName(evt.Name);
+        var code = ComputeEventCode(evt, schemaPrefix);
+
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine($"/// Constants for the {className} event.");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine($"public static class {className}");
+        sb.AppendLine("{");
+        sb.AppendLine($"    /// <summary>The event code string (prefix + numeric ID).</summary>");
+        sb.AppendLine($"    public const string Code = \"{EscapeString(code)}\";");
+        sb.AppendLine();
+        sb.AppendLine($"    /// <summary>The numeric event ID.</summary>");
+        sb.AppendLine($"    public const int NumericId = {evt.Id};");
+        sb.AppendLine();
+        sb.AppendLine($"    /// <summary>The event name.</summary>");
+        sb.AppendLine($"    public const string EventName = \"{EscapeString(className)}\";");
+        sb.AppendLine("}");
+    }
+
     // ── LoggerMessage Extensions ───────────────────────────────────
 
     private static void GenerateLoggerExtensionsClass(
         StringBuilder sb,
         string schemaName,
-        List<EventDefinition> events)
+        SchemaDocument doc)
     {
         sb.AppendLine("/// <summary>");
         sb.AppendLine($"/// LoggerMessage methods for {schemaName} events.");
@@ -191,10 +237,10 @@ public sealed class CodeGenerator
         sb.AppendLine($"public static partial class {schemaName}LoggerExtensions");
         sb.AppendLine("{");
 
-        for (var i = 0; i < events.Count; i++)
+        for (var i = 0; i < doc.Events.Count; i++)
         {
             if (i > 0) sb.AppendLine();
-            GenerateLoggerMessageMethod(sb, events[i]);
+            GenerateLoggerMessageMethod(sb, doc.Events[i], doc.Schema.Prefix);
         }
 
         sb.AppendLine("}");
@@ -202,14 +248,17 @@ public sealed class CodeGenerator
 
     private static void GenerateLoggerMessageMethod(
         StringBuilder sb,
-        EventDefinition evt)
+        EventDefinition evt,
+        string? schemaPrefix)
     {
         var methodName = NamingHelper.ToMethodName(evt.Name);
         var logLevel = TypeMapper.ToLogLevel(evt.Severity);
+        var eventCode = ComputeEventCode(evt, schemaPrefix);
 
         // [LoggerMessage] attribute
         sb.AppendLine($"    [LoggerMessage(");
         sb.AppendLine($"        EventId = {evt.Id},");
+        sb.AppendLine($"        EventName = \"{EscapeString(eventCode)}\",");
         sb.AppendLine($"        Level = {logLevel},");
         sb.AppendLine($"        Message = \"{EscapeString(evt.Message)}\")]");
 

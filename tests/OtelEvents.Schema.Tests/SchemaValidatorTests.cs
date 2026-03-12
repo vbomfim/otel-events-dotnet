@@ -237,7 +237,6 @@ public class SchemaValidatorTests
     // ── OTEL_SCHEMA_006: Event name format ───────────────────────────────
 
     [Theory]
-    [InlineData("NotLowerCase")]
     [InlineData("no-dashes-allowed")]
     [InlineData("singleword")]
     [InlineData("has spaces")]

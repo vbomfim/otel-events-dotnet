@@ -191,7 +191,8 @@ public sealed class SchemaParser
             Namespace = GetRequiredScalar(schemaNode, "namespace", "schema.namespace"),
             Description = GetOptionalScalar(schemaNode, "description"),
             MeterName = GetOptionalScalar(schemaNode, "meterName"),
-            MeterLifecycle = ParseMeterLifecycle(GetOptionalScalar(schemaNode, "meterLifecycle"))
+            MeterLifecycle = ParseMeterLifecycle(GetOptionalScalar(schemaNode, "meterLifecycle")),
+            Prefix = GetOptionalScalar(schemaNode, "prefix")
         };
     }
 
@@ -294,6 +295,7 @@ public sealed class SchemaParser
             }
 
             var parentEvent = GetOptionalScalar(eventMapping, "parent");
+            var eventPrefix = GetOptionalScalar(eventMapping, "prefix");
 
             events.Add(new EventDefinition
             {
@@ -308,7 +310,8 @@ public sealed class SchemaParser
                 Tags = tags,
                 EventType = eventType,
                 ParentEvent = parentEvent,
-                RawEventType = eventTypeStr
+                RawEventType = eventTypeStr,
+                Prefix = eventPrefix
             });
         }
         return events;

@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System;
 using System.Diagnostics.Metrics;
 using Microsoft.Extensions.Logging;
 using OtelEvents.Causality;
@@ -11,14 +12,55 @@ namespace OtelEvents.Sample.WebApi.Events;
 
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for order lifecycle events.
-/// Demonstrates typed transactions: start/success/failure/event patterns.
-/// All fields are strings (simplified schema — Issue #42).
+/// Schema v3: PascalCase names, string event codes with ORDER prefix.
 /// </summary>
 internal static partial class OrderEvents
 {
+    // ─── Schema Metadata ────────────────────────────────────────────────
+
+    /// <summary>The schema version from the YAML definition.</summary>
+    public const string SchemaVersion = "3.0.0";
+
+    /// <summary>The schema name from the YAML definition.</summary>
+    public const string SchemaName = "Orders";
+
+    // ─── Event Constants ────────────────────────────────────────────────
+
+    /// <summary>Constants for the OrderPlaced event.</summary>
+    public static class OrderPlaced
+    {
+        public const string Code = "ORDER-1000";
+        public const int NumericId = 1000;
+        public const string EventName = "OrderPlaced";
+    }
+
+    /// <summary>Constants for the OrderCompleted event.</summary>
+    public static class OrderCompleted
+    {
+        public const string Code = "ORDER-1001";
+        public const int NumericId = 1001;
+        public const string EventName = "OrderCompleted";
+    }
+
+    /// <summary>Constants for the OrderFailed event.</summary>
+    public static class OrderFailed
+    {
+        public const string Code = "ORDER-2000";
+        public const int NumericId = 2000;
+        public const string EventName = "OrderFailed";
+    }
+
+    /// <summary>Constants for the OrderNoteAdded event.</summary>
+    public static class OrderNoteAdded
+    {
+        public const string Code = "ORDER-1002";
+        public const int NumericId = 1002;
+        public const string EventName = "OrderNoteAdded";
+    }
+
     // ─── Meter & Instruments ────────────────────────────────────────────
 
-    private static readonly Meter s_meter = new("Sample.Events.Orders", "1.1.0");
+    private static readonly Meter s_meter = new("Sample.Events.Orders", "3.0.0");
 
     internal static readonly Counter<long> OrderPlacedCount =
         s_meter.CreateCounter<long>("sample.order.placed.count", "orders", "Total orders placed");
@@ -29,14 +71,14 @@ internal static partial class OrderEvents
     internal static readonly Counter<long> OrderFailedCount =
         s_meter.CreateCounter<long>("sample.order.failed.count", "errors", "Total order failures");
 
-    // ─── Event: order.placed (ID 20001) — type: start ───────────────────
+    // ─── Event: OrderPlaced (ID 1000, Code ORDER-1000) — type: start ────
     // Creates a causal scope + starts timer. Returns transaction handle.
 
     [LoggerMessage(
-        EventId = 20001,
-        EventName = "order.placed",
+        EventId = 1000,
+        EventName = "ORDER-1000",
         Level = LogLevel.Information,
-        Message = "Order {OrderId} placed by customer {CustomerId} for ${Amount}")]
+        Message = "Order {OrderId} placed by {CustomerId} for ${Amount}")]
     private static partial void LogOrderPlaced(
         ILogger logger,
         string orderId,
@@ -44,7 +86,7 @@ internal static partial class OrderEvents
         string amount);
 
     /// <summary>
-    /// Emits <c>order.placed</c> (type: start) — creates a transaction scope.
+    /// Emits <c>OrderPlaced</c> (type: start) — creates a transaction scope.
     /// Dispose the returned handle to end the transaction.
     /// </summary>
     internal static OtelEventsTransactionScope BeginOrderPlaced(
@@ -61,15 +103,15 @@ internal static partial class OrderEvents
         if (double.TryParse(amount, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amountValue))
             OrderPlacedAmount.Record(amountValue);
 
-        return OtelEventsTransactionScope.Begin("order.placed");
+        return OtelEventsTransactionScope.Begin("OrderPlaced");
     }
 
-    // ─── Event: order.completed (ID 20002) — type: success ──────────────
-    // Closes parent scope (order.placed) as success, records duration.
+    // ─── Event: OrderCompleted (ID 1001, Code ORDER-1001) — type: success ─
+    // Closes parent scope (OrderPlaced) as success, records duration.
 
     [LoggerMessage(
-        EventId = 20002,
-        EventName = "order.completed",
+        EventId = 1001,
+        EventName = "ORDER-1001",
         Level = LogLevel.Information,
         Message = "Order {OrderId} shipped via {Carrier}")]
     private static partial void LogOrderCompleted(
@@ -78,23 +120,23 @@ internal static partial class OrderEvents
         string carrier);
 
     /// <summary>
-    /// Emits <c>order.completed</c> (type: success) — closes the order.placed transaction.
+    /// Emits <c>OrderCompleted</c> (type: success) — closes the OrderPlaced transaction.
     /// </summary>
-    internal static void OrderCompleted(
+    internal static void EmitOrderCompleted(
         this ILogger logger,
         string orderId,
         string carrier)
     {
         LogOrderCompleted(logger, orderId, carrier);
-        OtelEventsTransactionScope.TryComplete("order.placed", "order.completed");
+        OtelEventsTransactionScope.TryComplete("OrderPlaced", "OrderCompleted");
     }
 
-    // ─── Event: order.failed (ID 20003) — type: failure ─────────────────
-    // Closes parent scope (order.placed) as failure, records duration.
+    // ─── Event: OrderFailed (ID 2000, Code ORDER-2000) — type: failure ──
+    // Closes parent scope (OrderPlaced) as failure, records duration.
 
     [LoggerMessage(
-        EventId = 20003,
-        EventName = "order.failed",
+        EventId = 2000,
+        EventName = "ORDER-2000",
         Level = LogLevel.Error,
         Message = "Order {OrderId} failed: {Reason}")]
     private static partial void LogOrderFailed(
@@ -104,9 +146,9 @@ internal static partial class OrderEvents
         string reason);
 
     /// <summary>
-    /// Emits <c>order.failed</c> (type: failure) — closes the order.placed transaction.
+    /// Emits <c>OrderFailed</c> (type: failure) — closes the OrderPlaced transaction.
     /// </summary>
-    internal static void OrderFailed(
+    internal static void EmitOrderFailed(
         this ILogger logger,
         string orderId,
         string reason,
@@ -114,15 +156,15 @@ internal static partial class OrderEvents
     {
         LogOrderFailed(logger, exception, orderId, reason);
         OrderFailedCount.Add(1);
-        OtelEventsTransactionScope.TryFail("order.placed", "order.failed");
+        OtelEventsTransactionScope.TryFail("OrderPlaced", "OrderFailed");
     }
 
-    // ─── Event: order.note.added (ID 20004) — type: event (default) ─────
+    // ─── Event: OrderNoteAdded (ID 1002, Code ORDER-1002) — type: event ─
     // Plain event — no scope effect.
 
     [LoggerMessage(
-        EventId = 20004,
-        EventName = "order.note.added",
+        EventId = 1002,
+        EventName = "ORDER-1002",
         Level = LogLevel.Information,
         Message = "Note added to order {OrderId}: {Note}")]
     private static partial void LogOrderNoteAdded(
@@ -131,9 +173,9 @@ internal static partial class OrderEvents
         string note);
 
     /// <summary>
-    /// Emits <c>order.note.added</c> (type: event) — standalone, no transaction effect.
+    /// Emits <c>OrderNoteAdded</c> (type: event) — standalone, no transaction effect.
     /// </summary>
-    internal static void OrderNoteAdded(
+    internal static void EmitOrderNoteAdded(
         this ILogger logger,
         string orderId,
         string note)

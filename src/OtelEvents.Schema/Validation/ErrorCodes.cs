@@ -20,7 +20,7 @@ public static class ErrorCodes
     /// <summary>Field types must be from the supported type list.</summary>
     public const string InvalidType = "OTEL_SCHEMA_005";
 
-    /// <summary>Event names must be dot-namespaced, lowercase, alphanumeric + dots only.</summary>
+    /// <summary>Event names must be PascalCase or dot-namespaced, lowercase, alphanumeric + dots only.</summary>
     public const string InvalidEventNameFormat = "OTEL_SCHEMA_006";
 
     /// <summary>Required fields must have a type (directly or via ref).</summary>

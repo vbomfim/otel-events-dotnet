@@ -30,6 +30,11 @@
           "type": "string",
           "description": "OTEL Meter name for generated metrics (defaults to namespace)"
         },
+        "prefix": {
+          "type": "string",
+          "description": "Event code prefix — event codes become '{prefix}-{id}' (e.g., 'ORDER-1000')",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
         "description": {
           "type": "string",
           "description": "Human-readable schema description"
@@ -38,7 +43,7 @@
     },
     "events": {
       "type": "object",
-      "description": "Event definitions — keys are event names (lowercase, dot-namespaced)",
+      "description": "Event definitions — keys are event names (PascalCase or lowercase dot-namespaced)",
       "additionalProperties": {
         "$ref": "#/definitions/event"
       }
@@ -78,6 +83,11 @@
         "parent": {
           "type": "string",
           "description": "Parent start event name — required for success and failure types"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Per-event prefix override — overrides the schema-level prefix for this event's code",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
         },
         "severity": {
           "type": "string",
