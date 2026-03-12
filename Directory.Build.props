@@ -22,4 +22,8 @@
     <PackageTags>opentelemetry;otel;logging;events;observability;dotnet;structured-logging</PackageTags>
     <Copyright>Copyright (c) 2026 Bomfim</Copyright>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)assets/icon.png" Pack="true" PackagePath="/" />
+  </ItemGroup>
 </Project>
