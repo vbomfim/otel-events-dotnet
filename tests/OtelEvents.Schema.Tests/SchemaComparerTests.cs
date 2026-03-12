@@ -20,7 +20,7 @@ public class SchemaComparerTests
     {
         var schema = CreateSchema(events:
         [
-            CreateEvent("http.request", 1, fields: [CreateField("method", FieldType.String)])
+            CreateEvent("http.request", 1, fields: [CreateField("method")])
         ]);
 
         var result = _comparer.Compare(schema, schema);
@@ -107,7 +107,7 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String)
+                CreateField("method")
             ])
         ]);
 
@@ -115,8 +115,8 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String),
-                CreateField("path", FieldType.String)
+                CreateField("method"),
+                CreateField("path")
             ])
         ]);
 
@@ -137,8 +137,8 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String),
-                CreateField("path", FieldType.String)
+                CreateField("method"),
+                CreateField("path")
             ])
         ]);
 
@@ -146,7 +146,7 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String)
+                CreateField("method")
             ])
         ]);
 
@@ -160,13 +160,14 @@ public class SchemaComparerTests
     }
 
     [Fact]
-    public void Compare_FieldTypeChanged_ReportsBreakingChange()
+    public void Compare_FieldsSame_NoChanges()
     {
+        // All fields are strings now, so same-name fields are always equal
         var oldSchema = CreateSchema(events:
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("statusCode", FieldType.String)
+                CreateField("statusCode")
             ])
         ]);
 
@@ -174,17 +175,13 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("statusCode", FieldType.Int)
+                CreateField("statusCode")
             ])
         ]);
 
         var result = _comparer.Compare(oldSchema, newSchema);
 
-        Assert.Single(result.Changes);
-        var change = result.Changes[0];
-        Assert.Equal(SchemaChangeKind.FieldTypeChanged, change.Kind);
-        Assert.Contains("statusCode", change.Name);
-        Assert.True(change.IsBreaking);
+        Assert.Empty(result.Changes);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -203,7 +200,7 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String)
+                CreateField("method")
             ]),
             CreateEvent("http.response", 2)
         ]);
@@ -220,7 +217,7 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String)
+                CreateField("method")
             ]),
             CreateEvent("http.response", 2)
         ]);
@@ -229,8 +226,8 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String),
-                CreateField("path", FieldType.String) // added, non-breaking
+                CreateField("method"),
+                CreateField("path") // added, non-breaking
             ])
             // http.response removed — breaking
         ]);
@@ -273,7 +270,7 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String)
+                CreateField("method")
             ])
         ]);
 
@@ -281,7 +278,8 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.Int) // type changed
+                CreateField("method"),
+                CreateField("path") // field added
             ])
         ]);
 
@@ -289,8 +287,6 @@ public class SchemaComparerTests
         var change = result.Changes[0];
 
         Assert.NotEmpty(change.Description);
-        Assert.Contains("string", change.Description, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("int", change.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -305,7 +301,7 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String)
+                CreateField("method")
             ])
         ]);
 
@@ -340,8 +336,8 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String),
-                CreateField("oldField", FieldType.String)
+                CreateField("method"),
+                CreateField("oldField")
             ])
         ]);
 
@@ -349,8 +345,8 @@ public class SchemaComparerTests
         [
             CreateEvent("http.request", 1, fields:
             [
-                CreateField("method", FieldType.String),
-                CreateField("newField", FieldType.String)
+                CreateField("method"),
+                CreateField("newField")
             ])
         ]);
 
@@ -390,10 +386,8 @@ public class SchemaComparerTests
     };
 
     private static FieldDefinition CreateField(
-        string name,
-        FieldType type) => new()
+        string name) => new()
     {
-        Name = name,
-        Type = type
+        Name = name
     };
 }

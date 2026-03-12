@@ -283,38 +283,9 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // OTEL_SCHEMA_005: Type validity (if raw type was provided but didn't parse)
-        if (field.RawType is not null && field.Type is null && field.Ref is null)
-        {
-            errors.Add(new SchemaError
-            {
-                Code = ErrorCodes.InvalidType,
-                Message = $"Field '{field.Name}' in event '{eventName}' has invalid type '{field.RawType}'."
-            });
-        }
-
-        // OTEL_SCHEMA_004: Ref resolution
-        if (field.Ref is not null)
-        {
-            if (!sharedFields.ContainsKey(field.Ref) && !enums.ContainsKey(field.Ref))
-            {
-                errors.Add(new SchemaError
-                {
-                    Code = ErrorCodes.UnresolvedRef,
-                    Message = $"Field '{field.Name}' in event '{eventName}' references undefined field/enum '{field.Ref}'."
-                });
-            }
-        }
-
-        // OTEL_SCHEMA_007: Required field must have a type (directly or via ref)
-        if (field.Required && field.Type is null && field.Ref is null)
-        {
-            errors.Add(new SchemaError
-            {
-                Code = ErrorCodes.RequiredFieldMissingType,
-                Message = $"Required field '{field.Name}' in event '{eventName}' must have a type or ref."
-            });
-        }
+        // OTEL_SCHEMA_005: Removed — all fields are strings, no type validation needed.
+        // OTEL_SCHEMA_004: Removed — ref field referencing has been removed.
+        // OTEL_SCHEMA_007: Removed — required fields no longer need a type/ref (all are strings).
 
         // OTEL_SCHEMA_014: Sensitivity validity
         if (field.RawSensitivity is not null &&

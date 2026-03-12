@@ -110,21 +110,6 @@ public sealed class SchemaComparer
             }
         }
 
-        // Fields in both — check type changes
-        foreach (var oldField in oldFields)
-        {
-            if (newByName.TryGetValue(oldField.Name, out var newField))
-            {
-                if (oldField.Type != newField.Type)
-                {
-                    changes.Add(new SchemaChange
-                    {
-                        Kind = SchemaChangeKind.FieldTypeChanged,
-                        Name = $"{eventName}.{oldField.Name}",
-                        Description = $"Field '{oldField.Name}' in event '{eventName}' changed type from '{oldField.Type}' to '{newField.Type}'."
-                    });
-                }
-            }
-        }
+        // Fields in both — type changes no longer apply since all fields are strings
     }
 }

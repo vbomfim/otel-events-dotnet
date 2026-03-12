@@ -12,12 +12,13 @@ namespace OtelEvents.Sample.WebApi.Events;
 /// <summary>
 /// Pre-compiled [LoggerMessage] methods and metrics for order lifecycle events.
 /// Demonstrates typed transactions: start/success/failure/event patterns.
+/// All fields are strings (simplified schema — Issue #42).
 /// </summary>
 internal static partial class OrderEvents
 {
     // ─── Meter & Instruments ────────────────────────────────────────────
 
-    private static readonly Meter s_meter = new("Sample.Events.Orders", "1.0.0");
+    private static readonly Meter s_meter = new("Sample.Events.Orders", "1.1.0");
 
     internal static readonly Counter<long> OrderPlacedCount =
         s_meter.CreateCounter<long>("sample.order.placed.count", "orders", "Total orders placed");
@@ -40,7 +41,7 @@ internal static partial class OrderEvents
         ILogger logger,
         string orderId,
         string customerId,
-        double amount);
+        string amount);
 
     /// <summary>
     /// Emits <c>order.placed</c> (type: start) — creates a transaction scope.
@@ -50,13 +51,15 @@ internal static partial class OrderEvents
         this ILogger logger,
         string orderId,
         string customerId,
-        double amount)
+        string amount)
     {
         LogOrderPlaced(logger, orderId, customerId, amount);
 
         OrderPlacedCount.Add(1,
             new KeyValuePair<string, object?>("customerId", customerId));
-        OrderPlacedAmount.Record(amount);
+
+        if (double.TryParse(amount, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amountValue))
+            OrderPlacedAmount.Record(amountValue);
 
         return OtelEventsTransactionScope.Begin("order.placed");
     }

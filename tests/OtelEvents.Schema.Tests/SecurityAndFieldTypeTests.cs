@@ -232,10 +232,10 @@ public class SecurityAndFieldTypeTests
         var fields = result.Document!.Events[0].Fields;
 
         var tagsField = fields.First(f => f.Name == "tags");
-        Assert.Equal(FieldType.StringArray, tagsField.Type);
+        Assert.Equal("Tags for categorization", tagsField.Description);
 
         var scoresField = fields.First(f => f.Name == "scores");
-        Assert.Equal(FieldType.IntArray, scoresField.Type);
+        Assert.Equal("Numeric scores", scoresField.Description);
     }
 
     [Fact]
@@ -257,8 +257,8 @@ public class SecurityAndFieldTypeTests
         Assert.True(result.IsSuccess);
         var fields = result.Document!.Fields;
 
-        Assert.Equal(FieldType.StringArray, fields.First(f => f.Name == "tags").Type);
-        Assert.Equal(FieldType.IntArray, fields.First(f => f.Name == "ids").Type);
+        Assert.Contains(fields, f => f.Name == "tags");
+        Assert.Contains(fields, f => f.Name == "ids");
     }
 
     // ── Map Field Type ──────────────────────────────────────────────────
@@ -286,7 +286,7 @@ public class SecurityAndFieldTypeTests
 
         Assert.True(result.IsSuccess);
         var field = result.Document!.Events[0].Fields.First(f => f.Name == "metadata");
-        Assert.Equal(FieldType.Map, field.Type);
+        Assert.Equal("Key-value metadata", field.Description);
     }
 
     [Fact]
@@ -304,6 +304,6 @@ public class SecurityAndFieldTypeTests
         var result = _parser.Parse(yaml, yaml.Length);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(FieldType.Map, result.Document!.Fields.First(f => f.Name == "headers").Type);
+        Assert.Contains(result.Document!.Fields, f => f.Name == "headers");
     }
 }

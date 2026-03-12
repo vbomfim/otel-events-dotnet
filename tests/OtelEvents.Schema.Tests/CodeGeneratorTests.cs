@@ -123,7 +123,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }]
         });
 
         var files = _generator.GenerateFromSchema(doc);
@@ -145,7 +145,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }]
         });
 
         var files = _generator.GenerateFromSchema(doc);
@@ -166,7 +166,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }]
         });
 
         var files = _generator.GenerateFromSchema(doc);
@@ -204,9 +204,9 @@ public class CodeGeneratorTests
             Message = "Order {orderId} placed by {userId} for {amount}",
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "userId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = true }
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "userId", Required = true },
+                new FieldDefinition { Name = "amount", Required = true }
             ]
         });
 
@@ -215,7 +215,7 @@ public class CodeGeneratorTests
 
         Assert.Contains("string orderId", content);
         Assert.Contains("string userId", content);
-        Assert.Contains("double amount", content);
+        Assert.Contains("string amount", content);
     }
 
     [Fact]
@@ -229,9 +229,9 @@ public class CodeGeneratorTests
             Message = "Order {orderId} placed",
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "userId", Type = FieldType.String, Required = false },
-                new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = false }
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "userId", Required = false },
+                new FieldDefinition { Name = "amount", Required = false }
             ]
         });
 
@@ -239,7 +239,7 @@ public class CodeGeneratorTests
         var content = files.First(f => f.FileName.Contains("Events")).Content;
 
         Assert.Contains("string? userId", content);
-        Assert.Contains("double? amount", content);
+        Assert.Contains("string? amount", content);
     }
 
     [Fact]
@@ -252,7 +252,7 @@ public class CodeGeneratorTests
             Severity = Severity.Error,
             Message = "Order {orderId} failed",
             Exception = true,
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }]
         });
 
         var files = _generator.GenerateFromSchema(doc);
@@ -339,17 +339,17 @@ public class CodeGeneratorTests
             Message = "Type test",
             Fields =
             [
-                new FieldDefinition { Name = "strField", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "intField", Type = FieldType.Int, Required = true },
-                new FieldDefinition { Name = "longField", Type = FieldType.Long, Required = true },
-                new FieldDefinition { Name = "doubleField", Type = FieldType.Double, Required = true },
-                new FieldDefinition { Name = "boolField", Type = FieldType.Bool, Required = true },
-                new FieldDefinition { Name = "dateField", Type = FieldType.DateTime, Required = true },
-                new FieldDefinition { Name = "durationField", Type = FieldType.Duration, Required = true },
-                new FieldDefinition { Name = "guidField", Type = FieldType.Guid, Required = true },
-                new FieldDefinition { Name = "strArrayField", Type = FieldType.StringArray, Required = true },
-                new FieldDefinition { Name = "intArrayField", Type = FieldType.IntArray, Required = true },
-                new FieldDefinition { Name = "mapField", Type = FieldType.Map, Required = true }
+                new FieldDefinition { Name = "strField", Required = true },
+                new FieldDefinition { Name = "intField", Required = true },
+                new FieldDefinition { Name = "longField", Required = true },
+                new FieldDefinition { Name = "doubleField", Required = true },
+                new FieldDefinition { Name = "boolField", Required = true },
+                new FieldDefinition { Name = "dateField", Required = true },
+                new FieldDefinition { Name = "durationField", Required = true },
+                new FieldDefinition { Name = "guidField", Required = true },
+                new FieldDefinition { Name = "strArrayField", Required = true },
+                new FieldDefinition { Name = "intArrayField", Required = true },
+                new FieldDefinition { Name = "mapField", Required = true }
             ]
         });
 
@@ -357,16 +357,16 @@ public class CodeGeneratorTests
         var content = files.First(f => f.FileName.Contains("Events")).Content;
 
         Assert.Contains("string strField", content);
-        Assert.Contains("int intField", content);
-        Assert.Contains("long longField", content);
-        Assert.Contains("double doubleField", content);
-        Assert.Contains("bool boolField", content);
-        Assert.Contains("DateTimeOffset dateField", content);
-        Assert.Contains("TimeSpan durationField", content);
-        Assert.Contains("Guid guidField", content);
-        Assert.Contains("string[] strArrayField", content);
-        Assert.Contains("int[] intArrayField", content);
-        Assert.Contains("Dictionary<string, string> mapField", content);
+        Assert.Contains("string intField", content);
+        Assert.Contains("string longField", content);
+        Assert.Contains("string doubleField", content);
+        Assert.Contains("string boolField", content);
+        Assert.Contains("string dateField", content);
+        Assert.Contains("string durationField", content);
+        Assert.Contains("string guidField", content);
+        Assert.Contains("string strArrayField", content);
+        Assert.Contains("string intArrayField", content);
+        Assert.Contains("string mapField", content);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -523,7 +523,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }],
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }],
             Metrics = [new MetricDefinition { Name = "order.placed.count", Type = MetricType.Counter }]
         });
 
@@ -543,7 +543,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }],
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }],
             Metrics = [new MetricDefinition { Name = "order.placed.count", Type = MetricType.Counter }]
         });
 
@@ -582,8 +582,8 @@ public class CodeGeneratorTests
             Message = "Order {orderId} placed for {amount}",
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = true }
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "amount", Required = true }
             ],
             Metrics = [new MetricDefinition { Name = "order.placed.amount", Type = MetricType.Histogram }]
         });
@@ -607,8 +607,8 @@ public class CodeGeneratorTests
             Message = "Order {orderId} placed",
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "region", Type = FieldType.String, Required = true }
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "region", Required = true }
             ],
             Metrics = [new MetricDefinition
             {
@@ -634,7 +634,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }]
         });
 
         var files = _generator.GenerateFromSchema(doc);
@@ -781,7 +781,7 @@ public class CodeGeneratorTests
     }
 
     [Fact]
-    public void Generate_InlineEnum_GeneratesEnumFile()
+    public void Generate_StringField_DoesNotGenerateEnumFile()
     {
         var doc = CreateSchemaWithEvent(new EventDefinition
         {
@@ -794,8 +794,6 @@ public class CodeGeneratorTests
                 new FieldDefinition
                 {
                     Name = "method",
-                    Type = FieldType.Enum,
-                    Values = ["GET", "POST", "PUT", "DELETE"],
                     Required = true
                 }
             ]
@@ -803,7 +801,8 @@ public class CodeGeneratorTests
 
         var files = _generator.GenerateFromSchema(doc);
 
-        Assert.Contains(files, f => f.FileName.Contains("Method") && f.Content.Contains("public enum Method"));
+        // String fields do not generate separate enum files
+        Assert.DoesNotContain(files, f => f.FileName.Contains("Method") && f.Content.Contains("public enum Method"));
     }
 
     [Fact]
@@ -819,8 +818,8 @@ public class CodeGeneratorTests
             },
             Enums =
             [
-                new EnumDefinition { Name = "color", Values = ["Red", "Green", "Blue"] },
-                new EnumDefinition { Name = "size", Values = ["Small", "Medium", "Large"] }
+                new EnumDefinition { Name = "color", Values = ["Red", "Blue"] },
+                new EnumDefinition { Name = "size", Values = ["Small", "Large"] }
             ]
         };
 
@@ -872,7 +871,7 @@ public class CodeGeneratorTests
             },
             Enums =
             [
-                new EnumDefinition { Name = "order_status", Values = ["Pending", "Completed", "Failed"] }
+                new EnumDefinition { Name = "order_status", Values = ["Pending", "Completed", "Cancelled"] }
             ],
             Events =
             [
@@ -884,10 +883,10 @@ public class CodeGeneratorTests
                     Message = "Order {orderId} placed by {userId} for {amount}",
                     Fields =
                     [
-                        new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                        new FieldDefinition { Name = "userId", Type = FieldType.String, Required = true },
-                        new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = true },
-                        new FieldDefinition { Name = "status", Type = FieldType.Enum, Ref = "order_status", Required = true }
+                        new FieldDefinition { Name = "orderId", Required = true },
+                        new FieldDefinition { Name = "userId", Required = true },
+                        new FieldDefinition { Name = "amount", Required = true },
+                        new FieldDefinition { Name = "status", Required = true }
                     ],
                     Metrics =
                     [
@@ -924,7 +923,7 @@ public class CodeGeneratorTests
 
         // Emit method
         Assert.Contains("EmitOrderPlaced", eventsFile.Content);
-        Assert.Contains("OrderStatus status", eventsFile.Content);
+        Assert.Contains("string status", eventsFile.Content);
 
         // Enum file
         Assert.Contains("public enum OrderStatus", enumFile.Content);
@@ -944,7 +943,7 @@ public class CodeGeneratorTests
             Id = 1001,
             Severity = Severity.Info,
             Message = "Order {orderId} placed",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "orderId", Required = true }]
         });
 
         var files = _generator.GenerateFromSchema(doc);
@@ -971,7 +970,7 @@ public class CodeGeneratorTests
             },
             Enums =
             [
-                new EnumDefinition { Name = "payment_method", Values = ["CreditCard", "DebitCard", "PayPal", "BankTransfer"] }
+                new EnumDefinition { Name = "payment_method", Values = ["CreditCard", "PayPal", "Crypto"] }
             ],
             Events =
             [
@@ -984,10 +983,10 @@ public class CodeGeneratorTests
                     Exception = false,
                     Fields =
                     [
-                        new FieldDefinition { Name = "paymentId", Type = FieldType.String, Required = true },
-                        new FieldDefinition { Name = "method", Type = FieldType.Enum, Ref = "payment_method", Required = true },
-                        new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = true },
-                        new FieldDefinition { Name = "currency", Type = FieldType.String, Required = false }
+                        new FieldDefinition { Name = "paymentId", Required = true },
+                        new FieldDefinition { Name = "method", Required = true },
+                        new FieldDefinition { Name = "amount", Required = true },
+                        new FieldDefinition { Name = "currency", Required = false }
                     ],
                     Metrics =
                     [
@@ -1011,8 +1010,8 @@ public class CodeGeneratorTests
                     Exception = true,
                     Fields =
                     [
-                        new FieldDefinition { Name = "paymentId", Type = FieldType.String, Required = true },
-                        new FieldDefinition { Name = "reason", Type = FieldType.String, Required = true }
+                        new FieldDefinition { Name = "paymentId", Required = true },
+                        new FieldDefinition { Name = "reason", Required = true }
                     ],
                     Metrics =
                     [
@@ -1043,8 +1042,8 @@ public class CodeGeneratorTests
             Message = "Order {orderId} placed",
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = true }
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "amount", Required = true }
             ],
             Metrics =
             [
@@ -1175,6 +1174,82 @@ public class CodeGeneratorTests
 
         Assert.DoesNotContain("TestServiceMetrics", content);
         Assert.DoesNotContain("new Meter(", content);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 11. STRING-ONLY FIELDS — ALL PARAMS ARE STRING
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Generate_AllFieldsAreStrings_NoMatterWhatYamlTypeSaid()
+    {
+        var doc = CreateSchemaWithEvent(new EventDefinition
+        {
+            Name = "test.strings",
+            Id = 8000,
+            Severity = Severity.Info,
+            Message = "Test {orderId} for {amount}",
+            Fields =
+            [
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "amount", Required = true },
+                new FieldDefinition { Name = "isActive", Required = false }
+            ]
+        });
+
+        var files = _generator.GenerateFromSchema(doc);
+        var content = files.First(f => f.FileName.Contains("Events")).Content;
+
+        Assert.Contains("string orderId", content);
+        Assert.Contains("string amount", content);
+        Assert.Contains("string? isActive", content);
+        Assert.DoesNotContain("double amount", content);
+        Assert.DoesNotContain("bool isActive", content);
+    }
+
+    [Fact]
+    public void Generate_HistogramMetric_UsesDoubleTryParse()
+    {
+        var doc = CreateSchemaWithEvent(new EventDefinition
+        {
+            Name = "order.placed",
+            Id = 1001,
+            Severity = Severity.Info,
+            Message = "Order {orderId} for {amount}",
+            Fields =
+            [
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "amount", Required = true }
+            ],
+            Metrics = [new MetricDefinition { Name = "order.placed.amount", Type = MetricType.Histogram }]
+        });
+
+        var files = _generator.GenerateFromSchema(doc);
+        var content = files.First(f => f.FileName.Contains("Events")).Content;
+
+        // Should use double.TryParse since amount is a string but histogram needs double
+        Assert.Contains("double.TryParse(amount", content);
+        Assert.Contains("amountValue", content);
+        Assert.Contains(".Record(amountValue", content);
+    }
+
+    [Fact]
+    public void Generate_HistogramMetric_NoMatchingField_RecordsDefault()
+    {
+        var doc = CreateSchemaWithEvent(new EventDefinition
+        {
+            Name = "order.placed",
+            Id = 1001,
+            Severity = Severity.Info,
+            Message = "Order placed",
+            Metrics = [new MetricDefinition { Name = "order.placed.duration", Type = MetricType.Histogram }]
+        });
+
+        var files = _generator.GenerateFromSchema(doc);
+        var content = files.First(f => f.FileName.Contains("Events")).Content;
+
+        // No matching field named 'duration', should fall back to Record(1)
+        Assert.Contains(".Record(1", content);
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -24,17 +24,6 @@ schema:
   description: "Events for MyService"  # Optional: human-readable description
   meterName: "MyCompany.MyService"     # Optional: OTEL Meter name (defaults to namespace)
 
-# ─── Reusable Field Definitions (optional) ───────────────────────────
-fields:
-  fieldName:
-    type: string                       # Required: field type (see type table)
-    description: "Field description"   # Optional: documentation
-    sensitivity: public                # Optional: public|internal|pii|credential
-    index: true                        # Optional: marks field as queryable
-    maxLength: 256                     # Optional: max string length (truncated)
-    unit: "ms"                         # Optional: unit of measurement
-    examples: ["value1", "value2"]     # Optional: example values
-
 # ─── Enum Type Definitions (optional) ────────────────────────────────
 enums:
   EnumName:
@@ -53,14 +42,10 @@ events:
     message: "Template with {field}"   # Required: message template
     exception: false                   # Optional: adds Exception parameter (default: false)
     fields:                            # Required: at least one field
-      fieldName:
-        type: string                   # Direct type definition
-        required: true                 # Required: true or false
-        sensitivity: pii               # Optional: override field-level sensitivity
-        maxLength: 512                 # Optional: override field-level maxLength
-      otherField:
-        ref: fieldName                 # Reference to a reusable field definition
-        required: false
+      - fieldName                      # Shorthand: just a name (string, optional)
+      - otherField: { required: true } # With annotation
+      - piiField: { sensitivity: pii } # With sensitivity
+      - bounded: { maxLength: 512 }    # With max length
     metrics:                           # Optional: associated metrics
       metric.name:
         type: counter                  # counter, histogram, or gauge
@@ -88,39 +73,40 @@ events:
 
 ---
 
-## Field Types
+## Fields
 
-| YAML Type | C# Type | JSON Type | Notes |
-|-----------|---------|-----------|-------|
-| `string` | `string` | `string` | Max length governed by `maxLength` or `MaxAttributeValueLength` (default: 4096) |
-| `int` | `int` | `number` | 32-bit signed integer |
-| `long` | `long` | `number` | 64-bit signed integer |
-| `double` | `double` | `number` | IEEE 754 double-precision |
-| `bool` | `bool` | `boolean` | |
-| `datetime` | `DateTimeOffset` | `string` | ISO 8601 UTC format |
-| `duration` | `TimeSpan` | `string` | ISO 8601 duration format |
-| `guid` | `Guid` | `string` | Standard GUID format |
-| `enum` | Generated C# enum | `string` | Serialized as string name, not integer |
-| `string[]` | `string[]` | `array` | Array of strings |
-| `int[]` | `int[]` | `array` | Array of integers |
-| `map` | `Dictionary<string, string>` | `object` | String key-value pairs |
+**All fields are strings.** The schema no longer supports typed fields (`int`, `bool`, `datetime`, etc.). Every field is emitted as a `string` attribute in the generated code. This simplifies the schema, aligns with OpenTelemetry's attribute model (which favors string attributes for log events), and eliminates type-mapping complexity.
 
----
+### Shorthand List Syntax (Recommended)
 
-## Field Attributes
+Fields are defined as a YAML list. Each entry can be a plain name or a name with annotations:
+
+```yaml
+fields:
+  - orderId                           # just a name (string, optional)
+  - customerId: { sensitivity: pii }  # with annotation
+  - amount: { required: true }        # with required
+  - notes: { maxLength: 1024 }        # with max length
+  - region: { index: true }           # with index
+```
+
+Multiple annotations can be combined:
+
+```yaml
+fields:
+  - email: { required: true, sensitivity: pii, maxLength: 256 }
+```
+
+### Field Attributes
 
 | Attribute | Required | Type | Default | Description |
 |-----------|----------|------|---------|-------------|
-| `type` | ✅* | string | — | Field type (see table above). *Not required if `ref` is used |
-| `ref` | ❌ | string | — | Reference to a reusable field definition. Mutually exclusive with `type` |
+| `name` | ✅ | string | — | Field name (the YAML key or list entry name) |
 | `description` | ❌ | string | — | Documentation for generated XML doc comments |
-| `required` | ✅ | bool | — | Whether the field is required. Required fields are non-nullable in generated code |
+| `required` | ❌ | bool | `false` | Whether the field is required. Required fields are non-nullable in generated code |
 | `sensitivity` | ❌ | string | `public` | Data sensitivity: `public`, `internal`, `pii`, `credential` |
-| `index` | ❌ | bool | `false` | Marks the field as queryable/indexed (documentation hint) |
 | `maxLength` | ❌ | int | — | Maximum string length. Values exceeding this are truncated with `"…[truncated]"` |
-| `unit` | ❌ | string | — | Unit of measurement (documentation + metric instrument unit) |
-| `examples` | ❌ | string[] | — | Example values (documentation hint) |
-| `values` | ❌ | string[] | — | Enum values when `type: enum`. Required when type is `enum` |
+| `index` | ❌ | bool | `false` | Marks the field as queryable/indexed (documentation hint) |
 
 ---
 
@@ -168,18 +154,10 @@ events:
     severity: INFO
     message: "HTTP {method} {path} completed with {statusCode} in {durationMs}ms"
     fields:
-      method:
-        type: string
-        required: true
-      path:
-        type: string
-        required: true
-      statusCode:
-        type: int
-        required: true
-      durationMs:
-        type: double
-        required: true
+      - method: { required: true }
+      - path: { required: true }
+      - statusCode: { required: true }
+      - durationMs: { required: true }
     metrics:
       http.request.duration:
         type: histogram
@@ -198,7 +176,7 @@ events:
 
 ## Enums
 
-Define enum types that can be referenced by events:
+Define enum types at the top level. Enum values are generated as **plain strings** — the `enums:` block serves as documentation and validation, but all enum fields are transmitted as string attributes:
 
 ```yaml
 enums:
@@ -221,10 +199,7 @@ enums:
 
 ### Generated Code
 
-For each enum, the code generator produces:
-
-1. A C# `enum` type
-2. A `ToStringFast()` extension method (zero-allocation, switch-based)
+For each enum, the code generator produces a C# `enum` type and a `ToStringFast()` extension method (zero-allocation, switch-based). At runtime, enum fields are serialized as their string name:
 
 ```csharp
 // Generated enum
@@ -243,26 +218,6 @@ public static class HealthStatusExtensions
 }
 ```
 
-### Inline Enums
-
-Enums can also be defined inline within an event field:
-
-```yaml
-events:
-  db.query.executed:
-    id: 2001
-    severity: DEBUG
-    message: "Query on {table} ({operation}) completed"
-    fields:
-      table:
-        type: string
-        required: true
-      operation:
-        type: enum
-        values: [SELECT, INSERT, UPDATE, DELETE, MERGE]
-        required: true
-```
-
 ---
 
 ## Sensitivity Classification
@@ -276,21 +231,10 @@ events:
 
 ```yaml
 fields:
-  httpMethod:
-    type: string
-    sensitivity: public        # Safe everywhere
-
-  hostName:
-    type: string
-    sensitivity: internal      # Redacted in Production
-
-  userId:
-    type: string
-    sensitivity: pii           # Redacted in Staging + Production
-
-  apiKey:
-    type: string
-    sensitivity: credential    # Always redacted
+  - httpMethod                         # Safe everywhere (default: public)
+  - hostName: { sensitivity: internal }  # Redacted in Production
+  - userId: { sensitivity: pii }         # Redacted in Staging + Production
+  - apiKey: { sensitivity: credential }  # Always redacted
 ```
 
 See [Chapter 10 — Security & Privacy](10-security-privacy.md) for the complete redaction matrix.
@@ -303,14 +247,8 @@ Use `maxLength` to prevent unbounded attribute values:
 
 ```yaml
 fields:
-  userAgent:
-    type: string
-    sensitivity: pii
-    maxLength: 512            # Truncated at 512 characters
-
-  httpPath:
-    type: string
-    maxLength: 256            # Truncated at 256 characters
+  - userAgent: { sensitivity: pii, maxLength: 512 }   # Truncated at 512 characters
+  - httpPath: { maxLength: 256 }                       # Truncated at 256 characters
 ```
 
 Values exceeding `maxLength` are truncated with `"…[truncated]"`. The global default maximum is `MaxAttributeValueLength` (4096 characters).
@@ -352,12 +290,8 @@ events:
     message: "Order {orderId} failed: {reason}"
     exception: true            # Adds Exception parameter
     fields:
-      orderId:
-        type: string
-        required: true
-      reason:
-        type: string
-        required: true
+      - orderId: { required: true }
+      - reason: { required: true }
 ```
 
 Generated usage:
@@ -388,10 +322,7 @@ The schema parser validates at build time. Violations produce clear build errors
 | `OTEL_SCHEMA_001` | Duplicate event name within merged schemas |
 | `OTEL_SCHEMA_002` | Invalid severity (must be TRACE, DEBUG, INFO, WARN, ERROR, FATAL) |
 | `OTEL_SCHEMA_003` | Message template `{placeholder}` does not match any field name |
-| `OTEL_SCHEMA_004` | Unresolved `ref` (field or enum reference not found) |
-| `OTEL_SCHEMA_005` | Invalid field type |
 | `OTEL_SCHEMA_006` | Invalid event name format (must be lowercase, dot-namespaced) |
-| `OTEL_SCHEMA_007` | Required field missing type (directly or via ref) |
 | `OTEL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
 | `OTEL_SCHEMA_009` | Empty enum definition (must have at least one value) |
 | `OTEL_SCHEMA_010` | Invalid semver version |
@@ -430,6 +361,46 @@ For each schema, the code generator produces:
 | `{EnumName}.g.cs` | One file per enum type defined in the schema |
 | `{SchemaName}Metrics.g.cs` | Static `Meter` / `Counter` / `Histogram` instances |
 | `{SchemaName}MetricsServiceCollectionExtensions.g.cs` | DI registration extension (only for `meter_lifecycle: di`) |
+
+---
+
+## Backward Compatibility
+
+The following properties are **accepted but ignored** by the schema parser for backward compatibility with older schema files:
+
+| Property | Status | Notes |
+|----------|--------|-------|
+| `type` | Accepted, ignored | All fields are strings. Specifying `type: string` (or any other type) is harmless but has no effect |
+| `ref` | Removed | Field referencing is no longer supported. Inline all field definitions directly |
+| `values` | Removed | Inline enum values on fields are no longer supported. Use top-level `enums:` instead |
+| `examples` | Removed | Example values are no longer part of the schema |
+| `unit` | Removed | Unit of measurement on fields is removed. Units on **metrics** are still supported |
+
+### Migrating from Map Syntax
+
+The old map-style field syntax still works and is parsed correctly:
+
+```yaml
+# Old syntax — still accepted
+fields:
+  orderId:
+    type: string        # accepted but ignored
+    required: true
+  customerId:
+    type: string        # accepted but ignored
+    sensitivity: pii
+```
+
+However, the **recommended** syntax is the shorthand list format:
+
+```yaml
+# New syntax — recommended
+fields:
+  - orderId: { required: true }
+  - customerId: { sensitivity: pii }
+```
+
+Both forms produce identical generated code.
 
 ---
 

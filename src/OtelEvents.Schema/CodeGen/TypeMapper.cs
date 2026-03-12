@@ -3,51 +3,16 @@ using OtelEvents.Schema.Models;
 namespace OtelEvents.Schema.CodeGen;
 
 /// <summary>
-/// Maps YAML schema types to C# types and YAML severity to LogLevel.
+/// Maps schema types to C# types and YAML severity to LogLevel.
+/// All fields are now strings — type mapping is simplified.
 /// </summary>
 public static class TypeMapper
 {
     /// <summary>
-    /// Maps a <see cref="FieldType"/> to its C# type name.
+    /// Returns the C# type for any field. Always returns "string" since
+    /// all schema fields are string-typed.
     /// </summary>
-    public static string ToCSharpType(FieldType fieldType) => fieldType switch
-    {
-        FieldType.String => "string",
-        FieldType.Int => "int",
-        FieldType.Long => "long",
-        FieldType.Double => "double",
-        FieldType.Bool => "bool",
-        FieldType.DateTime => "DateTimeOffset",
-        FieldType.Duration => "TimeSpan",
-        FieldType.Guid => "Guid",
-        FieldType.StringArray => "string[]",
-        FieldType.IntArray => "int[]",
-        FieldType.Map => "Dictionary<string, string>",
-        FieldType.Enum => "string", // Resolved separately via GetFieldCSharpType
-        _ => "object"
-    };
-
-    /// <summary>
-    /// Gets the C# type for a field, handling enum references and inline enums.
-    /// </summary>
-    public static string GetFieldCSharpType(FieldDefinition field)
-    {
-        if (field.Type == FieldType.Enum)
-        {
-            if (field.Ref is not null)
-                return NamingHelper.ToPascalCase(field.Ref);
-
-            if (field.Values is { Count: > 0 })
-                return NamingHelper.ToPascalCase(field.Name);
-
-            return "string";
-        }
-
-        if (field.Type is not null)
-            return ToCSharpType(field.Type.Value);
-
-        return "object";
-    }
+    public static string GetFieldCSharpType(FieldDefinition field) => "string";
 
     /// <summary>
     /// Maps a <see cref="Severity"/> to its C# LogLevel string.
@@ -84,16 +49,5 @@ public static class TypeMapper
         MetricType.Histogram => "CreateHistogram",
         MetricType.Gauge => "CreateCounter", // Simplified: gauge as counter for now
         _ => "CreateCounter"
-    };
-
-    /// <summary>
-    /// Checks whether a field type is numeric (can be recorded in a Histogram).
-    /// </summary>
-    public static bool IsNumericType(FieldType fieldType) => fieldType switch
-    {
-        FieldType.Int => true,
-        FieldType.Long => true,
-        FieldType.Double => true,
-        _ => false
     };
 }

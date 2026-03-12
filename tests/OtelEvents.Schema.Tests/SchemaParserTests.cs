@@ -102,17 +102,11 @@ public class SchemaParserTests
 
         var userId = result.Document.Fields[0];
         Assert.Equal("userId", userId.Name);
-        Assert.Equal(FieldType.String, userId.Type);
         Assert.Equal("Unique user identifier", userId.Description);
         Assert.True(userId.Index);
-        Assert.NotNull(userId.Examples);
-        Assert.Single(userId.Examples);
-        Assert.Equal("usr_abc123", userId.Examples[0]);
 
         var duration = result.Document.Fields[1];
         Assert.Equal("durationMs", duration.Name);
-        Assert.Equal(FieldType.Double, duration.Type);
-        Assert.Equal("ms", duration.Unit);
     }
 
     [Fact]
@@ -191,7 +185,7 @@ public class SchemaParserTests
     }
 
     [Fact]
-    public void Parse_EventWithRefField_ParsesRef()
+    public void Parse_EventWithRefField_StillParsesSuccessfully()
     {
         var yaml = """
             schema:
@@ -218,7 +212,6 @@ public class SchemaParserTests
         Assert.True(result.IsSuccess);
         var field = result.Document!.Events[0].Fields[0];
         Assert.Equal("method", field.Name);
-        Assert.Equal("httpMethod", field.Ref);
         Assert.True(field.Required);
     }
 
@@ -374,7 +367,7 @@ public class SchemaParserTests
     }
 
     [Fact]
-    public void Parse_AllFieldTypes_ParsesCorrectly()
+    public void Parse_AllFieldTypes_BackwardCompatible()
     {
         var yaml = """
             schema:
@@ -419,18 +412,6 @@ public class SchemaParserTests
         Assert.True(result.IsSuccess);
         var fields = result.Document!.Events[0].Fields;
         Assert.Equal(12, fields.Count);
-        Assert.Equal(FieldType.String, fields[0].Type);
-        Assert.Equal(FieldType.Int, fields[1].Type);
-        Assert.Equal(FieldType.Long, fields[2].Type);
-        Assert.Equal(FieldType.Double, fields[3].Type);
-        Assert.Equal(FieldType.Bool, fields[4].Type);
-        Assert.Equal(FieldType.DateTime, fields[5].Type);
-        Assert.Equal(FieldType.Duration, fields[6].Type);
-        Assert.Equal(FieldType.Guid, fields[7].Type);
-        Assert.Equal(FieldType.Enum, fields[8].Type);
-        Assert.Equal(FieldType.StringArray, fields[9].Type);
-        Assert.Equal(FieldType.IntArray, fields[10].Type);
-        Assert.Equal(FieldType.Map, fields[11].Type);
     }
 
     [Fact]
@@ -551,7 +532,7 @@ public class SchemaParserTests
     }
 
     [Fact]
-    public void Parse_FieldWithInlineEnumValues_ParsesValues()
+    public void Parse_FieldWithInlineEnumValues_StillParsesSuccessfully()
     {
         var yaml = """
             schema:
@@ -577,10 +558,8 @@ public class SchemaParserTests
 
         Assert.True(result.IsSuccess);
         var opField = result.Document!.Events[0].Fields[1];
-        Assert.Equal(FieldType.Enum, opField.Type);
-        Assert.NotNull(opField.Values);
-        Assert.Equal(4, opField.Values.Count);
-        Assert.Contains("SELECT", opField.Values);
+        Assert.Equal("operation", opField.Name);
+        Assert.True(opField.Required);
     }
 
     [Fact]
@@ -655,5 +634,193 @@ public class SchemaParserTests
         Assert.Equal(2, evt.Fields.Count);
         Assert.Single(evt.Metrics);
         Assert.Equal(2, evt.Tags.Count);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SHORTHAND LIST SYNTAX FOR FIELDS (new in Issue #42)
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Parse_EventFieldsAsSequence_SimpleNames_ParsesCorrectly()
+    {
+        var yaml = """
+            schema:
+              name: "TestService"
+              version: "1.0.0"
+              namespace: "Test.Namespace"
+            events:
+              order.placed:
+                id: 1001
+                severity: INFO
+                message: "Order {orderId} placed"
+                fields:
+                  - orderId
+                  - customerId
+                  - amount
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+
+        Assert.True(result.IsSuccess);
+        var fields = result.Document!.Events[0].Fields;
+        Assert.Equal(3, fields.Count);
+        Assert.Equal("orderId", fields[0].Name);
+        Assert.Equal("customerId", fields[1].Name);
+        Assert.Equal("amount", fields[2].Name);
+    }
+
+    [Fact]
+    public void Parse_EventFieldsAsSequence_WithAnnotations_ParsesCorrectly()
+    {
+        var yaml = """
+            schema:
+              name: "TestService"
+              version: "1.0.0"
+              namespace: "Test.Namespace"
+            events:
+              user.login:
+                id: 2001
+                severity: INFO
+                message: "User {userId} logged in"
+                fields:
+                  - userId: { sensitivity: pii, required: true }
+                  - email: { sensitivity: pii }
+                  - region
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+
+        Assert.True(result.IsSuccess);
+        var fields = result.Document!.Events[0].Fields;
+        Assert.Equal(3, fields.Count);
+
+        Assert.Equal("userId", fields[0].Name);
+        Assert.Equal(Sensitivity.Pii, fields[0].Sensitivity);
+        Assert.True(fields[0].Required);
+
+        Assert.Equal("email", fields[1].Name);
+        Assert.Equal(Sensitivity.Pii, fields[1].Sensitivity);
+        Assert.False(fields[1].Required);
+
+        Assert.Equal("region", fields[2].Name);
+        Assert.Equal(Sensitivity.Public, fields[2].Sensitivity);
+    }
+
+    [Fact]
+    public void Parse_SharedFieldsAsSequence_ParsesCorrectly()
+    {
+        var yaml = """
+            schema:
+              name: "TestService"
+              version: "1.0.0"
+              namespace: "Test.Namespace"
+            fields:
+              - orderId
+              - customerId: { sensitivity: pii }
+              - amount: { required: true }
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+
+        Assert.True(result.IsSuccess);
+        var fields = result.Document!.Fields;
+        Assert.Equal(3, fields.Count);
+        Assert.Equal("orderId", fields[0].Name);
+        Assert.Equal("customerId", fields[1].Name);
+        Assert.Equal(Sensitivity.Pii, fields[1].Sensitivity);
+        Assert.Equal("amount", fields[2].Name);
+        Assert.True(fields[2].Required);
+    }
+
+    [Fact]
+    public void Parse_OldMapSyntaxWithType_StillParsesSuccessfully()
+    {
+        // Backward compat: old type: key is silently accepted but ignored
+        var yaml = """
+            schema:
+              name: "TestService"
+              version: "1.0.0"
+              namespace: "Test.Namespace"
+            events:
+              order.placed:
+                id: 1001
+                severity: INFO
+                message: "Order {orderId} for {amount}"
+                fields:
+                  orderId:
+                    type: string
+                    required: true
+                  amount:
+                    type: double
+                    required: true
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+
+        Assert.True(result.IsSuccess);
+        var fields = result.Document!.Events[0].Fields;
+        Assert.Equal(2, fields.Count);
+        Assert.Equal("orderId", fields[0].Name);
+        Assert.True(fields[0].Required);
+        Assert.Equal("amount", fields[1].Name);
+        Assert.True(fields[1].Required);
+    }
+
+    [Fact]
+    public void Parse_OldMapSyntaxWithRef_StillParsesSuccessfully()
+    {
+        // Backward compat: old ref: key is silently accepted but ignored
+        var yaml = """
+            schema:
+              name: "TestService"
+              version: "1.0.0"
+              namespace: "Test.Namespace"
+            fields:
+              userId:
+                type: string
+                description: "User ID"
+            events:
+              test.event:
+                id: 1
+                severity: INFO
+                message: "User {method}"
+                fields:
+                  method:
+                    ref: userId
+                    required: true
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+
+        Assert.True(result.IsSuccess);
+        var field = result.Document!.Events[0].Fields[0];
+        Assert.Equal("method", field.Name);
+        Assert.True(field.Required);
+    }
+
+    [Fact]
+    public void Parse_FieldWithMaxLengthInSequence_ParsesCorrectly()
+    {
+        var yaml = """
+            schema:
+              name: "TestService"
+              version: "1.0.0"
+              namespace: "Test.Namespace"
+            events:
+              test.event:
+                id: 1
+                severity: INFO
+                message: "Path {path}"
+                fields:
+                  - path: { required: true, maxLength: 256 }
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+
+        Assert.True(result.IsSuccess);
+        var field = result.Document!.Events[0].Fields[0];
+        Assert.Equal("path", field.Name);
+        Assert.True(field.Required);
+        Assert.Equal(256, field.MaxLength);
     }
 }
