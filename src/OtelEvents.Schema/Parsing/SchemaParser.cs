@@ -285,6 +285,15 @@ public sealed class SchemaParser
             var metrics = ParseEventMetrics(eventMapping, name);
             var tags = ParseEventTags(eventMapping);
 
+            var eventTypeStr = GetOptionalScalar(eventMapping, "type");
+            var eventType = EventType.Event;
+            if (eventTypeStr is not null && EventTypeExtensions.TryParseEventType(eventTypeStr, out var parsedEventType))
+            {
+                eventType = parsedEventType;
+            }
+
+            var parentEvent = GetOptionalScalar(eventMapping, "parent");
+
             events.Add(new EventDefinition
             {
                 Name = name,
@@ -295,7 +304,10 @@ public sealed class SchemaParser
                 Exception = exceptionFlag,
                 Fields = fields,
                 Metrics = metrics,
-                Tags = tags
+                Tags = tags,
+                EventType = eventType,
+                ParentEvent = parentEvent,
+                RawEventType = eventTypeStr
             });
         }
         return events;

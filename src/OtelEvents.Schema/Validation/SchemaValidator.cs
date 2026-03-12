@@ -168,8 +168,14 @@ public sealed partial class SchemaValidator
                 {
                     ValidateMetric(metric, evt.Name, errors);
                 }
+
+                // OTEL_SCHEMA_028: Event type validity
+                ValidateEventType(evt, errors);
             }
         }
+
+        // OTEL_SCHEMA_029/030/031: Cross-event transaction rules
+        ValidateTransactionRules(documents, errors);
 
         // OTEL_SCHEMA_017: Event count limit (across merged schemas)
         if (totalEvents > MaxEventCount)
@@ -425,5 +431,76 @@ public sealed partial class SchemaValidator
             return -1;
 
         return int.TryParse(version.AsSpan(0, dotIndex), out var major) ? major : -1;
+    }
+
+    // ── OTEL_SCHEMA_028: Event type validity ────────────────────────
+
+    private static void ValidateEventType(EventDefinition evt, List<SchemaError> errors)
+    {
+        if (evt.RawEventType is not null && !EventTypeExtensions.TryParseEventType(evt.RawEventType, out _))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidEventType,
+                Message = $"Event '{evt.Name}' has invalid type '{evt.RawEventType}' — must be one of: start, success, failure, event."
+            });
+        }
+    }
+
+    // ── OTEL_SCHEMA_029/030/031: Transaction rules ──────────────────
+
+    private static void ValidateTransactionRules(
+        IReadOnlyList<SchemaDocument> documents,
+        List<SchemaError> errors)
+    {
+        // Collect all start events across all documents
+        var startEventNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var doc in documents)
+        {
+            foreach (var evt in doc.Events)
+            {
+                if (evt.EventType == EventType.Start)
+                {
+                    startEventNames.Add(evt.Name);
+                }
+            }
+        }
+
+        // Validate each event's transaction constraints
+        foreach (var doc in documents)
+        {
+            foreach (var evt in doc.Events)
+            {
+                // OTEL_SCHEMA_031: Start events must NOT have a parent
+                if (evt.EventType == EventType.Start && evt.ParentEvent is not null)
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.StartEventWithParent,
+                        Message = $"Start event '{evt.Name}' must not have a 'parent' field — start events create new transaction scopes."
+                    });
+                }
+
+                // OTEL_SCHEMA_029: Success/failure events MUST have a parent
+                if (evt.EventType is EventType.Success or EventType.Failure && evt.ParentEvent is null)
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.MissingParentEvent,
+                        Message = $"{evt.EventType} event '{evt.Name}' must have a 'parent' field referencing a start event."
+                    });
+                }
+
+                // OTEL_SCHEMA_030: Parent must reference a valid start event
+                if (evt.ParentEvent is not null && !startEventNames.Contains(evt.ParentEvent))
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.InvalidParentEvent,
+                        Message = $"Event '{evt.Name}' references parent '{evt.ParentEvent}' which is not a valid start event."
+                    });
+                }
+            }
+        }
     }
 }

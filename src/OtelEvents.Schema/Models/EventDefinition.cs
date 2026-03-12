@@ -32,4 +32,21 @@ public sealed class EventDefinition
 
     /// <summary>Freeform tags for categorization.</summary>
     public List<string> Tags { get; init; } = [];
+
+    /// <summary>
+    /// Transaction event type: start, success, failure, or event (default).
+    /// Controls code generation behavior for transaction lifecycle events.
+    /// </summary>
+    public EventType EventType { get; init; } = EventType.Event;
+
+    /// <summary>
+    /// References another event's name (for success/failure/event types).
+    /// Must reference a valid "start" event name in the schema.
+    /// </summary>
+    public string? ParentEvent { get; init; }
+
+    /// <summary>
+    /// The raw event type string from YAML, preserved for validation when the type is invalid.
+    /// </summary>
+    public string? RawEventType { get; init; }
 }
