@@ -1,78 +1,47 @@
 # ─── Sample Order Events Schema ──────────────────────────────────────────────
 # Demonstrates typed transactions for an order lifecycle workflow.
-# The C# code in Events/ is pre-generated — you can modify this schema
-# and regenerate using the OtelEvents CLI tool.
-#
-# All fields are strings (simplified schema — Issue #42).
-# Old 'type:' syntax is accepted but ignored for backward compatibility.
+# All fields are strings. Shorthand list syntax.
 
 schema:
   name: "Sample.Orders"
-  version: "1.1.0"
+  version: "2.0.0"
   namespace: "OtelEvents.Sample.WebApi.Events"
   meterName: "Sample.Events.Orders"
-  description: "Schema-defined order lifecycle events with typed transactions"
-
-fields:
-  - orderId: { description: "Unique order identifier", index: true }
-  - customerId: { description: "Customer who placed the order", index: true }
-  - amount: { description: "Order total amount in USD" }
-  - status: { description: "Order completion status (Shipped, Delivered, etc.)", index: true }
-  - reason: { description: "Failure reason or error description" }
-  - carrier: { description: "Shipping carrier name" }
-  - trackingNumber: { description: "Shipment tracking number" }
 
 events:
-  # ── Transaction Start: creates a causal scope + starts timer ──────────────
   order.placed:
     id: 20001
-    severity: INFO
     type: start
-    description: "A new order was placed by a customer. Begins the order transaction."
+    severity: INFO
     message: "Order {orderId} placed by customer {customerId} for ${amount}"
     fields:
       - orderId: { required: true }
-      - customerId: { required: true }
+      - customerId: { required: true, sensitivity: pii }
       - amount: { required: true }
     metrics:
       sample.order.placed.count:
         type: counter
-        unit: "orders"
-        description: "Total orders placed"
-        labels:
-          - customerId
+        labels: [customerId]
       sample.order.placed.amount:
         type: histogram
-        unit: "USD"
-        description: "Order amount distribution"
-        buckets: [10, 25, 50, 100, 250, 500, 1000, 5000]
-    tags:
-      - orders
-      - business
+        field: amount
 
-  # ── Transaction Success: closes parent scope, records duration ────────────
   order.completed:
     id: 20002
-    severity: INFO
     type: success
     parent: order.placed
-    description: "An order was completed and shipped successfully."
+    severity: INFO
     message: "Order {orderId} shipped via {carrier}"
     fields:
       - orderId: { required: true }
       - carrier: { required: true }
       - trackingNumber
-    tags:
-      - orders
-      - business
 
-  # ── Transaction Failure: closes parent scope as failure ───────────────────
   order.failed:
     id: 20003
-    severity: ERROR
     type: failure
     parent: order.placed
-    description: "An order failed due to an error."
+    severity: ERROR
     message: "Order {orderId} failed: {reason}"
     exception: true
     fields:
@@ -81,21 +50,11 @@ events:
     metrics:
       sample.order.failed.count:
         type: counter
-        unit: "errors"
-        description: "Total order failures"
-    tags:
-      - orders
-      - business
-      - error
 
-  # ── Plain event (no transaction effect) ───────────────────────────────────
   order.note.added:
     id: 20004
     severity: INFO
-    description: "A note was added to an order. No transaction effect."
     message: "Note added to order {orderId}: {note}"
     fields:
       - orderId: { required: true }
-      - note: { required: true, description: "The note text" }
-    tags:
-      - orders
+      - note: { required: true }
