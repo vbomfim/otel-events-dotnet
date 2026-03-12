@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+  <!-- Event graph nodes -->
+  <circle cx="40" cy="48" r="12" fill="#e94560" opacity="0.9"/>
+  <circle cx="78" cy="72" r="9" fill="#533483" opacity="0.9"/>
+  <circle cx="64" cy="32" r="7" fill="#0f3460" opacity="0.9"/>
+  <!-- Connections -->
+  <line x1="40" y1="48" x2="78" y2="72" stroke="#e94560" stroke-width="3" opacity="0.5"/>
+  <line x1="40" y1="48" x2="64" y2="32" stroke="#533483" stroke-width="3" opacity="0.5"/>
+  <line x1="64" y1="32" x2="78" y2="72" stroke="#0f3460" stroke-width="2" opacity="0.3"/>
+  <!-- Accent bar -->
+  <rect x="16" y="100" width="96" height="6" rx="3" fill="url(#bg)"/>
+  <rect x="16" y="100" width="32" height="6" rx="3" fill="#0f3460"/>
+  <rect x="48" y="100" width="32" height="6" rx="3" fill="#533483"/>
+  <rect x="80" y="100" width="32" height="6" rx="3" fill="#e94560"/>
+</svg>
