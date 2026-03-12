@@ -619,18 +619,17 @@ public sealed class CodeGenerator
             }
             else if (metric.Type == MetricType.Histogram)
             {
-                // Try to match a field by the last segment of the metric name
+                // Try to match a field by the last segment of the metric name.
+                // Since all fields are strings, use double.TryParse() to convert.
                 var lastSegment = NamingHelper.GetLastSegment(metric.Name);
                 var matchingField = evt.Fields.FirstOrDefault(f =>
-                    f.Name.Equals(lastSegment, StringComparison.OrdinalIgnoreCase) &&
-                    f.Type is not null &&
-                    TypeMapper.IsNumericType(f.Type.Value));
+                    f.Name.Equals(lastSegment, StringComparison.OrdinalIgnoreCase));
 
                 if (matchingField is not null)
                 {
                     var paramName = NamingHelper.ToCamelCase(matchingField.Name);
-                    var castPrefix = matchingField.Type != FieldType.Double ? "(double)" : "";
-                    sb.AppendLine($"        {accessor}.Record({castPrefix}{paramName}{tagsSuffix});");
+                    sb.AppendLine($"        if (double.TryParse({paramName}, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var {paramName}Value))");
+                    sb.AppendLine($"            {accessor}.Record({paramName}Value{tagsSuffix});");
                 }
                 else
                 {
@@ -646,31 +645,9 @@ public sealed class CodeGenerator
 
     private static List<EnumDefinition> CollectAllEnums(SchemaDocument doc)
     {
-        var enums = new List<EnumDefinition>(doc.Enums);
-        var existingNames = new HashSet<string>(
-            enums.Select(e => NamingHelper.ToPascalCase(e.Name)),
-            StringComparer.Ordinal);
-
-        foreach (var evt in doc.Events)
-        {
-            foreach (var field in evt.Fields)
-            {
-                if (field.Type == FieldType.Enum && field.Values is { Count: > 0 })
-                {
-                    var enumName = NamingHelper.ToPascalCase(field.Name);
-                    if (existingNames.Add(enumName))
-                    {
-                        enums.Add(new EnumDefinition
-                        {
-                            Name = field.Name,
-                            Values = field.Values
-                        });
-                    }
-                }
-            }
-        }
-
-        return enums;
+        // Only collect top-level enums; inline field enums are no longer supported
+        // since all fields are strings.
+        return new List<EnumDefinition>(doc.Enums);
     }
 
     private static void AppendFieldParameters(
@@ -681,16 +658,15 @@ public sealed class CodeGenerator
         foreach (var field in fields)
         {
             sb.Append(", ");
-            var csharpType = TypeMapper.GetFieldCSharpType(field);
             var paramName = NamingHelper.ToCamelCase(field.Name);
 
             if (field.Required)
             {
-                sb.Append($"{csharpType} {paramName}");
+                sb.Append($"string {paramName}");
             }
             else
             {
-                sb.Append($"{csharpType}? {paramName} = null");
+                sb.Append($"string? {paramName} = null");
             }
         }
 

@@ -208,16 +208,17 @@ public sealed class SchemaParser
 
     private static List<FieldDefinition> ParseSharedFields(YamlMappingNode root)
     {
-        var fieldsNode = GetOptionalMapping(root, "fields");
-        if (fieldsNode is null) return [];
+        // Support both list syntax (new) and map syntax (old/backward compat)
+        var scalarKey = new YamlScalarNode("fields");
+        if (!root.Children.TryGetValue(scalarKey, out var fieldsValue))
+            return [];
 
-        var fields = new List<FieldDefinition>();
-        foreach (var entry in fieldsNode.Children)
+        return fieldsValue switch
         {
-            var name = ((YamlScalarNode)entry.Key).Value!;
-            fields.Add(ParseFieldDefinition(name, entry.Value));
-        }
-        return fields;
+            YamlSequenceNode sequence => ParseFieldsFromSequence(sequence),
+            YamlMappingNode mapping => ParseFieldsFromMapping(mapping),
+            _ => []
+        };
     }
 
     private static List<EnumDefinition> ParseEnums(YamlMappingNode root)
@@ -315,14 +316,65 @@ public sealed class SchemaParser
 
     private static List<FieldDefinition> ParseEventFields(YamlMappingNode eventNode, string eventName)
     {
-        var fieldsNode = GetOptionalMapping(eventNode, "fields");
-        if (fieldsNode is null) return [];
+        // Support both list syntax (new) and map syntax (old/backward compat)
+        var scalarKey = new YamlScalarNode("fields");
+        if (!eventNode.Children.TryGetValue(scalarKey, out var fieldsValue))
+            return [];
 
+        return fieldsValue switch
+        {
+            YamlSequenceNode sequence => ParseFieldsFromSequence(sequence),
+            YamlMappingNode mapping => ParseFieldsFromMapping(mapping),
+            _ => []
+        };
+    }
+
+    /// <summary>
+    /// Parses fields from a YAML mapping node (old map syntax — backward compatible).
+    /// The <c>type:</c> and <c>ref:</c> keys are accepted but silently ignored.
+    /// </summary>
+    private static List<FieldDefinition> ParseFieldsFromMapping(YamlMappingNode mapping)
+    {
         var fields = new List<FieldDefinition>();
-        foreach (var entry in fieldsNode.Children)
+        foreach (var entry in mapping.Children)
         {
             var name = ((YamlScalarNode)entry.Key).Value!;
             fields.Add(ParseFieldDefinition(name, entry.Value));
+        }
+        return fields;
+    }
+
+    /// <summary>
+    /// Parses fields from a YAML sequence node (new shorthand list syntax).
+    /// Supports:
+    ///   - orderId                           (just a name — scalar)
+    ///   - customerId: { sensitivity: pii }  (name with annotations — single-entry mapping)
+    /// </summary>
+    private static List<FieldDefinition> ParseFieldsFromSequence(YamlSequenceNode sequence)
+    {
+        var fields = new List<FieldDefinition>();
+        foreach (var item in sequence.Children)
+        {
+            switch (item)
+            {
+                case YamlScalarNode scalar when scalar.Value is not null:
+                    // Simple field name only: "- orderId"
+                    fields.Add(new FieldDefinition { Name = scalar.Value });
+                    break;
+
+                case YamlMappingNode mapping when mapping.Children.Count == 1:
+                {
+                    // Field with annotations: "- customerId: { sensitivity: pii }"
+                    var entry = mapping.Children.First();
+                    var name = ((YamlScalarNode)entry.Key).Value!;
+                    fields.Add(ParseFieldDefinition(name, entry.Value));
+                    break;
+                }
+
+                default:
+                    throw new SchemaParseException(ErrorCodes.InvalidEventNameFormat,
+                        "Field list items must be a string name or a single-key mapping with annotations.");
+            }
         }
         return fields;
     }
@@ -331,15 +383,8 @@ public sealed class SchemaParser
     {
         if (node is YamlMappingNode mapping)
         {
-            var typeStr = GetOptionalScalar(mapping, "type");
-            FieldType? fieldType = null;
-            if (typeStr is not null)
-            {
-                if (FieldTypeExtensions.TryParseFieldType(typeStr, out var parsed))
-                    fieldType = parsed;
-                else
-                    fieldType = null; // Will be caught by validation
-            }
+            // Accept 'type:' and 'ref:' keys for backward compat — silently ignored
+            // (All fields are now strings, refs are inlined)
 
             var sensitivityStr = GetOptionalScalar(mapping, "sensitivity");
             var sensitivity = Sensitivity.Public;
@@ -360,54 +405,33 @@ public sealed class SchemaParser
                 maxLength = -1;
             }
 
-            var refValue = GetOptionalScalar(mapping, "ref");
             var description = GetOptionalScalar(mapping, "description");
             var required = GetOptionalScalarBool(mapping, "required");
             var index = GetOptionalScalarBool(mapping, "index");
-            var unit = GetOptionalScalar(mapping, "unit");
 
-            var examples = GetOptionalSequence(mapping, "examples")?
-                .Children.OfType<YamlScalarNode>().Select(n => n.Value!).ToList();
-
-            var values = GetOptionalSequence(mapping, "values")?
-                .Children.OfType<YamlScalarNode>().Select(n => n.Value!).ToList();
-
-            // Preserve the raw type string for validation when type is invalid
             return new FieldDefinition
             {
                 Name = name,
-                Type = fieldType,
                 Description = description,
                 Required = required,
                 Sensitivity = sensitivity,
                 MaxLength = maxLength,
                 Index = index,
-                Ref = refValue,
-                Unit = unit,
-                Examples = examples,
-                Values = values,
-                RawType = typeStr,
                 RawSensitivity = sensitivityStr,
                 RawMaxLength = maxLengthStr
             };
         }
 
-        // Simple scalar value — treat as type shorthand
-        if (node is YamlScalarNode scalar)
+        // Simple scalar value — treat as a field name (backward compat: old type shorthand ignored)
+        if (node is YamlScalarNode)
         {
-            FieldType? fieldType = null;
-            if (scalar.Value is not null && FieldTypeExtensions.TryParseFieldType(scalar.Value, out var parsed))
-                fieldType = parsed;
-
             return new FieldDefinition
             {
-                Name = name,
-                Type = fieldType,
-                RawType = scalar.Value
+                Name = name
             };
         }
 
-        throw new SchemaParseException(ErrorCodes.InvalidType,
+        throw new SchemaParseException(ErrorCodes.InvalidEventNameFormat,
             $"Field '{name}' has an invalid structure.");
     }
 

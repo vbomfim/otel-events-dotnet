@@ -110,7 +110,7 @@ public class SchemaMergerTests
             },
             Fields =
             [
-                new FieldDefinition { Name = "userId", Type = FieldType.String }
+                new FieldDefinition { Name = "userId" }
             ],
             Enums =
             [
@@ -128,7 +128,7 @@ public class SchemaMergerTests
             },
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String }
+                new FieldDefinition { Name = "orderId" }
             ]
         };
 

@@ -125,7 +125,7 @@ public class SchemaValidatorTests
     // ── OTEL_SCHEMA_004: Ref resolution ──────────────────────────────────
 
     [Fact]
-    public void Validate_UnresolvedRef_ReturnsOTEL_SCHEMA_004()
+    public void Validate_UnresolvedRef_AcceptedSilently()
     {
         var yaml = """
             schema:
@@ -145,8 +145,8 @@ public class SchemaValidatorTests
 
         var result = ParseAndValidate(yaml);
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.Code == ErrorCodes.UnresolvedRef);
+        // Ref resolution is no longer validated (refs are silently ignored)
+        Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.UnresolvedRef);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class SchemaValidatorTests
     // ── OTEL_SCHEMA_005: Type validity ───────────────────────────────────
 
     [Fact]
-    public void Validate_InvalidFieldType_ReturnsOTEL_SCHEMA_005()
+    public void Validate_UnknownFieldType_AcceptedSilently()
     {
         var yaml = """
             schema:
@@ -230,8 +230,8 @@ public class SchemaValidatorTests
 
         var result = ParseAndValidate(yaml);
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.Code == ErrorCodes.InvalidType);
+        // Invalid field types are silently accepted (all fields are strings now)
+        Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.InvalidType);
     }
 
     // ── OTEL_SCHEMA_006: Event name format ───────────────────────────────
@@ -275,7 +275,7 @@ public class SchemaValidatorTests
     // ── OTEL_SCHEMA_007: Required field completeness ─────────────────────
 
     [Fact]
-    public void Validate_RequiredFieldWithoutTypeOrRef_ReturnsOTEL_SCHEMA_007()
+    public void Validate_RequiredFieldWithoutType_AcceptedSilently()
     {
         var yaml = """
             schema:
@@ -294,8 +294,8 @@ public class SchemaValidatorTests
 
         var result = ParseAndValidate(yaml);
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.Code == ErrorCodes.RequiredFieldMissingType);
+        // Required fields no longer need a type (all fields are strings)
+        Assert.DoesNotContain(result.Errors, e => e.Code == ErrorCodes.RequiredFieldMissingType);
     }
 
     // ── OTEL_SCHEMA_008: Metric type validity ────────────────────────────
@@ -715,7 +715,7 @@ public class SchemaValidatorTests
         var fields = new List<FieldDefinition>();
         for (int i = 0; i < 51; i++)
         {
-            fields.Add(new FieldDefinition { Name = $"field{i}", Type = FieldType.String });
+            fields.Add(new FieldDefinition { Name = $"field{i}" });
         }
 
         var doc = CreateMinimalDoc(events:
@@ -742,7 +742,7 @@ public class SchemaValidatorTests
         var fields = new List<FieldDefinition>();
         for (int i = 0; i < 50; i++)
         {
-            fields.Add(new FieldDefinition { Name = $"field{i}", Type = FieldType.String });
+            fields.Add(new FieldDefinition { Name = $"field{i}" });
         }
 
         var doc = CreateMinimalDoc(events:
@@ -839,7 +839,7 @@ public class SchemaValidatorTests
             },
             Fields =
             [
-                new FieldDefinition { Name = "httpMethod", Type = FieldType.String }
+                new FieldDefinition { Name = "httpMethod" }
             ]
         };
 
@@ -861,7 +861,7 @@ public class SchemaValidatorTests
                     Message = "Request {method}",
                     Fields =
                     [
-                        new FieldDefinition { Name = "method", Ref = "httpMethod", Required = true }
+                        new FieldDefinition { Name = "method", Required = true }
                     ]
                 }
             ]

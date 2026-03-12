@@ -60,17 +60,11 @@ schema:
   meterName: "MyOrderService.Events.Orders"
   description: "Events for the order-processing service"
 
+# All fields are strings — no type annotation needed.
+# Use the shorthand list syntax for clean, concise schemas.
 fields:
-  orderId:
-    type: string
-    description: "Unique order identifier"
-    index: true
-
-  customerId:
-    type: string
-    description: "Customer who placed the order"
-    index: true
-
+  - orderId: { description: "Unique order identifier", index: true }
+  - customerId: { description: "Customer who placed the order", index: true }
 
 enums:
   OrderStatus:
@@ -89,15 +83,9 @@ events:
     description: "An order was placed by a customer"
     message: "Order {orderId} placed by {customerId} for {amount}"
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      customerId:
-        ref: customerId
-        required: true
-      amount:
-        type: double
-        required: true
+      - orderId: { required: true }
+      - customerId: { required: true }
+      - amount: { required: true }
     metrics:
       order.placed.count:
         type: counter
@@ -117,17 +105,9 @@ events:
     description: "An order's status changed"
     message: "Order {orderId} changed from {previousStatus} to {newStatus}"
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      previousStatus:
-        type: enum
-        values: [Pending, Confirmed, Shipped, Delivered, Cancelled]
-        required: true
-      newStatus:
-        type: enum
-        values: [Pending, Confirmed, Shipped, Delivered, Cancelled]
-        required: true
+      - orderId: { required: true }
+      - previousStatus: { required: true }
+      - newStatus: { required: true }
     tags:
       - commerce
       - orders
@@ -139,12 +119,8 @@ events:
     message: "Order {orderId} failed: {reason}"
     exception: true
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      reason:
-        type: string
-        required: true
+      - orderId: { required: true }
+      - reason: { required: true }
     metrics:
       order.failure.count:
         type: counter

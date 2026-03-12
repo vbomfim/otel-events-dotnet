@@ -4,35 +4,36 @@ using OtelEvents.Schema.Models;
 namespace OtelEvents.Schema.Tests;
 
 /// <summary>
-/// Tests for TypeMapper — validates YAML-to-C# type mapping
-/// and severity-to-LogLevel mapping.
+/// Tests for TypeMapper — validates that all fields map to "string"
+/// and severity-to-LogLevel mapping works correctly.
 /// </summary>
 public class TypeMapperTests
 {
-    // ── C# Type Mapping ────────────────────────────────────────────
+    // ── All Fields Are Strings ─────────────────────────────────────
 
-    [Theory]
-    [InlineData(FieldType.String, "string")]
-    [InlineData(FieldType.Int, "int")]
-    [InlineData(FieldType.Long, "long")]
-    [InlineData(FieldType.Double, "double")]
-    [InlineData(FieldType.Bool, "bool")]
-    [InlineData(FieldType.DateTime, "DateTimeOffset")]
-    [InlineData(FieldType.Duration, "TimeSpan")]
-    [InlineData(FieldType.Guid, "Guid")]
-    [InlineData(FieldType.StringArray, "string[]")]
-    [InlineData(FieldType.IntArray, "int[]")]
-    [InlineData(FieldType.Map, "Dictionary<string, string>")]
-    public void ToCSharpType_MapsAllFieldTypes(FieldType fieldType, string expected)
+    [Fact]
+    public void GetFieldCSharpType_AnyField_ReturnsString()
     {
-        Assert.Equal(expected, TypeMapper.ToCSharpType(fieldType));
+        var field = new FieldDefinition { Name = "amount" };
+        Assert.Equal("string", TypeMapper.GetFieldCSharpType(field));
     }
 
     [Fact]
-    public void ToCSharpType_EnumFieldType_ReturnsString()
+    public void GetFieldCSharpType_RequiredField_ReturnsString()
     {
-        // Enum base mapping returns "string"; actual enum type resolved via GetFieldCSharpType
-        Assert.Equal("string", TypeMapper.ToCSharpType(FieldType.Enum));
+        var field = new FieldDefinition { Name = "orderId", Required = true };
+        Assert.Equal("string", TypeMapper.GetFieldCSharpType(field));
+    }
+
+    [Fact]
+    public void GetFieldCSharpType_FieldWithSensitivity_ReturnsString()
+    {
+        var field = new FieldDefinition
+        {
+            Name = "userId",
+            Sensitivity = Sensitivity.Pii
+        };
+        Assert.Equal("string", TypeMapper.GetFieldCSharpType(field));
     }
 
     // ── Severity → LogLevel Mapping ────────────────────────────────
@@ -49,70 +50,6 @@ public class TypeMapperTests
         Assert.Equal(expected, TypeMapper.ToLogLevel(severity));
     }
 
-    // ── Field C# Type Resolution ───────────────────────────────────
-
-    [Fact]
-    public void GetFieldCSharpType_EnumWithRef_ReturnsPascalCaseRefName()
-    {
-        var field = new FieldDefinition
-        {
-            Name = "method",
-            Type = FieldType.Enum,
-            Ref = "http_method"
-        };
-
-        Assert.Equal("HttpMethod", TypeMapper.GetFieldCSharpType(field));
-    }
-
-    [Fact]
-    public void GetFieldCSharpType_EnumWithInlineValues_ReturnsPascalCaseFieldName()
-    {
-        var field = new FieldDefinition
-        {
-            Name = "status",
-            Type = FieldType.Enum,
-            Values = ["active", "inactive", "pending"]
-        };
-
-        Assert.Equal("Status", TypeMapper.GetFieldCSharpType(field));
-    }
-
-    [Fact]
-    public void GetFieldCSharpType_EnumWithoutRefOrValues_ReturnsString()
-    {
-        var field = new FieldDefinition
-        {
-            Name = "category",
-            Type = FieldType.Enum
-        };
-
-        Assert.Equal("string", TypeMapper.GetFieldCSharpType(field));
-    }
-
-    [Fact]
-    public void GetFieldCSharpType_NonEnumType_ReturnsMappedType()
-    {
-        var field = new FieldDefinition
-        {
-            Name = "amount",
-            Type = FieldType.Double
-        };
-
-        Assert.Equal("double", TypeMapper.GetFieldCSharpType(field));
-    }
-
-    [Fact]
-    public void GetFieldCSharpType_NullType_ReturnsObject()
-    {
-        var field = new FieldDefinition
-        {
-            Name = "unknown",
-            Type = null
-        };
-
-        Assert.Equal("object", TypeMapper.GetFieldCSharpType(field));
-    }
-
     // ── Metric CLR Types ───────────────────────────────────────────
 
     [Theory]
@@ -122,19 +59,5 @@ public class TypeMapperTests
     public void GetMetricClrType_ReturnsCorrectType(MetricType metricType, string expected)
     {
         Assert.Equal(expected, TypeMapper.GetMetricClrType(metricType));
-    }
-
-    // ── Numeric Type Check ─────────────────────────────────────────
-
-    [Theory]
-    [InlineData(FieldType.Int, true)]
-    [InlineData(FieldType.Long, true)]
-    [InlineData(FieldType.Double, true)]
-    [InlineData(FieldType.String, false)]
-    [InlineData(FieldType.Bool, false)]
-    [InlineData(FieldType.DateTime, false)]
-    public void IsNumericType_ReturnsCorrectResult(FieldType fieldType, bool expected)
-    {
-        Assert.Equal(expected, TypeMapper.IsNumericType(fieldType));
     }
 }

@@ -2,6 +2,9 @@
 # Demonstrates typed transactions for an order lifecycle workflow.
 # The C# code in Events/ is pre-generated — you can modify this schema
 # and regenerate using the OtelEvents CLI tool.
+#
+# All fields are strings (simplified schema — Issue #42).
+# Old 'type:' syntax is accepted but ignored for backward compatibility.
 
 schema:
   name: "Sample.Orders"
@@ -11,37 +14,13 @@ schema:
   description: "Schema-defined order lifecycle events with typed transactions"
 
 fields:
-  orderId:
-    type: string
-    description: "Unique order identifier"
-    index: true
-
-  customerId:
-    type: string
-    description: "Customer who placed the order"
-    index: true
-
-  amount:
-    type: double
-    description: "Order total amount in USD"
-    unit: "USD"
-
-  status:
-    type: string
-    description: "Order completion status (Shipped, Delivered, etc.)"
-    index: true
-
-  reason:
-    type: string
-    description: "Failure reason or error description"
-
-  carrier:
-    type: string
-    description: "Shipping carrier name"
-
-  trackingNumber:
-    type: string
-    description: "Shipment tracking number"
+  - orderId: { description: "Unique order identifier", index: true }
+  - customerId: { description: "Customer who placed the order", index: true }
+  - amount: { description: "Order total amount in USD" }
+  - status: { description: "Order completion status (Shipped, Delivered, etc.)", index: true }
+  - reason: { description: "Failure reason or error description" }
+  - carrier: { description: "Shipping carrier name" }
+  - trackingNumber: { description: "Shipment tracking number" }
 
 events:
   # ── Transaction Start: creates a causal scope + starts timer ──────────────
@@ -52,15 +31,9 @@ events:
     description: "A new order was placed by a customer. Begins the order transaction."
     message: "Order {orderId} placed by customer {customerId} for ${amount}"
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      customerId:
-        ref: customerId
-        required: true
-      amount:
-        ref: amount
-        required: true
+      - orderId: { required: true }
+      - customerId: { required: true }
+      - amount: { required: true }
     metrics:
       sample.order.placed.count:
         type: counter
@@ -86,14 +59,9 @@ events:
     description: "An order was completed and shipped successfully."
     message: "Order {orderId} shipped via {carrier}"
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      carrier:
-        ref: carrier
-        required: true
-      trackingNumber:
-        ref: trackingNumber
+      - orderId: { required: true }
+      - carrier: { required: true }
+      - trackingNumber
     tags:
       - orders
       - business
@@ -108,12 +76,8 @@ events:
     message: "Order {orderId} failed: {reason}"
     exception: true
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      reason:
-        ref: reason
-        required: true
+      - orderId: { required: true }
+      - reason: { required: true }
     metrics:
       sample.order.failed.count:
         type: counter
@@ -131,12 +95,7 @@ events:
     description: "A note was added to an order. No transaction effect."
     message: "Note added to order {orderId}: {note}"
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      note:
-        type: string
-        description: "The note text"
-        required: true
+      - orderId: { required: true }
+      - note: { required: true, description: "The note text" }
     tags:
       - orders

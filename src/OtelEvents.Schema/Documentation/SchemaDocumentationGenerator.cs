@@ -182,37 +182,10 @@ public sealed class SchemaDocumentationGenerator
         sb.AppendLine();
     }
 
-    private static readonly Dictionary<FieldType, string> FieldTypeDisplayNames = new()
-    {
-        [FieldType.String] = "string",
-        [FieldType.Int] = "int",
-        [FieldType.Long] = "long",
-        [FieldType.Double] = "double",
-        [FieldType.Bool] = "bool",
-        [FieldType.DateTime] = "datetime",
-        [FieldType.Duration] = "duration",
-        [FieldType.Guid] = "guid",
-        [FieldType.Enum] = "enum",
-        [FieldType.StringArray] = "string[]",
-        [FieldType.IntArray] = "int[]",
-        [FieldType.Map] = "map"
-    };
-
     private static string FormatFieldType(FieldDefinition field)
     {
-        if (field.Type == FieldType.Enum && field.Ref is not null)
-        {
-            return $"enum ({field.Ref})";
-        }
-
-        if (field.Type is null)
-        {
-            return "ref";
-        }
-
-        return FieldTypeDisplayNames.TryGetValue(field.Type.Value, out var displayName)
-            ? displayName
-            : field.Type.Value.ToString();
+        // All fields are strings in the simplified schema
+        return "string";
     }
 
     private static string FormatSensitivity(Sensitivity sensitivity)
@@ -228,19 +201,7 @@ public sealed class SchemaDocumentationGenerator
 
     private static string FormatFieldDescription(FieldDefinition field)
     {
-        var parts = new List<string>();
-
-        if (field.Description is not null)
-        {
-            parts.Add(field.Description);
-        }
-
-        if (field.Unit is not null)
-        {
-            parts.Add($"Unit: {field.Unit}");
-        }
-
-        return string.Join(" · ", parts);
+        return field.Description ?? "";
     }
 
     // ═══════════════════════════════════════════════════════════════

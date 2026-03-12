@@ -673,7 +673,7 @@ public class TypedTransactionTests
                     EventType = EventType.Start,
                     Fields =
                     [
-                        new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }
+                        new FieldDefinition { Name = "orderId", Required = true }
                     ],
                     Metrics =
                     [
@@ -736,7 +736,7 @@ public class TypedTransactionTests
                 EventType = EventType.Start,
                 Fields =
                 [
-                    new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }
+                    new FieldDefinition { Name = "orderId", Required = true }
                 ]
             },
             new EventDefinition
@@ -749,7 +749,7 @@ public class TypedTransactionTests
                 ParentEvent = "new.order",
                 Fields =
                 [
-                    new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }
+                    new FieldDefinition { Name = "orderId", Required = true }
                 ]
             },
             new EventDefinition
@@ -762,7 +762,7 @@ public class TypedTransactionTests
                 ParentEvent = "new.order",
                 Fields =
                 [
-                    new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true }
+                    new FieldDefinition { Name = "orderId", Required = true }
                 ]
             }
         ]

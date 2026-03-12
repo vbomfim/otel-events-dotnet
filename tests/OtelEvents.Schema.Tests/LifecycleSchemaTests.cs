@@ -190,12 +190,9 @@ public class LifecycleSchemaTests
         Assert.Equal(2, evt.Fields.Count);
 
         var phaseField = evt.Fields.First(f => f.Name == "phase");
-        Assert.Equal(FieldType.Enum, phaseField.Type);
-        Assert.Equal("LifecyclePhase", phaseField.Ref);
         Assert.True(phaseField.Required);
 
         var reasonField = evt.Fields.First(f => f.Name == "reason");
-        Assert.Equal(FieldType.String, reasonField.Type);
         Assert.False(reasonField.Required);
     }
 
@@ -210,13 +207,9 @@ public class LifecycleSchemaTests
         Assert.Equal(3, evt.Fields.Count);
 
         var prevField = evt.Fields.First(f => f.Name == "previousStatus");
-        Assert.Equal(FieldType.Enum, prevField.Type);
-        Assert.Equal("HealthStatus", prevField.Ref);
         Assert.True(prevField.Required);
 
         var currField = evt.Fields.First(f => f.Name == "currentStatus");
-        Assert.Equal(FieldType.Enum, currField.Type);
-        Assert.Equal("HealthStatus", currField.Ref);
         Assert.True(currField.Required);
     }
 
@@ -232,7 +225,6 @@ public class LifecycleSchemaTests
 
         var durationField = evt.Fields[0];
         Assert.Equal("durationMs", durationField.Name);
-        Assert.Equal(FieldType.Long, durationField.Type);
         Assert.True(durationField.Required);
     }
 
@@ -248,7 +240,6 @@ public class LifecycleSchemaTests
 
         var reasonField = evt.Fields[0];
         Assert.Equal("reason", reasonField.Name);
-        Assert.Equal(FieldType.String, reasonField.Type);
         Assert.True(reasonField.Required);
     }
 
@@ -391,8 +382,8 @@ public class LifecycleSchemaTests
         var files = _generator.GenerateFromSchema(doc);
         var content = files.First(f => f.FileName.Contains("Events")).Content;
 
-        Assert.Contains("HealthStatus previousStatus", content);
-        Assert.Contains("HealthStatus currentStatus", content);
+        Assert.Contains("string previousStatus", content);
+        Assert.Contains("string currentStatus", content);
     }
 
     [Fact]
@@ -402,7 +393,7 @@ public class LifecycleSchemaTests
         var files = _generator.GenerateFromSchema(doc);
         var content = files.First(f => f.FileName.Contains("Events")).Content;
 
-        Assert.Contains("LifecyclePhase phase", content);
+        Assert.Contains("string phase", content);
     }
 
     [Fact]
@@ -412,7 +403,7 @@ public class LifecycleSchemaTests
         var files = _generator.GenerateFromSchema(doc);
         var content = files.First(f => f.FileName.Contains("Events")).Content;
 
-        Assert.Contains("long durationMs", content);
+        Assert.Contains("string durationMs", content);
     }
 
     [Fact]

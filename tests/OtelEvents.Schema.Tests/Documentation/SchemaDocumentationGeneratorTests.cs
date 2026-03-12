@@ -271,8 +271,8 @@ public class SchemaDocumentationGeneratorTests
             Message = "Order {orderId} placed",
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = false }
+                new FieldDefinition { Name = "orderId", Required = true },
+                new FieldDefinition { Name = "amount", Required = false }
             ]
         });
 
@@ -282,7 +282,6 @@ public class SchemaDocumentationGeneratorTests
         Assert.Contains("orderId", markdown);
         Assert.Contains("string", markdown);
         Assert.Contains("amount", markdown);
-        Assert.Contains("double", markdown);
     }
 
     [Fact]
@@ -294,7 +293,7 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "f1", Type = FieldType.String, Required = true }]
+            Fields = [new FieldDefinition { Name = "f1", Required = true }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
@@ -311,7 +310,7 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "f1", Type = FieldType.String, Required = false }]
+            Fields = [new FieldDefinition { Name = "f1", Required = false }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
@@ -331,7 +330,7 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "email", Type = FieldType.String, Sensitivity = Sensitivity.Pii }]
+            Fields = [new FieldDefinition { Name = "email", Sensitivity = Sensitivity.Pii }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
@@ -348,7 +347,7 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "status", Type = FieldType.String, Sensitivity = Sensitivity.Public }]
+            Fields = [new FieldDefinition { Name = "status", Sensitivity = Sensitivity.Public }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
@@ -367,7 +366,7 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "orderId", Type = FieldType.String, Description = "Unique order identifier" }]
+            Fields = [new FieldDefinition { Name = "orderId", Description = "Unique order identifier" }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
@@ -376,7 +375,7 @@ public class SchemaDocumentationGeneratorTests
     }
 
     [Fact]
-    public void GenerateMarkdown_FieldWithUnit_IncludesUnit()
+    public void GenerateMarkdown_FieldWithDescription_IncludesFieldDescription()
     {
         var doc = CreateSchemaWithEvent(new EventDefinition
         {
@@ -384,12 +383,12 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "duration", Type = FieldType.Double, Unit = "ms" }]
+            Fields = [new FieldDefinition { Name = "duration", Description = "Duration in milliseconds" }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
 
-        Assert.Contains("ms", markdown);
+        Assert.Contains("Duration in milliseconds", markdown);
     }
 
     [Fact]
@@ -409,7 +408,7 @@ public class SchemaDocumentationGeneratorTests
     }
 
     [Fact]
-    public void GenerateMarkdown_FieldWithEnumRef_ShowsEnumRef()
+    public void GenerateMarkdown_FieldWithStringType_ShowsStringType()
     {
         var doc = CreateSchemaWithEvent(new EventDefinition
         {
@@ -417,12 +416,13 @@ public class SchemaDocumentationGeneratorTests
             Id = 1,
             Severity = Severity.Info,
             Message = "msg",
-            Fields = [new FieldDefinition { Name = "status", Type = FieldType.Enum, Ref = "OrderStatus" }]
+            Fields = [new FieldDefinition { Name = "status" }]
         });
 
         var markdown = _generator.GenerateMarkdown(doc);
 
-        Assert.Contains("OrderStatus", markdown);
+        Assert.Contains("status", markdown);
+        Assert.Contains("string", markdown);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -602,7 +602,7 @@ public class SchemaDocumentationGeneratorTests
             Enums =
             [
                 new EnumDefinition { Name = "Status", Values = ["Active", "Inactive"] },
-                new EnumDefinition { Name = "Priority", Values = ["Low", "Medium", "High"] }
+                new EnumDefinition { Name = "Priority", Values = ["Low", "High"] }
             ]
         };
 
@@ -634,8 +634,8 @@ public class SchemaDocumentationGeneratorTests
             Schema = new SchemaHeader { Name = "Test", Version = "1.0.0", Namespace = "Test.Events" },
             Fields =
             [
-                new FieldDefinition { Name = "requestId", Type = FieldType.String, Description = "Unique request identifier" },
-                new FieldDefinition { Name = "durationMs", Type = FieldType.Double, Unit = "ms", Description = "Duration in ms" }
+                new FieldDefinition { Name = "requestId", Description = "Unique request identifier" },
+                new FieldDefinition { Name = "durationMs", Description = "Duration in ms" }
             ]
         };
 
@@ -674,7 +674,7 @@ public class SchemaDocumentationGeneratorTests
             },
             Fields =
             [
-                new FieldDefinition { Name = "orderId", Type = FieldType.String, Description = "Unique order identifier" }
+                new FieldDefinition { Name = "orderId", Description = "Unique order identifier" }
             ],
             Enums =
             [
@@ -696,9 +696,9 @@ public class SchemaDocumentationGeneratorTests
                     Message = "Order {orderId} placed for {amount}",
                     Fields =
                     [
-                        new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                        new FieldDefinition { Name = "amount", Type = FieldType.Double, Required = true, Unit = "USD" },
-                        new FieldDefinition { Name = "customerEmail", Type = FieldType.String, Sensitivity = Sensitivity.Pii }
+                        new FieldDefinition { Name = "orderId", Required = true },
+                        new FieldDefinition { Name = "amount", Required = true },
+                        new FieldDefinition { Name = "customerEmail", Sensitivity = Sensitivity.Pii }
                     ],
                     Metrics =
                     [
@@ -717,8 +717,8 @@ public class SchemaDocumentationGeneratorTests
                     Exception = true,
                     Fields =
                     [
-                        new FieldDefinition { Name = "orderId", Type = FieldType.String, Required = true },
-                        new FieldDefinition { Name = "reason", Type = FieldType.String, Required = true }
+                        new FieldDefinition { Name = "orderId", Required = true },
+                        new FieldDefinition { Name = "reason", Required = true }
                     ],
                     Tags = ["order", "error"]
                 }
@@ -792,7 +792,7 @@ public class SchemaDocumentationGeneratorTests
         var doc = new SchemaDocument
         {
             Schema = new SchemaHeader { Name = "Test", Version = "1.0.0", Namespace = "Test.Events" },
-            Enums = [new EnumDefinition { Name = "HealthStatus", Values = ["Healthy", "Degraded", "Unhealthy"] }],
+            Enums = [new EnumDefinition { Name = "HealthStatus", Values = ["Healthy", "Unhealthy"] }],
             Events =
             [
                 new EventDefinition
@@ -801,15 +801,15 @@ public class SchemaDocumentationGeneratorTests
                     Id = 1,
                     Severity = Severity.Warn,
                     Message = "Health changed to {status}",
-                    Fields = [new FieldDefinition { Name = "status", Type = FieldType.Enum, Ref = "HealthStatus", Required = true }]
+                    Fields = [new FieldDefinition { Name = "status", Required = true }]
                 }
             ]
         };
 
         var markdown = _generator.GenerateMarkdown(doc);
 
-        // Should reference the enum type
-        Assert.Contains("enum (HealthStatus)", markdown);
+        // All fields are now strings
+        Assert.Contains("string", markdown);
     }
 
     [Fact]
@@ -817,17 +817,17 @@ public class SchemaDocumentationGeneratorTests
     {
         var fields = new List<FieldDefinition>
         {
-            new() { Name = "f1", Type = FieldType.String },
-            new() { Name = "f2", Type = FieldType.Int },
-            new() { Name = "f3", Type = FieldType.Long },
-            new() { Name = "f4", Type = FieldType.Double },
-            new() { Name = "f5", Type = FieldType.Bool },
-            new() { Name = "f6", Type = FieldType.DateTime },
-            new() { Name = "f7", Type = FieldType.Duration },
-            new() { Name = "f8", Type = FieldType.Guid },
-            new() { Name = "f9", Type = FieldType.StringArray },
-            new() { Name = "f10", Type = FieldType.IntArray },
-            new() { Name = "f11", Type = FieldType.Map }
+            new() { Name = "f1" },
+            new() { Name = "f2" },
+            new() { Name = "f3" },
+            new() { Name = "f4" },
+            new() { Name = "f5" },
+            new() { Name = "f6" },
+            new() { Name = "f7" },
+            new() { Name = "f8" },
+            new() { Name = "f9" },
+            new() { Name = "f10" },
+            new() { Name = "f11" }
         };
 
         var doc = CreateSchemaWithEvent(new EventDefinition
@@ -843,16 +843,6 @@ public class SchemaDocumentationGeneratorTests
 
         Assert.Contains("| f1 ", markdown);
         Assert.Contains("string", markdown);
-        Assert.Contains("int", markdown);
-        Assert.Contains("long", markdown);
-        Assert.Contains("double", markdown);
-        Assert.Contains("bool", markdown);
-        Assert.Contains("datetime", markdown);
-        Assert.Contains("duration", markdown);
-        Assert.Contains("guid", markdown);
-        Assert.Contains("string[]", markdown);
-        Assert.Contains("int[]", markdown);
-        Assert.Contains("map", markdown);
     }
 
     [Fact]
@@ -893,10 +883,10 @@ public class SchemaDocumentationGeneratorTests
             Message = "msg",
             Fields =
             [
-                new FieldDefinition { Name = "f1", Type = FieldType.String, Sensitivity = Sensitivity.Public },
-                new FieldDefinition { Name = "f2", Type = FieldType.String, Sensitivity = Sensitivity.Internal },
-                new FieldDefinition { Name = "f3", Type = FieldType.String, Sensitivity = Sensitivity.Pii },
-                new FieldDefinition { Name = "f4", Type = FieldType.String, Sensitivity = Sensitivity.Credential }
+                new FieldDefinition { Name = "f1", Sensitivity = Sensitivity.Public },
+                new FieldDefinition { Name = "f2", Sensitivity = Sensitivity.Internal },
+                new FieldDefinition { Name = "f3", Sensitivity = Sensitivity.Pii },
+                new FieldDefinition { Name = "f4", Sensitivity = Sensitivity.Credential }
             ]
         });
 
