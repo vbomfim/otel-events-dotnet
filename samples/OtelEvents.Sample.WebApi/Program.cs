@@ -84,7 +84,7 @@ app.MapPost("/orders", async (OrderRequest request, ILogger<OrderEventSource> lo
         await Task.Delay(Random.Shared.Next(50, 200));
 
         // Simulate occasional failures
-        if (request.Amount > 999)
+        if (double.TryParse(request.Amount, out var amt) && amt > 999)
             throw new InvalidOperationException("Amount exceeds processing limit");
 
         logger.OrderNoteAdded(orderId, "Payment validated, reserving inventory");
@@ -126,5 +126,5 @@ app.Run();
 
 // ─── Request models ─────────────────────────────────────────────────────────
 
-internal sealed record OrderRequest(string CustomerId, double Amount);
+internal sealed record OrderRequest(string CustomerId, string Amount);
 internal sealed record NoteRequest(string Note);
