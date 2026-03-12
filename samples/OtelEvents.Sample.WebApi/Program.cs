@@ -78,7 +78,8 @@ app.MapPost("/orders", (OrderRequest request, ILogger<OrderEventSource> logger) 
 
     // Causal scope: all events emitted within this block share a parent
 
-    logger.OrderPlaced(orderId, request.CustomerId, request.Amount);
+    // type: start — creates transaction scope
+    using var tx = logger.BeginOrderPlaced(orderId, request.CustomerId, request.Amount);
 
     return Results.Created($"/orders/{orderId}", new
     {
@@ -94,7 +95,8 @@ app.MapPost("/orders", (OrderRequest request, ILogger<OrderEventSource> logger) 
 app.MapPost("/orders/{id}/complete", (string id, ILogger<OrderEventSource> logger) =>
 {
 
-    logger.OrderCompleted(id, "Shipped");
+    // type: success — closes the order.placed transaction, records duration
+    logger.OrderCompleted(id, "DHL Express");
 
     return Results.Ok(new
     {
@@ -110,6 +112,7 @@ app.MapPost("/orders/{id}/fail", (string id, ILogger<OrderEventSource> logger) =
 
     var exception = new InvalidOperationException("Payment gateway timeout");
 
+    // type: failure — closes the order.placed transaction as failure
     logger.OrderFailed(id, "Payment processing failed", exception);
 
     return Results.Problem(
