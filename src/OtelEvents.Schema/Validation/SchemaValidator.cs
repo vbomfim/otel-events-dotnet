@@ -15,9 +15,13 @@ public sealed partial class SchemaValidator
     /// <summary>Maximum allowed fields per event.</summary>
     internal const int MaxFieldsPerEvent = 50;
 
-    // Regex: lowercase alphanumeric + dots, must have at least one dot
+    // Regex: lowercase alphanumeric + dots, must have at least one dot (legacy format)
     [GeneratedRegex(@"^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$")]
-    private static partial Regex EventNameRegex();
+    private static partial Regex DotNamespacedEventNameRegex();
+
+    // Regex: PascalCase C# identifier (starts with uppercase letter, no dots)
+    [GeneratedRegex(@"^[A-Z][A-Za-z0-9]*$")]
+    private static partial Regex PascalCaseEventNameRegex();
 
     // Regex: semver (simplified — major.minor.patch with optional pre-release)
     [GeneratedRegex(@"^\d+\.\d+\.\d+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?(\+[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$")]
@@ -221,12 +225,12 @@ public sealed partial class SchemaValidator
 
     private static void ValidateEventNameFormat(string eventName, List<SchemaError> errors)
     {
-        if (!EventNameRegex().IsMatch(eventName))
+        if (!DotNamespacedEventNameRegex().IsMatch(eventName) && !PascalCaseEventNameRegex().IsMatch(eventName))
         {
             errors.Add(new SchemaError
             {
                 Code = ErrorCodes.InvalidEventNameFormat,
-                Message = $"Event name '{eventName}' must be lowercase, dot-namespaced (e.g., 'http.request.received')."
+                Message = $"Event name '{eventName}' must be either PascalCase (e.g., 'OrderPlaced') or lowercase dot-namespaced (e.g., 'order.placed')."
             });
         }
     }

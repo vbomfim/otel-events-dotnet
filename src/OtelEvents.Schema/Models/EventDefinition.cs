@@ -49,4 +49,10 @@ public sealed class EventDefinition
     /// The raw event type string from YAML, preserved for validation when the type is invalid.
     /// </summary>
     public string? RawEventType { get; init; }
+
+    /// <summary>
+    /// Optional per-event prefix override. When set, overrides the schema-level prefix
+    /// for this event's code string. When absent, the schema-level prefix is used.
+    /// </summary>
+    public string? Prefix { get; init; }
 }

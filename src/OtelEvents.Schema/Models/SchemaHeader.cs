@@ -25,4 +25,10 @@ public sealed class SchemaHeader
     /// When set to <see cref="MeterLifecycle.DI"/>, generates IMeterFactory-injected metrics class.
     /// </summary>
     public MeterLifecycle MeterLifecycle { get; init; } = MeterLifecycle.Static;
+
+    /// <summary>
+    /// Optional event code prefix. When set, event codes become "{Prefix}-{Id}" (e.g., "ORDER-1000").
+    /// When absent, event codes are just the numeric ID as a string.
+    /// </summary>
+    public string? Prefix { get; init; }
 }

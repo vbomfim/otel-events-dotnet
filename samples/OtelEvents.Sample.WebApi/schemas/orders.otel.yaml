@@ -1,19 +1,21 @@
 # ─── Sample Order Events Schema ──────────────────────────────────────────────
+# Schema v3: PascalCase event names, string event codes with prefix.
 # All fields are strings and required by default.
 # Use { optional: true } to mark a field as optional.
 
 schema:
-  name: "Sample.Orders"
-  version: "2.0.0"
+  name: "Orders"
+  version: "3.0.0"
   namespace: "OtelEvents.Sample.WebApi.Events"
   meterName: "Sample.Events.Orders"
+  prefix: ORDER
 
 events:
-  order.placed:
-    id: 20001
+  OrderPlaced:
+    id: 1000
     type: start
     severity: INFO
-    message: "Order {orderId} placed by customer {customerId} for ${amount}"
+    message: "Order {orderId} placed by {customerId} for ${amount}"
     fields:
       - orderId
       - customerId: { sensitivity: pii }
@@ -26,10 +28,10 @@ events:
         type: histogram
         field: amount
 
-  order.completed:
-    id: 20002
+  OrderCompleted:
+    id: 1001
     type: success
-    parent: order.placed
+    parent: OrderPlaced
     severity: INFO
     message: "Order {orderId} shipped via {carrier}"
     fields:
@@ -37,10 +39,10 @@ events:
       - carrier
       - trackingNumber: { optional: true }
 
-  order.failed:
-    id: 20003
+  OrderFailed:
+    id: 2000
     type: failure
-    parent: order.placed
+    parent: OrderPlaced
     severity: ERROR
     message: "Order {orderId} failed: {reason}"
     exception: true
@@ -51,8 +53,8 @@ events:
       sample.order.failed.count:
         type: counter
 
-  order.note.added:
-    id: 20004
+  OrderNoteAdded:
+    id: 1002
     severity: INFO
     message: "Note added to order {orderId}: {note}"
     fields:
