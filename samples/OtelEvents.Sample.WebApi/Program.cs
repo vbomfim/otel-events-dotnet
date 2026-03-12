@@ -1,6 +1,5 @@
 using OpenTelemetry.Logs;
 using OtelEvents.AspNetCore;
-using OtelEvents.Causality;
 using OtelEvents.Exporter.Json;
 using OtelEvents.HealthChecks;
 using OtelEvents.Sample.WebApi.Events;
@@ -77,7 +76,6 @@ app.MapPost("/orders", (OrderRequest request, ILogger<OrderEventSource> logger) 
     var orderId = Guid.NewGuid().ToString("N")[..8];
 
     // Causal scope: all events emitted within this block share a parent
-    using var scope = OtelEventsCausalScope.Begin();
 
     logger.OrderPlaced(orderId, request.CustomerId, request.Amount);
 
@@ -94,7 +92,6 @@ app.MapPost("/orders", (OrderRequest request, ILogger<OrderEventSource> logger) 
 
 app.MapPost("/orders/{id}/complete", (string id, ILogger<OrderEventSource> logger) =>
 {
-    using var scope = OtelEventsCausalScope.Begin();
 
     logger.OrderCompleted(id, "Shipped");
 
@@ -109,7 +106,6 @@ app.MapPost("/orders/{id}/complete", (string id, ILogger<OrderEventSource> logge
 
 app.MapPost("/orders/{id}/fail", (string id, ILogger<OrderEventSource> logger) =>
 {
-    using var scope = OtelEventsCausalScope.Begin();
 
     var exception = new InvalidOperationException("Payment gateway timeout");
 
