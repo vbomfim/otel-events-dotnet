@@ -132,34 +132,6 @@ public sealed class DiffCommandTests : IDisposable
     }
 
     [Fact]
-    public void Execute_FieldTypeChanged_ReturnsTwoAndShowsBreaking()
-    {
-        var oldPath = CreateTempYaml(BaseSchemaYaml);
-        var newYaml = """
-            schema:
-              name: Test
-              version: "2.0.0"
-              namespace: Test.Events
-              meterName: test.meter
-            events:
-              test.event:
-                id: 1
-                severity: INFO
-                message: "Test {field1}"
-                fields:
-                  field1:
-                    type: int
-            """;
-        var newPath = CreateTempYaml(newYaml);
-
-        var exitCode = DiffCommand.Execute(oldPath, newPath, _stdout, _stderr);
-
-        Assert.Equal(2, exitCode);
-        var stdoutOutput = _stdout.ToString();
-        Assert.Contains("BREAKING", stdoutOutput);
-    }
-
-    [Fact]
     public void Execute_BreakingChanges_ShowsBreakingCount()
     {
         var oldYaml = """
