@@ -1,6 +1,6 @@
 # ─── Sample Order Events Schema ──────────────────────────────────────────────
-# Demonstrates typed transactions for an order lifecycle workflow.
-# All fields are strings. Shorthand list syntax.
+# All fields are strings and required by default.
+# Use { optional: true } to mark a field as optional.
 
 schema:
   name: "Sample.Orders"
@@ -15,9 +15,9 @@ events:
     severity: INFO
     message: "Order {orderId} placed by customer {customerId} for ${amount}"
     fields:
-      - orderId: { required: true }
-      - customerId: { required: true, sensitivity: pii }
-      - amount: { required: true }
+      - orderId
+      - customerId: { sensitivity: pii }
+      - amount
     metrics:
       sample.order.placed.count:
         type: counter
@@ -33,9 +33,9 @@ events:
     severity: INFO
     message: "Order {orderId} shipped via {carrier}"
     fields:
-      - orderId: { required: true }
-      - carrier: { required: true }
-      - trackingNumber
+      - orderId
+      - carrier
+      - trackingNumber: { optional: true }
 
   order.failed:
     id: 20003
@@ -45,8 +45,8 @@ events:
     message: "Order {orderId} failed: {reason}"
     exception: true
     fields:
-      - orderId: { required: true }
-      - reason: { required: true }
+      - orderId
+      - reason
     metrics:
       sample.order.failed.count:
         type: counter
@@ -56,5 +56,5 @@ events:
     severity: INFO
     message: "Note added to order {orderId}: {note}"
     fields:
-      - orderId: { required: true }
-      - note: { required: true }
+      - orderId
+      - note
