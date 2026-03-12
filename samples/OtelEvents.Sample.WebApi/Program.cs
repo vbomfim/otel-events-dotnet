@@ -6,11 +6,10 @@ using OtelEvents.HealthChecks;
 using OtelEvents.Sample.WebApi.Events;
 using OtelEvents.Subscriptions;
 
-// ─── Builder ────────────────────────────────────────────────────────────────
-
 var builder = WebApplication.CreateBuilder(args);
 
-// OpenTelemetry: logging pipeline with causality + JSONL exporter + subscriptions
+// ─── OpenTelemetry pipeline ─────────────────────────────────────────────────
+
 builder.Services.AddOpenTelemetry()
     .WithLogging(logging =>
     {
@@ -19,111 +18,113 @@ builder.Services.AddOpenTelemetry()
         {
             options.EnvironmentProfile = OtelEventsEnvironmentProfile.Development;
         });
-        // Subscription processor — dispatches matching events to handlers
         logging.AddProcessor(sp => sp.GetRequiredService<OtelEventsSubscriptionProcessor>());
     })
     .WithMetrics(metrics => metrics.AddMeter("Sample.Events.*"));
 
-// OtelEvents integration packs
+// ─── Integration packs ──────────────────────────────────────────────────────
+
 builder.Services.AddOtelEventsAspNetCore(options =>
 {
     options.ExcludePaths = ["/health"];
 });
 
-// Health checks with structured event emission
 builder.Services.AddHealthChecks();
-builder.Services.AddOtelEventsHealthChecks(options =>
-{
-    options.EmitStateChangedEvents = true;
-    options.EmitReportCompletedEvents = true;
-});
+builder.Services.AddOtelEventsHealthChecks();
 
-// Event subscriptions — react to events in-process
+// ─── Event subscriptions — react to events in-process ───────────────────────
+
 builder.Services.AddOtelEventsSubscriptions(subs =>
 {
     subs.On("order.placed", (ctx, ct) =>
     {
-        var orderId = ctx.GetAttribute<string>("OrderId");
-        var amount = ctx.GetAttribute<double>("Amount");
-        Console.WriteLine($"📦 Subscription: Order {orderId} placed for ${amount}");
+        Console.WriteLine($"📦 Order {ctx.GetAttribute<string>("OrderId")} placed for ${ctx.GetAttribute<double>("Amount")}");
         return Task.CompletedTask;
     });
 
     subs.On("order.failed", (ctx, ct) =>
     {
-        var orderId = ctx.GetAttribute<string>("OrderId");
-        var reason = ctx.GetAttribute<string>("Reason");
-        Console.WriteLine($"⚠️ Subscription: Order {orderId} failed — {reason}");
+        Console.WriteLine($"⚠️ Order {ctx.GetAttribute<string>("OrderId")} failed: {ctx.GetAttribute<string>("Reason")}");
         return Task.CompletedTask;
     });
 
-    subs.On("order.*", (ctx, ct) =>
+    subs.On("order.completed", (ctx, ct) =>
     {
-        Console.WriteLine($"📊 Subscription: Event '{ctx.EventName}' observed at {ctx.Timestamp:HH:mm:ss.fff}");
+        Console.WriteLine($"✅ Order {ctx.GetAttribute<string>("OrderId")} shipped via {ctx.GetAttribute<string>("Carrier")}");
         return Task.CompletedTask;
     });
 });
 
-// ─── App ────────────────────────────────────────────────────────────────────
-
 var app = builder.Build();
-
 app.MapHealthChecks("/health");
 
-// ─── POST /orders — Place an order ──────────────────────────────────────────
+// ─── POST /orders — Full order transaction in a single request ──────────────
+//
+// Demonstrates typed transactions:
+//   order.placed    (type: start)   → creates scope, starts timer
+//   order.note.added (type: event)  → plain event within the scope
+//   order.completed (type: success) → closes scope, records duration
+//   order.failed    (type: failure) → closes scope as failure, records duration
+//
+// All events share the same parentEventId and otel_events.elapsed_ms.
 
-app.MapPost("/orders", (OrderRequest request, ILogger<OrderEventSource> logger) =>
+app.MapPost("/orders", async (OrderRequest request, ILogger<OrderEventSource> logger) =>
 {
     var orderId = Guid.NewGuid().ToString("N")[..8];
 
-    // Causal scope: all events emitted within this block share a parent
-
-    // type: start — creates transaction scope
+    // type: start — creates transaction scope, starts timer
     using var tx = logger.BeginOrderPlaced(orderId, request.CustomerId, request.Amount);
 
-    return Results.Created($"/orders/{orderId}", new
+    try
     {
-        orderId,
-        request.CustomerId,
-        request.Amount,
-        status = "Placed",
-    });
+        // type: event — plain event within the transaction (no scope effect)
+        logger.OrderNoteAdded(orderId, "Validating payment...");
+
+        // Simulate async processing
+        await Task.Delay(Random.Shared.Next(50, 200));
+
+        // Simulate occasional failures
+        if (request.Amount > 999)
+            throw new InvalidOperationException("Amount exceeds processing limit");
+
+        logger.OrderNoteAdded(orderId, "Payment validated, reserving inventory");
+        await Task.Delay(Random.Shared.Next(20, 100));
+
+        // type: success — closes transaction, records duration
+        logger.OrderCompleted(orderId, "DHL Express");
+
+        return Results.Created($"/orders/{orderId}", new
+        {
+            orderId,
+            customerId = request.CustomerId,
+            amount = request.Amount,
+            status = "Shipped",
+        });
+    }
+    catch (Exception ex)
+    {
+        // type: failure — closes transaction as failure, records duration
+        logger.OrderFailed(orderId, ex.Message, ex);
+
+        return Results.Problem(
+            title: "Order Failed",
+            detail: ex.Message,
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
 });
 
-// ─── POST /orders/{id}/complete — Complete an order ─────────────────────────
+// ─── GET /orders/{id}/notes — Demonstrate standalone events ─────────────────
 
-app.MapPost("/orders/{id}/complete", (string id, ILogger<OrderEventSource> logger) =>
+app.MapPost("/orders/{id}/notes", (string id, NoteRequest request, ILogger<OrderEventSource> logger) =>
 {
-
-    // type: success — closes the order.placed transaction, records duration
-    logger.OrderCompleted(id, "DHL Express");
-
-    return Results.Ok(new
-    {
-        orderId = id,
-        status = "Shipped",
-    });
-});
-
-// ─── POST /orders/{id}/fail — Simulate order failure ────────────────────────
-
-app.MapPost("/orders/{id}/fail", (string id, ILogger<OrderEventSource> logger) =>
-{
-
-    var exception = new InvalidOperationException("Payment gateway timeout");
-
-    // type: failure — closes the order.placed transaction as failure
-    logger.OrderFailed(id, "Payment processing failed", exception);
-
-    return Results.Problem(
-        title: "Order Failed",
-        detail: $"Order {id} could not be processed",
-        statusCode: StatusCodes.Status500InternalServerError);
+    // type: event — standalone, no transaction effect
+    logger.OrderNoteAdded(id, request.Note);
+    return Results.Ok(new { orderId = id, note = request.Note });
 });
 
 app.Run();
 
 // ─── Request models ─────────────────────────────────────────────────────────
 
-/// <summary>Request body for creating a new order.</summary>
 internal sealed record OrderRequest(string CustomerId, double Amount);
+internal sealed record NoteRequest(string Note);
