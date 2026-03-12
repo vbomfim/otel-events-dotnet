@@ -18,7 +18,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.svg</PackageIcon>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageTags>opentelemetry;otel;logging;events;observability;dotnet;structured-logging</PackageTags>
     <Copyright>Copyright (c) 2026 Bomfim</Copyright>
   </PropertyGroup>
