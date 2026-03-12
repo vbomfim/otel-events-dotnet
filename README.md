@@ -45,7 +45,7 @@ dotnet add package OtelEvents.Subscriptions    # In-process event bus for reacti
 
 | Package | What it does | When to use |
 |---------|-------------|-------------|
-| **OtelEvents.Schema** | Parses `.otel.yaml` schema files and generates type-safe C# code (`[LoggerMessage]` methods + `Meter`/`Counter`/`Histogram` instruments) | You want to define custom business events (e.g., `order.placed`, `payment.processed`) |
+| **OtelEvents.Schema** | Parses `.otel.yaml` schema files and generates type-safe C# code (`[LoggerMessage]` methods + `Meter`/`Counter`/`Histogram` instruments) | You want to define custom business events (e.g., `OrderPlaced`, `PaymentProcessed`) |
 | **OtelEvents.Exporter.Json** | OTEL `BaseExporter<LogRecord>` that writes compact, single-line JSONL to stdout — optimized for AI/ML log analysis | You want structured JSON output instead of plain-text logs |
 | **OtelEvents.Causality** | OTEL `BaseProcessor<LogRecord>` that auto-generates UUID v7 `eventId` and links events via `parentEventId` using `AsyncLocal` scopes | You want to trace cause-and-effect between events (e.g., all events from one HTTP request) |
 
@@ -92,7 +92,7 @@ Every HTTP request, CosmosDB query, and health check now emits structured events
 
 ### Option 2: Custom Events via YAML Schema
 
-1. Define your events in `events.otel.yaml`:
+1. Define your events in `orders.otel.yaml`:
 
 ```yaml
 schema:
@@ -100,32 +100,48 @@ schema:
   version: "1.0.0"
   namespace: MyApp.Events
   meterName: myapp.events
+  prefix: ORDER              # Event codes become ORDER-1000, ORDER-2000, etc.
 
 events:
-  order.placed:
-    id: 1001
+  OrderPlaced:
+    id: 1000
+    type: start              # Creates a transaction scope
     severity: INFO
-    message: "Order {orderId} placed by {customerId} for {amount}"
+    message: "Order {orderId} placed by {customerId} for ${amount}"
     fields:
-      orderId: { type: string, required: true }
-      customerId: { type: string, required: true, sensitivity: pii }
-      amount: { type: double, required: true }
+      - orderId
+      - customerId: { sensitivity: pii }
+      - amount
     metrics:
       order.placed.count:
         type: counter
         labels: [customerId]
+
+  OrderFailed:
+    id: 2000
+    type: failure             # Closes parent scope as failed
+    parent: OrderPlaced
+    severity: ERROR
+    message: "Order {orderId} failed: {reason}"
+    exception: true
+    fields:
+      - orderId
+      - reason
 ```
 
 2. Generate code and use it:
 
 ```bash
-dotnet otel-events generate events.otel.yaml -o Generated/
+dotnet otel-events generate orders.otel.yaml -o Generated/
 ```
 
 ```csharp
 // Type-safe, schema-enforced — log + metrics in one call
-using var scope = OtelEventsCausalScope.Begin();
-logger.EmitOrderPlaced(orderId, customerId, amount);
+using var scope = logger.BeginOrderPlaced(orderId, customerId, amount);
+// ... do work ...
+scope.TryComplete(logger, orderId, carrier, trackingNumber);
+// or on failure:
+scope.TryFail(logger, orderId, reason, exception);
 ```
 
 📖 See the full [User Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/README.md) for detailed tutorials.
@@ -138,10 +154,10 @@ logger.EmitOrderPlaced(orderId, customerId, amount);
 
 | Package | Targets |
 |---------|---------|
-| Library packages (`OtelEvents.*`) | `net8.0`, `net10.0` |
+| Library packages (`OtelEvents.*`) | `net8.0` |
 | `OtelEvents.Analyzers` | `netstandard2.0` (Roslyn requirement) |
-| `OtelEvents.Cli` | `net10.0` |
-| Test projects | `net10.0` |
+| `OtelEvents.Cli` | `net8.0` |
+| Test projects | `net8.0` |
 
 ## Project Structure
 
