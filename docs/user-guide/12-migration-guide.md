@@ -129,9 +129,9 @@ Create a migration table:
 
 | Current Code | Event Name | Priority | Status |
 |-------------|------------|----------|--------|
-| `OrderPlaced(orderId, userId)` | `order.placed` | High | ⬜ |
-| `_logger.LogInformation("HTTP {Method}...")` | `http.request.completed` | High | ⬜ |
-| `_logger.LogError(ex, "DB query failed")` | `db.query.failed` | Medium | ⬜ |
+| `OrderPlaced(orderId, userId)` | `OrderPlaced` | High | ⬜ |
+| `_logger.LogInformation("HTTP {Method}...")` | `HttpRequestCompleted` | High | ⬜ |
+| `_logger.LogError(ex, "DB query failed")` | `DbQueryFailed` | Medium | ⬜ |
 | `Console.WriteLine(...)` | Remove | Low | ⬜ |
 
 ---
@@ -143,74 +143,36 @@ Translate your event audit into a YAML schema:
 ```yaml
 schema:
   name: "MyService"
-  version: "1.0.0"
+  version: "3.0.0"
   namespace: "MyCompany.MyService.Events"
   meterName: "MyCompany.MyService.Events"
-
-fields:
-  orderId:
-    type: string
-    description: "Unique order identifier"
-    index: true
-
-  userId:
-    type: string
-    description: "User who placed the order"
-    sensitivity: pii
-    index: true
-
-  durationMs:
-    type: double
-    description: "Duration in milliseconds"
-    unit: "ms"
+  prefix: SVC
 
 events:
-  order.placed:
+  OrderPlaced:
     id: 1001
     severity: INFO
-    description: "A new order was placed"
     message: "Order {orderId} placed by {userId}"
     fields:
-      orderId:
-        ref: orderId
-        required: true
-      userId:
-        ref: userId
-        required: true
-      amount:
-        type: double
-        required: true
+      - orderId
+      - userId: { sensitivity: pii }
+      - amount
     metrics:
-      order.placed.count:
+      svc.order.placed.count:
         type: counter
-        unit: "orders"
-    tags:
-      - commerce
 
-  http.request.completed:
+  HttpRequestCompleted:
     id: 1002
     severity: INFO
     message: "HTTP {method} {path} completed with {statusCode} in {durationMs}ms"
     fields:
-      method:
-        type: string
-        required: true
-      path:
-        type: string
-        required: true
-      statusCode:
-        type: int
-        required: true
-      durationMs:
-        ref: durationMs
-        required: true
+      - method
+      - path
+      - statusCode
+      - durationMs
     metrics:
-      http.request.duration:
+      svc.http.request.duration:
         type: histogram
-        unit: "ms"
-        buckets: [5, 10, 25, 50, 100, 250, 500, 1000]
-    tags:
-      - api
 ```
 
 ---
@@ -285,7 +247,7 @@ The `OtelEventsJsonExporter` exports **all** `LogRecord`s:
 
 | Source | `event` field | `attr` field |
 |--------|--------------|-------------|
-| otel-events generated | `"http.request.completed"` | Schema-defined typed fields |
+| otel-events generated | `"HttpRequestCompleted"` | Schema-defined typed fields |
 | Hand-written `[LoggerMessage]` | `EventId.Name` if set | State key-value pairs |
 | Direct `_logger.LogInformation(...)` | `"dotnet.ilogger"` (fallback) | State key-value pairs |
 | Third-party library (EF Core, ASP.NET) | `EventId.Name` if set | Library-specific attributes |

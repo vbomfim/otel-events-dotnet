@@ -42,9 +42,9 @@ dotnet otel-events validate schemas/orders.otel.yaml
 **Error output** (to stderr):
 
 ```
-OTEL_SCHEMA_001: Duplicate event name 'order.placed' at line 42
+OTEL_SCHEMA_001: Duplicate event name 'OrderPlaced' at line 42
 OTEL_SCHEMA_003: Message template placeholder '{orderId}' does not match any field name
-OTEL_SCHEMA_006: Event name 'OrderPlaced' is invalid — must be lowercase, dot-namespaced
+OTEL_SCHEMA_006: Event name 'order.placed' is invalid — must be PascalCase
 
 3 error(s)
 ```
@@ -111,8 +111,8 @@ dotnet otel-events diff schemas/v1/orders.otel.yaml schemas/v2/orders.otel.yaml
 **Compatible output (no breaking changes):**
 
 ```
-✓ [OK] Event 'order.refunded' added
-✓ [OK] Field 'order.placed.notes' added
+✓ [OK] Event 'OrderRefunded' added
+✓ [OK] Field 'OrderPlaced.notes' added
 
 0 breaking change(s), 2 compatible change(s).
 ```
@@ -120,10 +120,10 @@ dotnet otel-events diff schemas/v1/orders.otel.yaml schemas/v2/orders.otel.yaml
 **Breaking changes output:**
 
 ```
-✗ [BREAKING] Event 'order.cancelled' removed
-✗ [BREAKING] Field 'order.placed.customerId' removed
-✗ [BREAKING] Field 'order.placed.amount' type changed (int → double)
-✓ [OK] Event 'order.refunded' added
+✗ [BREAKING] Event 'OrderCancelled' removed
+✗ [BREAKING] Field 'OrderPlaced.customerId' removed
+✗ [BREAKING] Field 'OrderPlaced.amount' type changed (int → double)
+✓ [OK] Event 'OrderRefunded' added
 
 3 breaking change(s), 1 compatible change(s).
 ```
@@ -185,7 +185,7 @@ Schema version: 1.0.0
 
 ## Events
 
-### order.placed
+### OrderPlaced
 **Severity:** INFO  
 **Message:** Order {orderId} placed by {customerId} for {amount}
 
@@ -228,7 +228,7 @@ When `validate` or `generate` reports errors, each error includes a structured c
 | `OTEL_SCHEMA_003` | Message template placeholder doesn't match any field name |
 | `OTEL_SCHEMA_004` | Unresolved `ref` (field or enum reference not found) |
 | `OTEL_SCHEMA_005` | Invalid field type |
-| `OTEL_SCHEMA_006` | Invalid event name format (must be lowercase, dot-namespaced) |
+| `OTEL_SCHEMA_006` | Invalid event name format (must be PascalCase) |
 | `OTEL_SCHEMA_007` | Required field missing type (directly or via ref) |
 | `OTEL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
 | `OTEL_SCHEMA_009` | Empty enum definition |

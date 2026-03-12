@@ -1,6 +1,8 @@
 # otel-events
 
-## Project Specification v2.0
+> **Note:** This specification was written for schema v2.0. The current schema format is v3.0, which introduces PascalCase event names (e.g., `OrderPlaced` instead of `order.placed`), string event codes with a schema-level `prefix` (e.g., `ORDER-1000`), simplified string-only fields with list syntax, and typed transactions (`type: start/success/failure` with `parent:` linking). See the [Schema Reference](docs/user-guide/05-schema-reference.md) in the User Guide for the current format.
+
+## Project Specification v2.0 (see note above for v3.0 changes)
 
 ### OTEL Extension Architecture
 

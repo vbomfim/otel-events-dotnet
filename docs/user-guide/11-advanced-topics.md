@@ -176,14 +176,12 @@ imports:
   - "package:MyCompany.Events.Shared/events.otel.yaml"
 
 events:
-  order.placed:
+  OrderPlaced:
     id: 1001
     severity: INFO
     message: "Order {orderId} placed"
     fields:
-      orderId:
-        ref: orderId          # Defined in shared schema
-        required: true
+      - orderId
 ```
 
 ### Workflow
@@ -264,8 +262,8 @@ public sealed class MyAppMetrics : IDisposable
     public MyAppMetrics(IMeterFactory meterFactory)
     {
         _meter = meterFactory.Create("MyApp.Events", "1.0.0");
-        OrderPlacedCount = _meter.CreateCounter<long>("order.placed.count", "orders");
-        OrderDuration = _meter.CreateHistogram<double>("order.duration", "ms");
+        OrderPlacedCount = _meter.CreateCounter<long>("myapp.order.placed.count", "orders");
+        OrderDuration = _meter.CreateHistogram<double>("myapp.order.duration", "ms");
     }
 
     public Counter<long> OrderPlacedCount { get; }

@@ -108,7 +108,7 @@ var factory = LoggerFactory.Create(builder =>
 var logger = factory.CreateLogger("TestCategory");
 
 using var scope = OtelEventsCausalScope.Begin();
-logger.LogInformation(new EventId(1, "order.placed"), "Order placed");
+logger.LogInformation(new EventId(1, "OrderPlaced"), "Order placed");
 
 var record = exporter.LogRecords[0];
 var eventId = record.Attributes["otel_events.event_id"] as string;
@@ -147,7 +147,7 @@ public sealed class ExportedLogRecord
 
 | Property | Source | Notes |
 |---|---|---|
-| `EventName` | `LogRecord.EventId.Name` | The schema-defined event name (e.g., `"order.placed"`) |
+| `EventName` | `LogRecord.EventId.Name` | The schema-defined event name (e.g., `"OrderPlaced"`) |
 | `EventId` | `LogRecord.EventId` | Full `EventId` (numeric ID + name) |
 | `LogLevel` | `LogRecord.LogLevel` | Severity: `Trace` through `Critical` |
 | `FormattedMessage` | `LogRecord.FormattedMessage` | Interpolated message string |
@@ -168,14 +168,14 @@ public sealed class ExportedLogRecord
 Verifies that **at least one** log record with the specified event name was emitted:
 
 ```csharp
-exporter.AssertEventEmitted("order.placed");
+exporter.AssertEventEmitted("OrderPlaced");
 ```
 
 If no match is found, throws with a message listing all emitted events:
 
 ```
-Expected event 'order.placed' to be emitted, but it was not found.
-Emitted events: 'order.created', 'order.shipped'
+Expected event 'OrderPlaced' to be emitted, but it was not found.
+Emitted events: 'OrderCreated', 'OrderShipped'
 ```
 
 ### AssertSingle
@@ -183,7 +183,7 @@ Emitted events: 'order.created', 'order.shipped'
 Verifies that **exactly one** record with the specified event name exists, and returns it for further assertions:
 
 ```csharp
-ExportedLogRecord record = exporter.AssertSingle("order.placed");
+ExportedLogRecord record = exporter.AssertSingle("OrderPlaced");
 Assert.Equal(LogLevel.Information, record.LogLevel);
 ```
 
@@ -223,8 +223,8 @@ If errors are found, the failure message lists each one:
 
 ```
 Expected no errors, but found 2 error-level record(s):
-  [Error] db.connection.failed: Connection timeout (IOException: ...)
-  [Critical] app.crash: Unhandled exception
+  [Error] DbConnectionFailed: Connection timeout (IOException: ...)
+  [Critical] AppCrash: Unhandled exception
 ```
 
 ---
@@ -290,7 +290,7 @@ public class OrderServiceTests : IDisposable
         var order = _service.PlaceOrder("CUST-001", 99.99m);
 
         // Assert — event was emitted
-        var record = _exporter.AssertSingle("order.placed");
+        var record = _exporter.AssertSingle("OrderPlaced");
         Assert.Equal(LogLevel.Information, record.LogLevel);
     }
 
@@ -301,7 +301,7 @@ public class OrderServiceTests : IDisposable
         var order = _service.PlaceOrder("CUST-001", 99.99m);
 
         // Assert — attributes match
-        var record = _exporter.AssertSingle("order.placed");
+        var record = _exporter.AssertSingle("OrderPlaced");
         record.AssertAttribute("CustomerId", "CUST-001");
         record.AssertAttribute("Amount", 99.99m);
     }
@@ -323,7 +323,7 @@ public class OrderServiceTests : IDisposable
         var order = _service.PlaceOrder("CUST-001", 42.00m);
 
         // Assert — message is interpolated
-        var record = _exporter.AssertSingle("order.placed");
+        var record = _exporter.AssertSingle("OrderPlaced");
         Assert.Contains("CUST-001", record.FormattedMessage);
     }
 
@@ -348,8 +348,8 @@ public void ProcessOrder_EmitsMultipleEvents()
     logger.OrderShipped(orderId: "ORD-1", carrier: "FedEx");
 
     // Assert — both events present
-    exporter.AssertEventEmitted("order.placed");
-    exporter.AssertEventEmitted("order.shipped");
+    exporter.AssertEventEmitted("OrderPlaced");
+    exporter.AssertEventEmitted("OrderShipped");
 
     // Assert — counts
     Assert.Equal(2, exporter.LogRecords.Count);
@@ -370,7 +370,7 @@ public void FailedOperation_EmitsErrorEventWithException()
     var exception = new InvalidOperationException("Out of stock");
     logger.OrderFailed(orderId: "ORD-1", reason: "Out of stock", exception: exception);
 
-    var record = exporter.AssertSingle("order.failed");
+    var record = exporter.AssertSingle("OrderFailed");
     Assert.Equal(LogLevel.Error, record.LogLevel);
     Assert.NotNull(record.Exception);
     Assert.IsType<InvalidOperationException>(record.Exception);

@@ -10,6 +10,7 @@ This chapter is the complete reference for the `.otel.yaml` schema format. Every
 - A project can have **multiple schema files** — they are merged by the code generator
 - Event names must be globally unique across all merged schemas
 - Event numeric IDs must be globally unique across all merged schemas
+- With a `prefix:` defined, event codes are formatted as `PREFIX-ID` (e.g., `ORDER-1000`)
 
 ---
 
@@ -19,10 +20,10 @@ This chapter is the complete reference for the `.otel.yaml` schema format. Every
 # ─── Schema Header (required) ───────────────────────────────────────
 schema:
   name: "MyService"                    # Required: schema name
-  version: "1.0.0"                     # Required: semver
+  version: "3.0.0"                     # Required: semver
   namespace: "MyCompany.MyService"     # Required: C# namespace for generated code
-  description: "Events for MyService"  # Optional: human-readable description
   meterName: "MyCompany.MyService"     # Optional: OTEL Meter name (defaults to namespace)
+  prefix: MYSERVICE                    # Optional: event code prefix (e.g., MYSERVICE-1000)
 
 # ─── Enum Type Definitions (optional) ────────────────────────────────
 enums:
@@ -35,15 +36,17 @@ enums:
 
 # ─── Event Definitions (required) ────────────────────────────────────
 events:
-  category.subcategory.action:         # Event name: dot-namespaced, lowercase
-    id: 1001                           # Required: unique numeric EventId
+  EventName:                             # Event name: PascalCase
+    id: 1000                           # Required: unique numeric ID (becomes PREFIX-1000)
+    type: start                        # Optional: start, success, or failure (typed transactions)
+    parent: ParentEventName            # Optional: links success/failure to a start event
     severity: INFO                     # Required: TRACE|DEBUG|INFO|WARN|ERROR|FATAL
     description: "What happened"       # Optional: event description
     message: "Template with {field}"   # Required: message template
     exception: false                   # Optional: adds Exception parameter (default: false)
     fields:                            # Required: at least one field
-      - fieldName                      # Shorthand: just a name (string, optional)
-      - otherField: { required: true } # With annotation
+      - fieldName                      # Shorthand: just a name (required by default)
+      - optionalField: { optional: true }  # Mark as optional
       - piiField: { sensitivity: pii } # With sensitivity
       - bounded: { maxLength: 512 }    # With max length
     metrics:                           # Optional: associated metrics
@@ -66,16 +69,16 @@ events:
 | Property | Required | Type | Description |
 |----------|----------|------|-------------|
 | `name` | ✅ | string | Schema name — used for generated class names |
-| `version` | ✅ | string | Semantic version (e.g., `"1.0.0"`) |
+| `version` | ✅ | string | Semantic version (e.g., `"3.0.0"`) |
 | `namespace` | ✅ | string | C# namespace for generated code |
-| `description` | ❌ | string | Human-readable description |
 | `meterName` | ❌ | string | OTEL Meter name. Defaults to `namespace` if omitted |
+| `prefix` | ❌ | string | Event code prefix. When set, event codes are `PREFIX-ID` (e.g., `ORDER-1000`) |
 
 ---
 
 ## Fields
 
-**All fields are strings.** The schema no longer supports typed fields (`int`, `bool`, `datetime`, etc.). Every field is emitted as a `string` attribute in the generated code. This simplifies the schema, aligns with OpenTelemetry's attribute model (which favors string attributes for log events), and eliminates type-mapping complexity.
+**All fields are strings and required by default.** The schema no longer supports typed fields (`int`, `bool`, `datetime`, etc.). Every field is emitted as a `string` attribute in the generated code. Use `{ optional: true }` to mark a field as optional. This simplifies the schema, aligns with OpenTelemetry's attribute model (which favors string attributes for log events), and eliminates type-mapping complexity.
 
 ### Shorthand List Syntax (Recommended)
 
@@ -83,10 +86,10 @@ Fields are defined as a YAML list. Each entry can be a plain name or a name with
 
 ```yaml
 fields:
-  - orderId                           # just a name (string, optional)
+  - orderId                           # required by default
   - customerId: { sensitivity: pii }  # with annotation
-  - amount: { required: true }        # with required
-  - notes: { maxLength: 1024 }        # with max length
+  - amount                            # required by default
+  - notes: { optional: true, maxLength: 1024 }  # optional with max length
   - region: { index: true }           # with index
 ```
 
@@ -94,7 +97,7 @@ Multiple annotations can be combined:
 
 ```yaml
 fields:
-  - email: { required: true, sensitivity: pii, maxLength: 256 }
+  - email: { sensitivity: pii, maxLength: 256 }
 ```
 
 ### Field Attributes
@@ -103,7 +106,7 @@ fields:
 |-----------|----------|------|---------|-------------|
 | `name` | ✅ | string | — | Field name (the YAML key or list entry name) |
 | `description` | ❌ | string | — | Documentation for generated XML doc comments |
-| `required` | ❌ | bool | `false` | Whether the field is required. Required fields are non-nullable in generated code |
+| `optional` | ❌ | bool | `false` | Whether the field is optional. All fields are required by default; set `true` to make nullable in generated code |
 | `sensitivity` | ❌ | string | `public` | Data sensitivity: `public`, `internal`, `pii`, `credential` |
 | `maxLength` | ❌ | int | — | Maximum string length. Values exceeding this are truncated with `"…[truncated]"` |
 | `index` | ❌ | bool | `false` | Marks the field as queryable/indexed (documentation hint) |
@@ -149,15 +152,15 @@ Each event can define zero or more metrics in the `metrics:` block. The code gen
 
 ```yaml
 events:
-  http.request.completed:
+  HttpRequestCompleted:
     id: 1002
     severity: INFO
     message: "HTTP {method} {path} completed with {statusCode} in {durationMs}ms"
     fields:
-      - method: { required: true }
-      - path: { required: true }
-      - statusCode: { required: true }
-      - durationMs: { required: true }
+      - method
+      - path
+      - statusCode
+      - durationMs
     metrics:
       http.request.duration:
         type: histogram
@@ -258,22 +261,22 @@ Values exceeding `maxLength` are truncated with `"…[truncated]"`. The global d
 ## Event Name Conventions
 
 Event names must be:
-- **Lowercase**
-- **Dot-namespaced**: `category.subcategory.action`
-- **Alphanumeric + dots only**
-- **Must not start with `otel_events.`** (reserved prefix)
+- **PascalCase**: each word capitalized, no separators
+- **Alphanumeric only**: no dots, hyphens, or underscores
+- **Must not start with `OtelEvents`** (reserved prefix)
 
 Examples:
 
 ```
-✅ http.request.completed
-✅ order.placed
-✅ db.query.executed
-✅ dependency.failed
+✅ HttpRequestCompleted
+✅ OrderPlaced
+✅ DbQueryExecuted
+✅ DependencyFailed
 
-❌ OrderPlaced          (not lowercase)
+❌ order.placed         (dot-namespaced not allowed)
 ❌ order-placed         (hyphens not allowed)
-❌ otel_events.custom.event     (reserved prefix)
+❌ order_placed         (underscores not allowed)
+❌ OtelEventsCustomEvent  (reserved prefix)
 ```
 
 ---
@@ -284,14 +287,16 @@ Set `exception: true` to add an `Exception?` parameter to the generated method:
 
 ```yaml
 events:
-  order.failed:
-    id: 1003
+  OrderFailed:
+    id: 2000
+    type: failure
+    parent: OrderPlaced
     severity: ERROR
     message: "Order {orderId} failed: {reason}"
     exception: true            # Adds Exception parameter
     fields:
-      - orderId: { required: true }
-      - reason: { required: true }
+      - orderId
+      - reason
 ```
 
 Generated usage:
@@ -322,7 +327,7 @@ The schema parser validates at build time. Violations produce clear build errors
 | `OTEL_SCHEMA_001` | Duplicate event name within merged schemas |
 | `OTEL_SCHEMA_002` | Invalid severity (must be TRACE, DEBUG, INFO, WARN, ERROR, FATAL) |
 | `OTEL_SCHEMA_003` | Message template `{placeholder}` does not match any field name |
-| `OTEL_SCHEMA_006` | Invalid event name format (must be lowercase, dot-namespaced) |
+| `OTEL_SCHEMA_006` | Invalid event name format (must be PascalCase, alphanumeric only) |
 | `OTEL_SCHEMA_008` | Invalid metric type (must be counter, histogram, or gauge) |
 | `OTEL_SCHEMA_009` | Empty enum definition (must have at least one value) |
 | `OTEL_SCHEMA_010` | Invalid semver version |
@@ -371,6 +376,7 @@ The following properties are **accepted but ignored** by the schema parser for b
 | Property | Status | Notes |
 |----------|--------|-------|
 | `type` | Accepted, ignored | All fields are strings. Specifying `type: string` (or any other type) is harmless but has no effect |
+| `required` | Accepted, ignored | All fields are required by default. Use `optional: true` to mark optional fields |
 | `ref` | Removed | Field referencing is no longer supported. Inline all field definitions directly |
 | `values` | Removed | Inline enum values on fields are no longer supported. Use top-level `enums:` instead |
 | `examples` | Removed | Example values are no longer part of the schema |
@@ -385,7 +391,7 @@ The old map-style field syntax still works and is parsed correctly:
 fields:
   orderId:
     type: string        # accepted but ignored
-    required: true
+    required: true      # accepted but ignored (fields are required by default)
   customerId:
     type: string        # accepted but ignored
     sensitivity: pii
@@ -396,7 +402,7 @@ However, the **recommended** syntax is the shorthand list format:
 ```yaml
 # New syntax — recommended
 fields:
-  - orderId: { required: true }
+  - orderId
   - customerId: { sensitivity: pii }
 ```
 

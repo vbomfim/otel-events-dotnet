@@ -7,7 +7,7 @@ need to get started.
 
 | Tool | Version |
 |------|---------|
-| [.NET SDK](https://dotnet.microsoft.com/download) | 10.0 or later |
+| [.NET SDK](https://dotnet.microsoft.com/download) | 8.0 or later |
 | [Git](https://git-scm.com/) | 2.x or later |
 
 ## Building and testing
@@ -79,7 +79,7 @@ The repository enforces conventions through `.editorconfig` and
 
 | Rule | Setting |
 |------|---------|
-| Target framework | `net10.0` |
+| Target framework | `net8.0` |
 | Namespace style | **File-scoped** (`namespace X;`) |
 | Warnings as errors | **Enabled** (`TreatWarningsAsErrors`) |
 | Analysis level | `latest-all` |

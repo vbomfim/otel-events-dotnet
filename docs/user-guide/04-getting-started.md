@@ -55,16 +55,10 @@ Create `schemas/orders.otel.yaml`:
 ```yaml
 schema:
   name: "OrderEvents"
-  version: "1.0.0"
+  version: "3.0.0"
   namespace: "MyOrderService.Events"
   meterName: "MyOrderService.Events.Orders"
-  description: "Events for the order-processing service"
-
-# All fields are strings — no type annotation needed.
-# Use the shorthand list syntax for clean, concise schemas.
-fields:
-  - orderId: { description: "Unique order identifier", index: true }
-  - customerId: { description: "Customer who placed the order", index: true }
+  prefix: ORDER
 
 enums:
   OrderStatus:
@@ -77,15 +71,16 @@ enums:
       - Cancelled
 
 events:
-  order.placed:
-    id: 1001
+  OrderPlaced:
+    id: 1000
+    type: start
     severity: INFO
     description: "An order was placed by a customer"
     message: "Order {orderId} placed by {customerId} for {amount}"
     fields:
-      - orderId: { required: true }
-      - customerId: { required: true }
-      - amount: { required: true }
+      - orderId
+      - customerId
+      - amount
     metrics:
       order.placed.count:
         type: counter
@@ -99,28 +94,30 @@ events:
       - commerce
       - orders
 
-  order.status.changed:
+  OrderStatusChanged:
     id: 1002
     severity: INFO
     description: "An order's status changed"
     message: "Order {orderId} changed from {previousStatus} to {newStatus}"
     fields:
-      - orderId: { required: true }
-      - previousStatus: { required: true }
-      - newStatus: { required: true }
+      - orderId
+      - previousStatus
+      - newStatus
     tags:
       - commerce
       - orders
 
-  order.failed:
-    id: 1003
+  OrderFailed:
+    id: 2000
+    type: failure
+    parent: OrderPlaced
     severity: ERROR
     description: "Order processing failed"
     message: "Order {orderId} failed: {reason}"
     exception: true
     fields:
-      - orderId: { required: true }
-      - reason: { required: true }
+      - orderId
+      - reason
     metrics:
       order.failure.count:
         type: counter
@@ -205,11 +202,8 @@ app.MapPost("/orders", (CreateOrderRequest request, ILogger<OrderEventsEventSour
 {
     var orderId = Guid.NewGuid().ToString("N")[..8];
 
-    // ─── Type-safe, schema-enforced event ──────────────────────────
-    // Causal scope — auto-generates eventId, tracks elapsed time
-    using var scope = OtelEventsCausalScope.Begin();
-
-    logger.OrderPlaced(
+    // ─── Typed transaction — BeginOrderPlaced() emits the start event ──
+    using var scope = logger.BeginOrderPlaced(
         orderId: orderId,
         customerId: request.CustomerId,
         amount: request.Amount);
@@ -251,7 +245,7 @@ curl -X POST http://localhost:5000/orders \
 You'll see a single JSONL line on stdout:
 
 ```json
-{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":1,"otel_events.elapsed_ms":0.42}
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"OrderPlaced","eventCode":"ORDER-1000","severity":"INFO","severityNumber":9,"message":"Order a1b2c3d4 placed by CUST-001 for 99.99","service":"order-service","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","attr":{"orderId":"a1b2c3d4","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"3.0.0","otel_events.seq":1,"otel_events.elapsed_ms":0.42}
 ```
 
 Use `jq` to pretty-print for readability:
@@ -292,18 +286,16 @@ public class OrderEventTests : IDisposable
     {
         var logger = _factory.CreateLogger<OrderEventsEventSource>();
 
-        // Causal scope — auto-generates eventId, tracks elapsed time
-    using var scope = OtelEventsCausalScope.Begin();
-
-    logger.OrderPlaced(
+        // Typed transaction — BeginOrderPlaced() emits the start event
+        using var scope = logger.BeginOrderPlaced(
             orderId: "ORD-001",
             customerId: "CUST-001",
-            amount: 42.00);
+            amount: "42.00");
 
-        var record = _exporter.AssertSingle("order.placed");
+        var record = _exporter.AssertSingle("OrderPlaced");
         record.AssertAttribute("orderId", "ORD-001");
         record.AssertAttribute("customerId", "CUST-001");
-        record.AssertAttribute("amount", 42.00);
+        record.AssertAttribute("amount", "42.00");
     }
 
     [Fact]
@@ -312,12 +304,17 @@ public class OrderEventTests : IDisposable
         var logger = _factory.CreateLogger<OrderEventsEventSource>();
         var exception = new InvalidOperationException("Out of stock");
 
-        logger.OrderFailed(
+        // Start a transaction, then fail it
+        using var scope = logger.BeginOrderPlaced(
             orderId: "ORD-002",
+            customerId: "CUST-001",
+            amount: "50.00");
+
+        scope.TryFail(
             reason: "Out of stock",
             exception: exception);
 
-        var record = _exporter.AssertSingle("order.failed");
+        var record = _exporter.AssertSingle("OrderFailed");
         Assert.Equal(LogLevel.Error, record.LogLevel);
         Assert.NotNull(record.Exception);
     }

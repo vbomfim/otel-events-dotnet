@@ -199,7 +199,7 @@ builder.AddOtelEventsSeverityFilter(
         // Allow debug-level health checks through
         opts.EventNameOverrides["health.check.*"] = LogLevel.Debug;
         // Only emit errors for a noisy event
-        opts.EventNameOverrides["db.query.executed"] = LogLevel.Error;
+        opts.EventNameOverrides["DbQueryExecuted"] = LogLevel.Error;
     },
     innerProcessor: exportProcessor);
 ```
@@ -235,8 +235,8 @@ builder.AddOtelEventsRateLimiter(
     {
         opts.DefaultMaxEventsPerWindow = 1000;
         opts.Window = TimeSpan.FromSeconds(1);
-        opts.EventLimits["db.query.*"] = 100;
-        opts.EventLimits["noisy.event"] = 10;
+        opts.EventLimits["DbQuery*"] = 100;
+        opts.EventLimits["NoisyEvent"] = 10;
     },
     innerProcessor: exportProcessor);
 ```
@@ -274,7 +274,7 @@ builder.AddOtelEventsSampler(
         opts.DefaultSamplingRate = 0.1;          // Sample 10% by default
         opts.AlwaysSampleErrors = true;          // Always keep errors
         opts.ErrorMinLevel = LogLevel.Error;
-        opts.EventRates["db.query.*"] = 0.01;    // 1% for DB queries
+        opts.EventRates["DbQuery*"] = 0.01;       // 1% for DB queries
         opts.EventRates["health.check"] = 0.001; // 0.1% for health checks
     },
     innerProcessor: exportProcessor);
@@ -328,7 +328,7 @@ builder.Services.AddOpenTelemetry()
             opts =>
             {
                 opts.DefaultMaxEventsPerWindow = 1000;
-                opts.EventLimits["db.query.*"] = 100;
+                opts.EventLimits["DbQuery*"] = 100;
             },
             exportProcessor);
 

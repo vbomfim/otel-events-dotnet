@@ -122,25 +122,19 @@ schema:
   version: "1.0.0"
   namespace: "MyApp.Events"
   meterName: "MyApp.Events.Orders"
+  prefix: ORDER
 
 events:
-  order.placed:
+  OrderPlaced:
     id: 1001
+    type: start
     severity: INFO
     description: "An order was placed by a customer"
     message: "Order {orderId} placed by {customerId} for {amount}"
     fields:
-      orderId:
-        type: string
-        required: true
-        index: true
-      customerId:
-        type: string
-        required: true
-        index: true
-      amount:
-        type: double
-        required: true
+      - orderId
+      - customerId: { sensitivity: pii }
+      - amount
     metrics:
       order.placed.count:
         type: counter
@@ -214,7 +208,7 @@ The `OtelEventsCausalityProcessor` automatically adds:
 ### otel-events JSON output (OtelEventsJsonExporter)
 
 ```json
-{"timestamp":"2025-01-15T14:30:00.123456Z","event":"order.placed","severity":"INFO","severityNumber":9,"message":"Order ORD-789 placed by CUST-001 for 99.99","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","parentEventId":"evt_019470a0-a1b2-7c3d-8e4f-5a6b7c8d9e0f","attr":{"orderId":"ORD-789","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":42,"otel_events.elapsed_ms":42.7}
+{"timestamp":"2025-01-15T14:30:00.123456Z","event":"OrderPlaced","severity":"INFO","severityNumber":9,"message":"Order ORD-789 placed by CUST-001 for 99.99","service":"order-service","environment":"production","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","eventId":"evt_019470a0-b1c2-7d3e-8f4a-5b6c7d8e9f0a","parentEventId":"evt_019470a0-a1b2-7c3d-8e4f-5a6b7c8d9e0f","attr":{"orderId":"ORD-789","customerId":"CUST-001","amount":99.99},"tags":["commerce","orders"],"otel_events.v":"1.0.0","otel_events.seq":42,"otel_events.elapsed_ms":42.7}
 ```
 
 Single line. No nulls. UTC microsecond timestamps. Causal event ID. Service name from OTEL resource. Schema version stamp. Monotonic sequence number.

@@ -14,11 +14,11 @@ Every event has:
 
 | Property | Description | Example |
 |----------|-------------|---------|
-| **Name** | Dot-namespaced, lowercase identifier | `order.placed`, `http.request.completed` |
-| **ID** | Unique numeric ID for `[LoggerMessage]` | `1001`, `2001` |
+| **Name** | PascalCase identifier | `OrderPlaced`, `HttpRequestCompleted` |
+| **ID** | Numeric ID combined with schema `prefix` to form event codes | `ORDER-1001`, `HTTP-2001` |
 | **Severity** | Log level | `INFO`, `ERROR`, `WARN` |
 | **Message** | Template with `{field}` placeholders | `"Order {orderId} placed by {customerId}"` |
-| **Fields** | Typed key-value attributes | `orderId: string`, `amount: double` |
+| **Fields** | String attributes (required by default) | `- orderId`, `- amount` |
 | **Metrics** | Counters and histograms | `order.placed.count: counter` |
 | **Tags** | Static labels for categorization | `["commerce", "orders"]` |
 
@@ -45,44 +45,38 @@ schema:
   name: "OrderEvents"
   version: "1.0.0"
   namespace: "MyApp.Events"
+  prefix: ORDER
 
 events:
-  order.placed:
+  OrderPlaced:
     id: 1001
+    type: start
     severity: INFO
     message: "Order {orderId} placed for {amount}"
     fields:
-      orderId:
-        type: string
-        required: true
-      amount:
-        type: double
-        required: true
+      - orderId
+      - amount
 
-  order.shipped:
+  OrderShipped:
     id: 1002
+    type: success
+    parent: OrderPlaced
     severity: INFO
     message: "Order {orderId} shipped via {carrier}"
     fields:
-      orderId:
-        type: string
-        required: true
-      carrier:
-        type: string
-        required: true
+      - orderId
+      - carrier
 
-  order.failed:
+  OrderFailed:
     id: 1003
+    type: failure
+    parent: OrderPlaced
     severity: ERROR
     message: "Order {orderId} failed: {reason}"
     exception: true
     fields:
-      orderId:
-        type: string
-        required: true
-      reason:
-        type: string
-        required: true
+      - orderId
+      - reason
 ```
 
 ### Schema File Structure
@@ -161,7 +155,7 @@ Every `LogRecord` exported by `OtelEventsJsonExporter` produces a single JSON li
 ```json
 {
   "timestamp": "2025-01-15T14:30:00.123456Z",
-  "event": "order.placed",
+  "event": "OrderPlaced",
   "severity": "INFO",
   "severityNumber": 9,
   "message": "Order ORD-789 placed for 99.99",
