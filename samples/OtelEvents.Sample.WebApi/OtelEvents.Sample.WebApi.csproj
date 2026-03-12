@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>OtelEvents.Sample.WebApi</RootNamespace>
+    <!-- Sample project — not a NuGet package -->
+    <IsPackable>false</IsPackable>
+    <!-- Suppress warnings inherited from Directory.Build.props that don't apply to a sample -->
+    <NoWarn>CA1062;CA1822;CA2000;CA1848;CA1515;CA1812</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Core: schema model, YAML parser -->
+    <ProjectReference Include="..\..\src\OtelEvents.Schema\OtelEvents.Schema.csproj" />
+    <!-- JSONL exporter with PII redaction and environment profiles -->
+    <ProjectReference Include="..\..\src\OtelEvents.Exporter.Json\OtelEvents.Exporter.Json.csproj" />
+    <!-- Causal event linking (eventId / parentEventId via UUID v7) -->
+    <ProjectReference Include="..\..\src\OtelEvents.Causality\OtelEvents.Causality.csproj" />
+    <!-- Zero-code HTTP request lifecycle events -->
+    <ProjectReference Include="..\..\src\OtelEvents.AspNetCore\OtelEvents.AspNetCore.csproj" />
+    <!-- Structured health check events with state change detection -->
+    <ProjectReference Include="..\..\src\OtelEvents.HealthChecks\OtelEvents.HealthChecks.csproj" />
+    <!-- In-process event subscriptions (react to events) -->
+    <ProjectReference Include="..\..\src\OtelEvents.Subscriptions\OtelEvents.Subscriptions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+  </ItemGroup>
+
+</Project>
