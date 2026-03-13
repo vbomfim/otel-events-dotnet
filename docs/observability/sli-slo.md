@@ -140,7 +140,6 @@ criticality. Each tier maps to an SLO target and an implied error budget.
 | **CosmosDB Query Latency p95** | ≤ 50 ms | ≤ 200 ms | ≤ 1 000 ms |
 | **CosmosDB RU p95 (query)** | ≤ 50 RU | ≤ 200 RU | ≤ 500 RU |
 | **Startup Duration p95** | ≤ 5 s | ≤ 15 s | ≤ 60 s |
-| **Health Check Latency p95** | ≤ 500 ms | ≤ 2 000 ms | ≤ 5 000 ms |
 
 ### Error Budget Reference
 

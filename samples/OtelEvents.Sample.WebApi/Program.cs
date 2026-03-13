@@ -23,10 +23,7 @@ builder.Services.AddOpenTelemetry()
 
 // ─── Integration packs ──────────────────────────────────────────────────────
 
-builder.Services.AddOtelEventsAspNetCore(options =>
-{
-    options.ExcludePaths = ["/health"];
-});
+builder.Services.AddOtelEventsAspNetCore();
 
 // ─── Event subscriptions — react to events in-process ───────────────────────
 

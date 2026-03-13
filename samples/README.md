@@ -6,7 +6,6 @@ A minimal ASP.NET Core Web API that demonstrates all otel-events features workin
 - **JSONL exporter** — AI-optimized structured output to stdout
 - **Causal linking** — automatic `eventId` / `parentEventId` via UUID v7
 - **ASP.NET Core integration** — zero-code HTTP request lifecycle events
-- **Health checks** — structured health check events with state change detection
 - **Subscriptions** — in-process event reactions via lambda handlers
 
 ## Prerequisites
@@ -53,12 +52,6 @@ curl -s -X POST http://localhost:5000/orders/a1b2c3d4/complete | jq .
 
 ```bash
 curl -s -X POST http://localhost:5000/orders/a1b2c3d4/fail | jq .
-```
-
-### Health check
-
-```bash
-curl -s http://localhost:5000/health
 ```
 
 ## What to look for in the output

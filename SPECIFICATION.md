@@ -131,7 +131,6 @@ Features required for production use and team adoption.
 | 2.4 | **Health/readiness events** | Built-in schema for application lifecycle events: startup, ready, degraded, shutdown |
 | 2.5 | **Testing utilities** | `OtelEvents.Testing` package with in-memory `LogRecord` collector and assertion extensions |
 | 2.6 | **OtelEvents.AspNetCore integration pack** | Pre-built ASP.NET Core middleware that auto-emits schema-defined `http.request.received`, `http.request.completed`, `http.request.failed` events with causal scope per request |
-| 2.7 | **OtelEvents.HealthChecks integration pack** | Pre-built `IHealthCheckPublisher` that emits `health.check.executed` and `health.state.changed` events; complements 2.4 lifecycle events |
 | 2.8 | **Per-event-category rate limiting** | OTEL processor that rate-limits events by category (e.g., max 100 `db.query.executed` events per second), configurable per event name |
 | 2.9 | **Optional `IMeterFactory`-based Meter creation** | Alternative to static `Meter` instances for DI-friendly, disposable meter lifecycle (see ADR in Appendix B, DR-023) |
 
@@ -2801,7 +2800,6 @@ Integration packs use the `OtelEvents.*` NuGet package prefix to distinguish the
 │  │  • ASP.NET Core Middleware (OtelEvents.AspNetCore)                   │   │
 │  │  • gRPC Interceptor (OtelEvents.Grpc)                               │   │
 │  │  • DiagnosticListener (OtelEvents.Azure.*)                          │   │
-│  │  • IHealthCheckPublisher (OtelEvents.HealthChecks)                  │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  All compiled into: OtelEvents.AspNetCore.nupkg (etc.)                      │
@@ -2846,7 +2844,7 @@ Integration pack event IDs use reserved ranges to avoid collisions with consumer
 | 10101–10199 | `OtelEvents.Grpc` | gRPC call lifecycle events |
 | 10201–10299 | `OtelEvents.Azure.CosmosDb` | CosmosDB operation events |
 | 10301–10399 | `OtelEvents.Azure.Storage` | Azure Storage operation events |
-| 10401–10499 | `OtelEvents.HealthChecks` | Health check events |
+| 10401–10499 | *(available)* | Reserved for consumer schemas |
 | 10500–19999 | Reserved | Future integration packs |
 
 #### Meter Name Convention
@@ -2859,7 +2857,6 @@ Each integration pack registers its own OTEL `Meter` with a namespaced name:
 | `OtelEvents.Grpc` | `OtelEvents.Grpc` |
 | `OtelEvents.Azure.CosmosDb` | `OtelEvents.Azure.CosmosDb` |
 | `OtelEvents.Azure.Storage` | `OtelEvents.Azure.Storage` |
-| `OtelEvents.HealthChecks` | `OtelEvents.HealthChecks` |
 
 Consumers register all integration pack meters via: `metrics.AddMeter("OtelEvents.*")`
 
@@ -4335,286 +4332,6 @@ var blobClient = new BlobServiceClient(connectionString, blobOptions);
 
 ---
 
-### 15.7 OtelEvents.HealthChecks
-
-#### Package & Dependencies
-
-```
-OtelEvents.HealthChecks (runtime)
-├── Microsoft.Extensions.Diagnostics.HealthChecks (>= 8.0) — Health check abstractions
-├── OpenTelemetry (>= 1.9)                                 — OTEL SDK types
-├── OtelEvents.Causality (>= 1.0) [optional]                      — Causal scope
-└── (no dependency on OtelEvents.Schema — code is pre-generated)
-```
-
-**Target frameworks:** `net8.0`, `net9.0`
-
-#### YAML Schema
-
-```yaml
-schema:
-  name: "OtelEvents.HealthChecks"
-  version: "1.0.0"
-  namespace: "OtelEvents.HealthChecks.Events"
-  meterName: "OtelEvents.HealthChecks"
-  description: "Schema-defined events for .NET health check execution and state changes"
-
-fields:
-  healthComponent:
-    type: string
-    description: "Name of the health check component (e.g., 'CosmosDb', 'Redis', 'SqlServer')"
-    index: true
-
-  healthStatus:
-    type: enum
-    description: "Health check result status"
-    values: [Healthy, Degraded, Unhealthy]
-
-  healthPreviousStatus:
-    type: enum
-    description: "Previous health check status (for state change events)"
-    values: [Healthy, Degraded, Unhealthy]
-
-  healthDurationMs:
-    type: double
-    description: "Health check execution duration in milliseconds"
-    unit: "ms"
-
-  healthDescription:
-    type: string
-    description: "Health check result description or reason"
-
-  healthTotalChecks:
-    type: int
-    description: "Total number of health checks executed in the report"
-
-  healthOverallStatus:
-    type: enum
-    description: "Overall health report status (aggregate of all checks)"
-    values: [Healthy, Degraded, Unhealthy]
-
-enums:
-  HealthStatus:
-    description: "Health check result status"
-    values:
-      - Healthy
-      - Degraded
-      - Unhealthy
-
-events:
-  health.check.executed:
-    id: 10401
-    severity: DEBUG
-    description: "A health check was executed. Emitted for every health check poll cycle."
-    message: "Health check {healthComponent} completed with {healthStatus} in {healthDurationMs}ms"
-    fields:
-      healthComponent:
-        ref: healthComponent
-        required: true
-      healthStatus:
-        ref: healthStatus
-        required: true
-      healthDurationMs:
-        ref: healthDurationMs
-        required: true
-      healthDescription:
-        ref: healthDescription
-        required: false
-    metrics:
-      otel.health.check.duration:
-        type: histogram
-        unit: "ms"
-        description: "Health check execution duration"
-        buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
-      otel.health.check.status:
-        type: gauge
-        unit: "status"
-        description: "Current health check status (0=Healthy, 1=Degraded, 2=Unhealthy)"
-        labels:
-          - healthComponent
-    tags:
-      - health
-
-  health.state.changed:
-    id: 10402
-    severity: WARN
-    description: >
-      A health check component's status changed from one state to another.
-      Only emitted when a state TRANSITION occurs — not on every poll.
-      Severity is WARN for any state change (including recovery to Healthy)
-      to ensure visibility.
-    message: "Health state changed: {healthComponent} {healthPreviousStatus} → {healthStatus}: {healthDescription}"
-    fields:
-      healthComponent:
-        ref: healthComponent
-        required: true
-      healthPreviousStatus:
-        ref: healthPreviousStatus
-        required: true
-      healthStatus:
-        ref: healthStatus
-        required: true
-      healthDurationMs:
-        ref: healthDurationMs
-        required: true
-      healthDescription:
-        ref: healthDescription
-        required: false
-    metrics:
-      otel.health.state.change.count:
-        type: counter
-        unit: "transitions"
-        description: "Total health state transitions"
-        labels:
-          - healthComponent
-          - healthPreviousStatus
-          - healthStatus
-    tags:
-      - health
-      - state-change
-
-  health.report.completed:
-    id: 10403
-    severity: DEBUG
-    description: "A full health check report was completed (all checks executed in one cycle)."
-    message: "Health report completed: {healthOverallStatus} ({healthTotalChecks} checks) in {healthDurationMs}ms"
-    fields:
-      healthOverallStatus:
-        ref: healthOverallStatus
-        required: true
-      healthTotalChecks:
-        ref: healthTotalChecks
-        required: true
-      healthDurationMs:
-        ref: healthDurationMs
-        required: true
-    metrics:
-      otel.health.report.duration:
-        type: histogram
-        unit: "ms"
-        description: "Full health report execution duration"
-        buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
-    tags:
-      - health
-```
-
-#### Registration API
-
-```csharp
-// Register health check event publisher
-builder.Services.AddHealthChecks()
-    .AddCheck<CosmosDbHealthCheck>("CosmosDb")
-    .AddCheck<RedisHealthCheck>("Redis")
-    .AddCheck<SqlServerHealthCheck>("SqlServer");
-
-// Integration pack — one line
-builder.Services.AddOtelEventsHealthChecks(options =>
-{
-    options.EmitExecutedEvents = true;            // Default: true — emit health.check.executed per poll
-    options.EmitStateChangedEvents = true;        // Default: true — emit health.state.changed on transitions
-    options.EmitReportCompletedEvents = true;     // Default: true — emit health.report.completed per cycle
-    options.SuppressHealthyExecutedEvents = false; // Default: false — set to true to only emit non-Healthy check events
-    options.EnableCausalScope = true;             // Default: true
-});
-```
-
-#### Implementation Approach
-
-**Mechanism:** `IHealthCheckPublisher` implementation registered as a singleton service.
-
-.NET's health check system supports `IHealthCheckPublisher` — services that receive `HealthReport` after each poll cycle. The integration pack implements this interface.
-
-```csharp
-/// <summary>
-/// IHealthCheckPublisher that emits schema-defined events for health check
-/// execution results and state changes.
-/// </summary>
-internal sealed class OtelEventsHealthCheckPublisher : IHealthCheckPublisher
-{
-    private readonly ILogger<OtelEventsHealthCheckEventSource> _logger;
-    private readonly OtelEventsHealthCheckOptions _options;
-    private readonly ConcurrentDictionary<string, HealthStatus> _previousStates = new();
-
-**Bounded state tracking:** The `_previousStates` dictionary has a maximum capacity of 1,000 entries. If a system registers more than 1,000 unique health check names (which would indicate a configuration issue), new entries are rejected and a warning is logged. Health check component names should be static and finite — dynamically generated names are not supported.
-
-
-    public Task PublishAsync(HealthReport report, CancellationToken cancellationToken)
-    {
-        foreach (var entry in report.Entries)
-        {
-            // Emit health.check.executed (every poll)
-            if (_options.EmitExecutedEvents &&
-                !(_options.SuppressHealthyExecutedEvents && entry.Value.Status == HealthStatus.Healthy))
-            {
-                _logger.HealthCheckExecuted(
-                    healthComponent: entry.Key,
-                    healthStatus: MapStatus(entry.Value.Status),
-                    healthDurationMs: entry.Value.Duration.TotalMilliseconds,
-                    healthDescription: entry.Value.Description);
-            }
-
-            // Emit health.state.changed (only on transitions)
-            if (_options.EmitStateChangedEvents)
-            {
-                var previousStatus = _previousStates.GetOrAdd(entry.Key, entry.Value.Status);
-                if (previousStatus != entry.Value.Status)
-                {
-                    _logger.HealthStateChanged(
-                        healthComponent: entry.Key,
-                        healthPreviousStatus: MapStatus(previousStatus),
-                        healthStatus: MapStatus(entry.Value.Status),
-                        healthDurationMs: entry.Value.Duration.TotalMilliseconds,
-                        healthDescription: entry.Value.Description);
-
-                    _previousStates[entry.Key] = entry.Value.Status;
-                }
-            }
-        }
-
-        // Emit health.report.completed (aggregate)
-        if (_options.EmitReportCompletedEvents)
-        {
-            _logger.HealthReportCompleted(
-                healthOverallStatus: MapStatus(report.Status),
-                healthTotalChecks: report.Entries.Count,
-                healthDurationMs: report.TotalDuration.TotalMilliseconds);
-        }
-
-        return Task.CompletedTask;
-    }
-}
-```
-
-**State change detection:** The publisher maintains a `ConcurrentDictionary<string, HealthStatus>` that tracks the last-known status of each health check component. On the first poll, the initial status is recorded without emitting a state change event. Subsequent polls compare against the stored value — a `health.state.changed` event is emitted only when the status differs.
-
-**Relationship to existing Phase 2 item 2.4:** The existing specification defines Phase 2 feature 2.4 as "Health/readiness events — Built-in schema for application lifecycle events: startup, ready, degraded, shutdown." `OtelEvents.HealthChecks` is **complementary** — 2.4 covers application lifecycle (process-level), while this pack covers component-level health check results from `Microsoft.Extensions.Diagnostics.HealthChecks`. They coexist.
-
-#### What It Complements
-
-| Existing .NET Feature | What It Provides | What OtelEvents.HealthChecks Adds |
-|-----------------------|------------------|------------------------------------|
-| `IHealthCheck` + `/health` endpoint | JSON response with check status for load balancers/K8s | Schema-defined log events for every poll cycle and state transitions |
-| `IHealthCheckPublisher` (built-in) | Publication hook (no event emission) | Structured events with duration histograms, state change counters, AI-optimized JSON |
-| ASP.NET Health UI / third-party dashboards | Visual health status | Machine-readable state change events for automated alerting and AI investigation |
-
-#### Example JSON Output
-
-**Event: `health.check.executed`**
-```json
-{"timestamp":"2025-07-15T14:30:30.000000Z","event":"health.check.executed","severity":"DEBUG","severityNumber":5,"message":"Health check CosmosDb completed with Healthy in 12.4ms","service":"order-service","environment":"production","eventId":"evt_01914a34-3a4b-5c6d-7e8f-0a1b2c3d4e5f","attr":{"healthComponent":"CosmosDb","healthStatus":"Healthy","healthDurationMs":12.4},"tags":["health"],"otel_events.v":"1.0.0","otel_events.seq":501,"otel_events.host":"web-01","otel_events.pid":4821}
-```
-
-**Event: `health.state.changed`**
-```json
-{"timestamp":"2025-07-15T14:31:00.000000Z","event":"health.state.changed","severity":"WARN","severityNumber":13,"message":"Health state changed: Redis Healthy → Degraded: Connection pool exhausted (23/25 connections in use)","service":"order-service","environment":"production","eventId":"evt_01914a35-4b5c-6d7e-8f9a-1b2c3d4e5f6a","attr":{"healthComponent":"Redis","healthPreviousStatus":"Healthy","healthStatus":"Degraded","healthDurationMs":5023.1,"healthDescription":"Connection pool exhausted (23/25 connections in use)"},"tags":["health","state-change"],"otel_events.v":"1.0.0","otel_events.seq":510,"otel_events.host":"web-01","otel_events.pid":4821}
-```
-
-**Event: `health.report.completed`**
-```json
-{"timestamp":"2025-07-15T14:31:00.050000Z","event":"health.report.completed","severity":"DEBUG","severityNumber":5,"message":"Health report completed: Degraded (3 checks) in 5045.2ms","service":"order-service","environment":"production","eventId":"evt_01914a36-5c6d-7e8f-9a0b-2c3d4e5f6a7b","attr":{"healthOverallStatus":"Degraded","healthTotalChecks":3,"healthDurationMs":5045.2},"tags":["health"],"otel_events.v":"1.0.0","otel_events.seq":513,"otel_events.host":"web-01","otel_events.pid":4821}
-```
-
----
 
 ### 15.8 Integration Pack Testing Strategy
 
@@ -4629,7 +4346,6 @@ Each integration pack includes its own test suite following the project's testin
 | Metric recording | Histogram, counter, and gauge records with correct values and labels |
 | Configuration | Exclude patterns work; feature flags toggle event emission |
 | Path/route sanitization | Long paths truncated; route template used instead of raw path (ASP.NET Core) |
-| State change detection | `health.state.changed` only on transitions, not every poll (HealthChecks) |
 | Error handling | Pack middleware/interceptor never swallows exceptions; always re-throws |
 
 #### Integration Tests (per pack)
@@ -4646,7 +4362,7 @@ Each integration pack includes its own test suite following the project's testin
 
 | Test Area | Examples |
 |-----------|---------|
-| Multi-pack stack | ASP.NET Core + CosmosDB + HealthChecks all emit events in a single request |
+| Multi-pack stack | ASP.NET Core + CosmosDB all emit events in a single request |
 | Causal tree | HTTP request parent → CosmosDB query child → verify causal chain in JSON output |
 | Performance | Pack middleware adds < 100μs overhead per request (BenchmarkDotNet) |
 
@@ -4658,7 +4374,6 @@ Each integration pack includes its own test suite following the project's testin
 | `GrpcInterceptorOverhead` | < 50μs p95 | Interceptor processing time (excluding gRPC call) |
 | `CosmosDbObserverOverhead` | < 50μs p95 | Diagnostic observer processing time |
 | `StoragePolicyOverhead` | < 50μs p95 | Pipeline policy processing time |
-| `HealthCheckPublisherOverhead` | < 25μs p95 | Publisher processing time per check |
 
 ---
 
@@ -4667,7 +4382,6 @@ Each integration pack includes its own test suite following the project's testin
 | Pack | Phase | Rationale |
 |------|-------|-----------|
 | **OtelEvents.AspNetCore** | **Phase 2** (2.6) | Most universal use case — every ASP.NET Core API benefits. Builds on Phase 1 core. |
-| **OtelEvents.HealthChecks** | **Phase 2** (2.7) | Complements existing Phase 2 item 2.4 (app lifecycle events). Simple implementation via `IHealthCheckPublisher`. |
 | **OtelEvents.Grpc** | **Phase 3** (3.7) | Second most common RPC mechanism. Replaces the deferred "gRPC service events" item from Section 14. |
 | **OtelEvents.Azure.CosmosDb** | **Phase 3** (3.8) | Azure-specific — lower priority than universal HTTP/gRPC packs. |
 | **OtelEvents.Azure.Storage** | **Phase 3** (3.9) | Azure-specific — lower priority than universal HTTP/gRPC packs. |
@@ -4676,7 +4390,6 @@ Each integration pack includes its own test suite following the project's testin
 
 **Phase 2 (Integration Packs):**
 1. **2.6 OtelEvents.AspNetCore** — highest value, most common scenario
-2. **2.7 OtelEvents.HealthChecks** — simple, complements 2.4
 
 **Phase 3 (Integration Packs):**
 1. **3.7 OtelEvents.Grpc** — replaces deferred item "gRPC service events"
@@ -4737,27 +4450,15 @@ builder.Services.AddOtelEventsCosmosDb(options =>
 
 builder.Services.AddOtelEventsAzureStorage();
 
-builder.Services.AddOtelEventsHealthChecks(options =>
-{
-    options.SuppressHealthyExecutedEvents = true;  // Only emit non-Healthy + state changes
-});
-
-// ─── Standard .NET HealthChecks ─────────────────────────────────────────
-builder.Services.AddHealthChecks()
-    .AddCheck<CosmosDbHealthCheck>("CosmosDb")
-    .AddCheck<RedisHealthCheck>("Redis");
 
 // ─── Standard .NET Logging Filters ──────────────────────────────────────
 builder.Logging.AddFilter<OpenTelemetryLoggerProvider>(
     "OtelEvents.AspNetCore", LogLevel.Information);
 builder.Logging.AddFilter<OpenTelemetryLoggerProvider>(
     "OtelEvents.Azure.CosmosDb", LogLevel.Debug);
-builder.Logging.AddFilter<OpenTelemetryLoggerProvider>(
-    "OtelEvents.HealthChecks", LogLevel.Debug);
 
 var app = builder.Build();
 app.MapControllers();
-app.MapHealthChecks("/health");
 app.Run();
 ```
 
@@ -4774,7 +4475,6 @@ app.Run();
 | # | Feature | Description |
 |---|---------|-------------|
 | 2.6 | **OtelEvents.AspNetCore integration pack** | Pre-built ASP.NET Core middleware that auto-emits schema-defined `http.request.received`, `http.request.completed`, `http.request.failed` events with causal scope per request |
-| 2.7 | **OtelEvents.HealthChecks integration pack** | Pre-built `IHealthCheckPublisher` that emits `health.check.executed` and `health.state.changed` events; complements 2.4 lifecycle events |
 
 **Add to Phase 3 — Ecosystem & Scale table:**
 
@@ -4798,7 +4498,6 @@ OtelEvents (meta-package — references all below)
 │
 └── Integration Packs (separate packages, not part of meta-package):
     ├── OtelEvents.AspNetCore        — ASP.NET Core middleware for HTTP request events    [Phase 2]
-    ├── OtelEvents.HealthChecks      — IHealthCheckPublisher for health check events      [Phase 2]
     ├── OtelEvents.Grpc              — gRPC server/client interceptors for call events    [Phase 3]
     ├── OtelEvents.Azure.CosmosDb    — DiagnosticListener for CosmosDB operation events   [Phase 3]
     └── OtelEvents.Azure.Storage     — Pipeline policy for Blob/Queue operation events    [Phase 3]
@@ -4810,8 +4509,7 @@ OtelEvents (meta-package — references all below)
 |----------|----------------|
 | Auto-events for ASP.NET Core APIs | `OtelEvents.Schema` (or not — pack is self-contained) + `OtelEvents.AspNetCore` |
 | Full stack with ASP.NET Core + CosmosDB | `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Azure.CosmosDb` |
-| Health monitoring with state change alerts | `OtelEvents.HealthChecks` |
-| Full integration pack suite | `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Grpc` + `OtelEvents.Azure.CosmosDb` + `OtelEvents.Azure.Storage` + `OtelEvents.HealthChecks` |
+| Full integration pack suite | `OtelEvents.Exporter.Json` + `OtelEvents.Causality` + `OtelEvents.AspNetCore` + `OtelEvents.Grpc` + `OtelEvents.Azure.CosmosDb` + `OtelEvents.Azure.Storage` |
 
 **Add to "Why This Split?" table:**
 
@@ -4895,16 +4593,6 @@ OtelEvents (meta-package — references all below)
 │   │   └── Schemas/
 │   │       └── storage.otel.yaml
 │   │
-│   └── OtelEvents.HealthChecks/
-│       ├── OtelEvents.HealthChecks.csproj
-│       ├── Events/
-│       │   ├── OtelEventsHealthCheckEventSource.cs
-│       │   └── HealthCheckEvents.g.cs
-│       ├── OtelEventsHealthCheckPublisher.cs
-│       ├── OtelEventsHealthCheckOptions.cs
-│       ├── OtelEventsHealthCheckExtensions.cs
-│       └── Schemas/
-│           └── healthchecks.otel.yaml
 │
 ├── tests/
 │   ├── ... (existing test projects) ...
@@ -4912,7 +4600,6 @@ OtelEvents (meta-package — references all below)
 │   ├── OtelEvents.Grpc.Tests/
 │   ├── OtelEvents.Azure.CosmosDb.Tests/
 │   ├── OtelEvents.Azure.Storage.Tests/
-│   ├── OtelEvents.HealthChecks.Tests/
 │   └── OtelEvents.Integration.Tests/          # Cross-pack integration tests
 │
 ├── samples/
@@ -4930,12 +4617,10 @@ OtelEvents (meta-package — references all below)
 Step 1: dotnet add package OtelEvents.Exporter.Json     (AI-optimized JSONL output)
 Step 2: dotnet add package OtelEvents.Causality         (causal event linking)
 Step 3: dotnet add package OtelEvents.AspNetCore (auto HTTP request events)
-Step 4: dotnet add package OtelEvents.HealthChecks (auto health check events)
-Step 5: Add 3 lines to Program.cs:
+Step 4: Add 2 lines to Program.cs:
         builder.Services.AddOtelEventsAspNetCore();
-        builder.Services.AddOtelEventsHealthChecks();
         metrics.AddMeter("OtelEvents.*");
-Step 6: Run — consistent, schema-defined events flowing immediately.
+Step 5: Run — consistent, schema-defined events flowing immediately.
 
 No YAML to write. No code to generate. No [LoggerMessage] to define.
 Infrastructure events are handled by integration packs.
