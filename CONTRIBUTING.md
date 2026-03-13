@@ -43,7 +43,6 @@ otel-events-dotnet/
 │   ├── OtelEvents.Grpc                # gRPC event instrumentation
 │   ├── OtelEvents.Azure.CosmosDb      # CosmosDB event instrumentation
 │   ├── OtelEvents.Azure.Storage       # Azure Storage event instrumentation
-│   ├── OtelEvents.HealthChecks        # Health-check event instrumentation
 │   ├── OtelEvents.Subscriptions       # In-process event bus
 │   ├── OtelEvents.Analyzers           # Roslyn analyzers
 │   ├── OtelEvents.Testing             # In-memory exporter & test assertions

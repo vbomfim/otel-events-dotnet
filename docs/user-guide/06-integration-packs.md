@@ -14,8 +14,6 @@ Integration packs are pre-built packages that automatically emit structured even
 | `OtelEvents.Grpc` | gRPC (server + client) | `grpc.call.started`, `grpc.call.completed`, `grpc.call.failed` | `AddOtelEventsGrpc()` |
 | `OtelEvents.Azure.CosmosDb` | Azure Cosmos DB | `cosmosdb.query.executed`, `cosmosdb.query.failed`, `cosmosdb.point.read`, `cosmosdb.point.write` | `AddOtelEventsCosmosDb()` |
 | `OtelEvents.Azure.Storage` | Azure Blob + Queue Storage | `storage.blob.uploaded`, `storage.blob.downloaded`, `storage.blob.deleted`, `storage.blob.failed`, `storage.queue.sent`, `storage.queue.received`, `storage.queue.failed` | `AddOtelEventsAzureStorage()` |
-| `OtelEvents.HealthChecks` | .NET Health Checks | `health.check.executed`, `health.state.changed`, `health.report.completed` | `AddOtelEventsHealthChecks()` |
-
 ### Event ID Ranges
 
 Integration packs use event IDs starting at 10000 to avoid collisions with your application events (1–9999):
@@ -26,7 +24,8 @@ Integration packs use event IDs starting at 10000 to avoid collisions with your 
 | Grpc | 10101–10103 |
 | CosmosDb | 10201–10204 |
 | Azure.Storage | 10301–10307 |
-| HealthChecks | 10401–10403 |
+
+> **Note:** Event ID range 10401–10410 is available for consumer schemas.
 
 ### Architecture Pattern
 
@@ -377,73 +376,6 @@ builder.Services.AddOtelEventsAzureStorage(options =>
 
 ---
 
-## OtelEvents.HealthChecks
-
-Emits structured events for .NET Health Check poll cycles by implementing `IHealthCheckPublisher`. Tracks state changes across poll cycles to emit `health.state.changed` events.
-
-### Install
-
-```bash
-dotnet add package OtelEvents.HealthChecks
-```
-
-### Register
-
-```csharp
-// Program.cs — requires health checks to be already configured
-builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database")
-    .AddCheck<CacheHealthCheck>("cache");
-
-builder.Services.AddOtelEventsHealthChecks();
-```
-
-### Configure
-
-```csharp
-builder.Services.AddOtelEventsHealthChecks(options =>
-{
-    // Per-check execution events
-    options.EmitExecutedEvents = true;              // default: true
-
-    // State transition events (Healthy → Degraded → Unhealthy)
-    options.EmitStateChangedEvents = true;           // default: true
-
-    // Summary event after each poll cycle
-    options.EmitReportCompletedEvents = true;        // default: true
-
-    // Suppress healthy check events (reduce noise)
-    options.SuppressHealthyExecutedEvents = false;   // default: false
-
-    // Causal linking
-    options.EnableCausalScope = true;                // default: true
-});
-```
-
-### Events Emitted
-
-| Event | ID | Severity | When |
-|-------|-----|----------|------|
-| `health.check.executed` | 10401 | INFO/WARN/ERROR | After each health check runs |
-| `health.state.changed` | 10402 | WARN | Health check status transitions |
-| `health.report.completed` | 10403 | INFO | After each poll cycle completes |
-
-### State Change Detection
-
-The publisher tracks each health check component's state in memory. A `health.state.changed` event is emitted only when a component's status transitions (e.g., `Healthy` → `Degraded`). Stable states produce no change events.
-
-### `OtelEventsHealthCheckOptions` Reference
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `EmitExecutedEvents` | `bool` | `true` | Emit per-check execution events |
-| `EmitStateChangedEvents` | `bool` | `true` | Emit state transition events |
-| `EmitReportCompletedEvents` | `bool` | `true` | Emit poll-cycle summary events |
-| `SuppressHealthyExecutedEvents` | `bool` | `false` | Skip events for healthy checks |
-| `EnableCausalScope` | `bool` | `true` | Causal linking within poll cycle |
-
----
-
 ## Using Multiple Packs Together
 
 Integration packs compose naturally. Register each one independently:
@@ -488,10 +420,6 @@ builder.Services.AddOtelEventsAzureStorage(opts =>
 {
     opts.ExcludeContainers = ["$logs"];
 });
-
-builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database");
-builder.Services.AddOtelEventsHealthChecks();
 ```
 
 ---

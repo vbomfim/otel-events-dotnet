@@ -6,8 +6,7 @@ Practical guidance on defining **Service Level Indicators** (SLIs) and
 
 > **Audience:** SRE teams, platform engineers, and service owners who operate
 > .NET services that use `OtelEvents.AspNetCore`, `OtelEvents.Grpc`,
-> `OtelEvents.Azure.CosmosDb`, `OtelEvents.Azure.Storage`, or
-> `OtelEvents.HealthChecks`.
+> `OtelEvents.Azure.CosmosDb`, or `OtelEvents.Azure.Storage`.
 
 ---
 
@@ -36,7 +35,7 @@ Practical guidance on defining **Service Level Indicators** (SLIs) and
 
 otel-events integration packs emit **standardised, schema-driven metrics**
 (counters, histograms, gauges) for every HTTP request, gRPC call, CosmosDB
-operation, storage action, and health check. These metrics map directly to the
+operation, and storage action. These metrics map directly to the
 SLIs that matter most:
 
 - **Availability** — `otel.http.request.received.count` vs
@@ -45,8 +44,6 @@ SLIs that matter most:
   quantiles
 - **Dependency health** — `otel.cosmosdb.query.ru`,
   `otel.cosmosdb.throttled.count`, `otel.storage.throttled.count`
-- **Infrastructure signals** — `otel.health.check.status` gauge,
-  `otel.health.state.change.count`
 
 Because the metric names and label dimensions are consistent across all
 services that use the same integration pack, you can define **organisation-wide
@@ -109,14 +106,6 @@ the full mapping table.
 | **Throttle Rate** | Ratio | `otel.storage.throttled.count`, total ops | `rate(otel_storage_throttled_count_total[5m]) / (rate(otel_storage_blob_upload_count_total[5m]) + rate(otel_storage_queue_send_count_total[5m]))` |
 | **Error Rate** | Ratio | `otel.storage.blob.error.count` + `otel.storage.queue.error.count` | `(rate(otel_storage_blob_error_count_total[5m]) + rate(otel_storage_queue_error_count_total[5m])) / (rate(otel_storage_blob_upload_count_total[5m]) + rate(otel_storage_queue_send_count_total[5m]))` |
 
-### Health Check SLIs (OtelEvents.HealthChecks)
-
-| SLI | Type | Metric Source | PromQL |
-|-----|------|--------------|--------|
-| **Health Status** | Gauge | `otel.health.check.status` | `otel_health_check_status` (0 = Healthy, 1 = Degraded, 2 = Unhealthy) |
-| **State Transitions** | Counter | `otel.health.state.change.count` | `increase(otel_health_state_change_count_total[1h])` |
-| **Check Latency p95** | Histogram | `otel.health.check.duration` | `histogram_quantile(0.95, sum(rate(otel_health_check_duration_bucket[5m])) by (le))` |
-
 ### Application Lifecycle SLIs
 
 | SLI | Type | Metric Source | PromQL |
@@ -151,7 +140,6 @@ criticality. Each tier maps to an SLO target and an implied error budget.
 | **CosmosDB Query Latency p95** | ≤ 50 ms | ≤ 200 ms | ≤ 1 000 ms |
 | **CosmosDB RU p95 (query)** | ≤ 50 RU | ≤ 200 RU | ≤ 500 RU |
 | **Startup Duration p95** | ≤ 5 s | ≤ 15 s | ≤ 60 s |
-| **Health Check Latency p95** | ≤ 500 ms | ≤ 2 000 ms | ≤ 5 000 ms |
 
 ### Error Budget Reference
 
@@ -483,40 +471,7 @@ groups:
             Review query patterns and indexing strategy.
 ```
 
-### 6. Health Check Degradation
-
-```yaml
-      - uid: slo-health-degraded
-        title: "SLO: Health Check Degraded or Unhealthy"
-        condition: unhealthy
-        data:
-          - refId: health_status
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: prometheus
-            model:
-              expr: "max(otel_health_check_status) by (component)"
-              instant: true
-          # status > 0 means Degraded (1) or Unhealthy (2)
-          - refId: unhealthy
-            datasourceUid: __expr__
-            model:
-              type: math
-              expression: "$health_status > 0"
-        for: 5m
-        labels:
-          severity: warning
-          slo: health
-        annotations:
-          summary: >-
-            One or more health checks report Degraded or Unhealthy for 5+ minutes.
-          description: >-
-            Health status: {{ $values.health_status }}
-            (0=Healthy, 1=Degraded, 2=Unhealthy).
-```
-
-### 7. Startup Duration — Breach Alert
+### 6. Startup Duration — Breach Alert
 
 ```yaml
       - uid: slo-startup-duration

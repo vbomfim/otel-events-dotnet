@@ -13,7 +13,7 @@ An extension to the OpenTelemetry .NET SDK for schema-driven events, AI-optimize
 | 3 | [Core Concepts](03-core-concepts.md) | Events, Schemas, JSON Envelope, Causality, Sensitivity, Environment Profiles |
 | 4 | [Getting Started](04-getting-started.md) | 10-minute tutorial: install → schema → generate → emit → see output |
 | 5 | [Schema Reference](05-schema-reference.md) | Complete YAML grammar: fields, types, severity, metrics, enums, sensitivity |
-| 6 | [Integration Packs](06-integration-packs.md) | Pre-built packs: AspNetCore, gRPC, CosmosDB, Azure Storage, HealthChecks |
+| 6 | [Integration Packs](06-integration-packs.md) | Pre-built packs: AspNetCore, gRPC, CosmosDB, Azure Storage |
 | 7 | [Configuration](07-configuration.md) | appsettings.json, environment variables, exporter options, filtering |
 | 8 | [Testing](08-testing.md) | `OtelEvents.Testing` package, `OtelEventsTestHost`, assertions, test patterns |
 | 9 | [CLI Tool](09-cli-tool.md) | `dotnet otel-events validate`, `generate`, `diff`, `docs` commands |
