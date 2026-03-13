@@ -291,6 +291,184 @@ public sealed class OtelEventsOutboundTrackingHandlerTests : IDisposable
         completed.AssertAttribute("httpClientName", "PaymentGateway");
     }
 
+    // ─── Defensive Delegate Tests — UrlRedactor ────────────────────────
+
+    [Fact]
+    public async Task UrlRedactor_throwing_falls_back_to_absolute_uri_on_completed()
+    {
+        // Arrange — UrlRedactor throws, should fall back to raw URI
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK);
+        var (client, exporter) = CreateTestClient(
+            configureOptions: opts =>
+            {
+                opts.UrlRedactor = _ => throw new InvalidOperationException("redactor boom");
+            },
+            innerHandler: handler);
+
+        // Act
+        await client.GetAsync("https://api.example.com/orders?secret=123");
+
+        // Assert — request succeeds; URL falls back to AbsoluteUri
+        var record = exporter.AssertSingle("http.outbound.completed");
+        record.AssertAttribute("httpUrl", "https://api.example.com/orders?secret=123");
+    }
+
+    [Fact]
+    public async Task UrlRedactor_throwing_falls_back_to_absolute_uri_on_started()
+    {
+        // Arrange — UrlRedactor throws, started event should still emit with raw URI
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK);
+        var (client, exporter) = CreateTestClient(
+            configureOptions: opts =>
+            {
+                opts.EmitStartedEvent = true;
+                opts.UrlRedactor = _ => throw new InvalidOperationException("redactor boom");
+            },
+            innerHandler: handler);
+
+        // Act
+        await client.GetAsync("https://api.example.com/orders?token=abc");
+
+        // Assert
+        var started = exporter.AssertSingle("http.outbound.started");
+        started.AssertAttribute("httpUrl", "https://api.example.com/orders?token=abc");
+    }
+
+    [Fact]
+    public async Task UrlRedactor_throwing_does_not_prevent_request()
+    {
+        // Arrange — even when UrlRedactor throws, the HTTP request must go through
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK);
+        var (client, exporter) = CreateTestClient(
+            configureOptions: opts =>
+            {
+                opts.UrlRedactor = _ => throw new InvalidOperationException("redactor boom");
+            },
+            innerHandler: handler);
+
+        // Act — must not throw
+        var response = await client.GetAsync("https://api.example.com/orders");
+
+        // Assert — response returned successfully
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        exporter.AssertEventEmitted("http.outbound.completed");
+    }
+
+    // ─── Defensive Delegate Tests — IsFailure ───────────────────────────
+
+    [Fact]
+    public async Task IsFailure_throwing_falls_back_to_default_treats_500_as_failure()
+    {
+        // Arrange — IsFailure throws on 500, fallback classifies as failure (>= 500)
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.InternalServerError);
+        var (client, exporter) = CreateTestClient(
+            configureOptions: opts =>
+            {
+                opts.IsFailure = _ => throw new InvalidOperationException("classifier boom");
+            },
+            innerHandler: handler);
+
+        // Act
+        await client.GetAsync("https://api.example.com/orders");
+
+        // Assert — classified as failure via default logic
+        exporter.AssertSingle("http.outbound.failed");
+        exporter.AssertEventNotEmitted("http.outbound.completed");
+    }
+
+    [Fact]
+    public async Task IsFailure_throwing_falls_back_to_default_treats_200_as_success()
+    {
+        // Arrange — IsFailure throws on 200, fallback classifies as success (< 500)
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK);
+        var (client, exporter) = CreateTestClient(
+            configureOptions: opts =>
+            {
+                opts.IsFailure = _ => throw new InvalidOperationException("classifier boom");
+            },
+            innerHandler: handler);
+
+        // Act
+        await client.GetAsync("https://api.example.com/orders");
+
+        // Assert — classified as success via default logic
+        exporter.AssertSingle("http.outbound.completed");
+        exporter.AssertEventNotEmitted("http.outbound.failed");
+    }
+
+    [Fact]
+    public async Task IsFailure_throwing_does_not_lose_response()
+    {
+        // Arrange — IsFailure throws, but the response must still be returned
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK);
+        var (client, exporter) = CreateTestClient(
+            configureOptions: opts =>
+            {
+                opts.IsFailure = _ => throw new InvalidOperationException("classifier boom");
+            },
+            innerHandler: handler);
+
+        // Act — must not throw
+        var response = await client.GetAsync("https://api.example.com/orders");
+
+        // Assert — response is returned intact
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // ─── Named Options Isolation Tests ──────────────────────────────────
+
+    [Fact]
+    public async Task Named_options_isolate_configurations_across_clients()
+    {
+        // Arrange — two clients with different UrlRedactor configurations
+        var exporter = new TestLogExporter();
+
+        var services = new ServiceCollection();
+        services.AddLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.SetMinimumLevel(LogLevel.Trace);
+            logging.AddOpenTelemetry(options =>
+            {
+                options.IncludeFormattedMessage = true;
+                options.ParseStateValues = true;
+                options.AddProcessor(new SimpleLogRecordExportProcessor(exporter));
+            });
+        });
+
+        // ClientA: strips query params
+        services.AddHttpClient("ClientA")
+            .AddOtelEventsOutboundTracking(opts =>
+            {
+                opts.UrlRedactor = uri => $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new FakeHttpMessageHandler());
+
+        // ClientB: no redaction (default)
+        services.AddHttpClient("ClientB")
+            .AddOtelEventsOutboundTracking()
+            .ConfigurePrimaryHttpMessageHandler(() => new FakeHttpMessageHandler());
+
+        using var sp = services.BuildServiceProvider();
+        var factory = sp.GetRequiredService<IHttpClientFactory>();
+        var clientA = factory.CreateClient("ClientA");
+        var clientB = factory.CreateClient("ClientB");
+
+        // Act
+        await clientA.GetAsync("https://api.example.com/orders?secret=123");
+        await clientB.GetAsync("https://api.example.com/orders?secret=456");
+
+        // Assert — each client uses its own options
+        var completed = exporter.LogRecords.Where(r => r.EventName == "http.outbound.completed").ToList();
+        Assert.Equal(2, completed.Count);
+
+        var recordA = completed.First(r => r.Attributes["httpClientName"]?.ToString() == "ClientA");
+        recordA.AssertAttribute("httpUrl", "https://api.example.com/orders");
+
+        var recordB = completed.First(r => r.Attributes["httpClientName"]?.ToString() == "ClientB");
+        recordB.AssertAttribute("httpUrl", "https://api.example.com/orders?secret=456");
+    }
+
     // ─── Duration Measurement Tests ─────────────────────────────────────
 
     [Fact]

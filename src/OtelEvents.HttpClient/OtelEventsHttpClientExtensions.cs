@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OtelEvents.HttpClient.Events;
 
 namespace OtelEvents.HttpClient;
 
@@ -17,6 +18,10 @@ public static class OtelEventsHttpClientExtensions
     /// <param name="builder">The HTTP client builder to configure.</param>
     /// <param name="configure">Optional action to configure <see cref="OtelEventsOutboundTrackingOptions"/>.</param>
     /// <returns>The <paramref name="builder"/> for chaining.</returns>
+    /// <remarks>
+    /// Options are keyed to the HttpClient name, so multiple named clients can have
+    /// independent configurations without overwriting each other.
+    /// </remarks>
     public static IHttpClientBuilder AddOtelEventsOutboundTracking(
         this IHttpClientBuilder builder,
         Action<OtelEventsOutboundTrackingOptions>? configure = null)
@@ -25,12 +30,12 @@ public static class OtelEventsHttpClientExtensions
 
         if (configure is not null)
         {
-            builder.Services.Configure(configure);
+            builder.Services.Configure<OtelEventsOutboundTrackingOptions>(builder.Name, configure);
         }
 
         builder.AddHttpMessageHandler(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<OtelEventsOutboundTrackingHandler>>();
+            var logger = sp.GetRequiredService<ILogger<OtelEventsHttpClientEventSource>>();
             var options = sp.GetRequiredService<IOptionsMonitor<OtelEventsOutboundTrackingOptions>>();
 
             return new OtelEventsOutboundTrackingHandler(logger, options, builder.Name);
