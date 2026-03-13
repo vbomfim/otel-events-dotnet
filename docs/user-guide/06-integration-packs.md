@@ -11,6 +11,7 @@ Integration packs are pre-built packages that automatically emit structured even
 | Package | Technology | Events | Registration |
 |---------|-----------|--------|--------------|
 | `OtelEvents.AspNetCore` | ASP.NET Core HTTP | `http.request.received`, `http.request.completed`, `http.request.failed` | `AddOtelEventsAspNetCore()` |
+| `OtelEvents.HttpClient` | Outbound HTTP calls | `http.outbound.started`, `http.outbound.completed`, `http.outbound.failed` | `AddOtelEventsOutboundTracking()` |
 | `OtelEvents.Grpc` | gRPC (server + client) | `grpc.call.started`, `grpc.call.completed`, `grpc.call.failed` | `AddOtelEventsGrpc()` |
 | `OtelEvents.Azure.CosmosDb` | Azure Cosmos DB | `cosmosdb.query.executed`, `cosmosdb.query.failed`, `cosmosdb.point.read`, `cosmosdb.point.write` | `AddOtelEventsCosmosDb()` |
 | `OtelEvents.Azure.Storage` | Azure Blob + Queue Storage | `storage.blob.uploaded`, `storage.blob.downloaded`, `storage.blob.deleted`, `storage.blob.failed`, `storage.queue.sent`, `storage.queue.received`, `storage.queue.failed` | `AddOtelEventsAzureStorage()` |
@@ -23,6 +24,7 @@ Integration packs use event IDs starting at 10000 to avoid collisions with your 
 | AspNetCore | 10001–10003 |
 | Grpc | 10101–10103 |
 | CosmosDb | 10201–10204 |
+| HttpClient | 10010–10012 |
 | Azure.Storage | 10301–10307 |
 
 > **Note:** Event ID range 10401–10410 is available for consumer schemas.
@@ -421,6 +423,69 @@ builder.Services.AddOtelEventsAzureStorage(opts =>
     opts.ExcludeContainers = ["$logs"];
 });
 ```
+
+---
+
+## OtelEvents.HttpClient
+
+Automatically emits structured events for outbound HTTP calls via a `DelegatingHandler`. Works with any `IHttpClientFactory`-registered client.
+
+### Install
+
+```bash
+dotnet add package OtelEvents.HttpClient
+```
+
+### Register
+
+```csharp
+// Program.cs — register per named/typed client
+builder.Services.AddHttpClient("PaymentGateway")
+    .AddOtelEventsOutboundTracking();
+
+// Or with configuration
+builder.Services.AddHttpClient<IOrdersClient, OrdersClient>()
+    .AddOtelEventsOutboundTracking(options =>
+    {
+        options.UrlRedactor = uri => $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
+    });
+```
+
+### Configure
+
+```csharp
+builder.Services.AddHttpClient("MyApi")
+    .AddOtelEventsOutboundTracking(options =>
+    {
+        // Emit http.outbound.started before each request
+        options.EmitStartedEvent = true;           // default: true
+
+        // Redact URLs before emitting (e.g., strip query params, tokens)
+        options.UrlRedactor = uri =>
+            $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
+
+        // Custom failure classification (default: status >= 500)
+        options.IsFailure = response =>
+            (int)response.StatusCode >= 500 ||
+            (int)response.StatusCode == 429;
+    });
+```
+
+### Events Emitted
+
+| Event | ID | Severity | When |
+|-------|-----|----------|------|
+| `http.outbound.started` | 10010 | DEBUG | Before sending request (opt-in, default: on) |
+| `http.outbound.completed` | 10011 | DEBUG | Response received successfully |
+| `http.outbound.failed` | 10012 | ERROR | Exception thrown or response classified as failure |
+
+### `OtelEventsOutboundTrackingOptions` Reference
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `EmitStartedEvent` | `bool` | `true` | Emit start-of-request event |
+| `UrlRedactor` | `Func<Uri, string>?` | `null` | Redact URLs before emitting |
+| `IsFailure` | `Func<HttpResponseMessage, bool>?` | `null` | Custom failure classification (default: status ≥ 500) |
 
 ---
 

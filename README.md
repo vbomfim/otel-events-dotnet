@@ -28,6 +28,7 @@ dotnet add package OtelEvents.Causality        # Causal event linking (eventId/p
 
 # Integration packs — zero-code instrumentation (pick what you use)
 dotnet add package OtelEvents.AspNetCore       # HTTP request/auth/throttle events
+dotnet add package OtelEvents.HttpClient       # Outbound HTTP call events
 dotnet add package OtelEvents.Grpc             # gRPC call/auth/throttle events
 dotnet add package OtelEvents.Azure.CosmosDb   # CosmosDB query/auth/throttle events
 dotnet add package OtelEvents.Azure.Storage    # Blob/Queue operation events
@@ -55,6 +56,7 @@ These packages auto-emit structured events by hooking into framework pipelines. 
 | Package | Events emitted | What it instruments |
 |---------|---------------|-------------------|
 | **OtelEvents.AspNetCore** | `http.request.received/completed/failed` + `http.connection.failed` + `http.auth.failed` + `http.throttled` | ASP.NET Core middleware — every HTTP request |
+| **OtelEvents.HttpClient** | `http.outbound.started/completed/failed` | Outbound HTTP calls via `DelegatingHandler` — every `IHttpClientFactory` call |
 | **OtelEvents.Grpc** | `grpc.call.started/completed/failed` + connection/auth/throttle events | gRPC server + client interceptors |
 | **OtelEvents.Azure.CosmosDb** | `cosmosdb.query.executed/failed` + `cosmosdb.point.read/write` + connection/auth/throttle events | Azure CosmosDB SDK via DiagnosticListener |
 | **OtelEvents.Azure.Storage** | `storage.blob.uploaded/downloaded/deleted` + `storage.queue.sent/received` + connection/auth/throttle events | Azure Storage SDK via HttpPipelinePolicy |
@@ -168,6 +170,7 @@ otel-events-dotnet/
 │   ├── OtelEvents.Testing/             # Test utilities
 │   ├── OtelEvents.Subscriptions/       # In-process event bus
 │   ├── OtelEvents.AspNetCore/          # ASP.NET Core integration pack
+│   ├── OtelEvents.HttpClient/          # Outbound HTTP client integration pack
 │   ├── OtelEvents.Grpc/                # gRPC integration pack
 │   ├── OtelEvents.Azure.CosmosDb/      # Azure CosmosDB integration pack
 │   ├── OtelEvents.Azure.Storage/       # Azure Storage integration pack
