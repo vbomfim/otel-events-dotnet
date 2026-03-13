@@ -2,7 +2,6 @@ using OtelEvents.Causality;
 using OpenTelemetry.Logs;
 using OtelEvents.AspNetCore;
 using OtelEvents.Exporter.Json;
-using OtelEvents.HealthChecks;
 using OtelEvents.Sample.WebApi.Events;
 using OtelEvents.Subscriptions;
 
@@ -29,9 +28,6 @@ builder.Services.AddOtelEventsAspNetCore(options =>
     options.ExcludePaths = ["/health"];
 });
 
-builder.Services.AddHealthChecks();
-builder.Services.AddOtelEventsHealthChecks();
-
 // ─── Event subscriptions — react to events in-process ───────────────────────
 
 builder.Services.AddOtelEventsSubscriptions(subs =>
@@ -56,7 +52,6 @@ builder.Services.AddOtelEventsSubscriptions(subs =>
 });
 
 var app = builder.Build();
-app.MapHealthChecks("/health");
 
 // ─── POST /orders — Full order transaction in a single request ──────────────
 //

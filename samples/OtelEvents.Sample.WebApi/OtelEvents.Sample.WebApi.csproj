@@ -20,8 +20,6 @@
     <ProjectReference Include="..\..\src\OtelEvents.Causality\OtelEvents.Causality.csproj" />
     <!-- Zero-code HTTP request lifecycle events -->
     <ProjectReference Include="..\..\src\OtelEvents.AspNetCore\OtelEvents.AspNetCore.csproj" />
-    <!-- Structured health check events with state change detection -->
-    <ProjectReference Include="..\..\src\OtelEvents.HealthChecks\OtelEvents.HealthChecks.csproj" />
     <!-- In-process event subscriptions (react to events) -->
     <ProjectReference Include="..\..\src\OtelEvents.Subscriptions\OtelEvents.Subscriptions.csproj" />
   </ItemGroup>

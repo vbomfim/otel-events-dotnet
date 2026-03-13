@@ -13,7 +13,7 @@ otel-events extends the standard OpenTelemetry pipeline with:
 - **AI-optimized JSON export** — Compact, single-line JSONL output optimized for machine investigation
 - **Causal event linking** — Track cause-and-effect relationships between events via `eventId`/`parentEventId`
 - **Compile-time enforcement** — Roslyn analyzers catch `Console.Write`, untyped `ILogger` usage, and schema violations
-- **Integration packs** — Zero-code instrumentation for ASP.NET Core, gRPC, Azure CosmosDB, Azure Storage, and Health Checks
+- **Integration packs** — Zero-code instrumentation for ASP.NET Core, gRPC, Azure CosmosDB, and Azure Storage
 - **Event subscriptions** — In-process event bus for reactive handlers (circuit breakers, token refresh, alerting)
 
 ## Installation
@@ -31,7 +31,6 @@ dotnet add package OtelEvents.AspNetCore       # HTTP request/auth/throttle even
 dotnet add package OtelEvents.Grpc             # gRPC call/auth/throttle events
 dotnet add package OtelEvents.Azure.CosmosDb   # CosmosDB query/auth/throttle events
 dotnet add package OtelEvents.Azure.Storage    # Blob/Queue operation events
-dotnet add package OtelEvents.HealthChecks     # Health check execution + state change events
 
 # Optional
 dotnet add package OtelEvents.Analyzers        # Roslyn analyzers for logging hygiene
@@ -59,7 +58,6 @@ These packages auto-emit structured events by hooking into framework pipelines. 
 | **OtelEvents.Grpc** | `grpc.call.started/completed/failed` + connection/auth/throttle events | gRPC server + client interceptors |
 | **OtelEvents.Azure.CosmosDb** | `cosmosdb.query.executed/failed` + `cosmosdb.point.read/write` + connection/auth/throttle events | Azure CosmosDB SDK via DiagnosticListener |
 | **OtelEvents.Azure.Storage** | `storage.blob.uploaded/downloaded/deleted` + `storage.queue.sent/received` + connection/auth/throttle events | Azure Storage SDK via HttpPipelinePolicy |
-| **OtelEvents.HealthChecks** | `health.check.executed` + `health.state.changed` | ASP.NET Core `IHealthCheckPublisher` |
 
 ### Developer Tools
 
@@ -85,10 +83,9 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddOtelEventsAspNetCore();   // Auto-emit HTTP events
 builder.Services.AddOtelEventsCosmosDb();     // Auto-emit CosmosDB events
-builder.Services.AddOtelEventsHealthChecks(); // Auto-emit health check events
 ```
 
-Every HTTP request, CosmosDB query, and health check now emits structured events — including connection failures, auth failures, and throttling. No custom code needed.
+Every HTTP request and CosmosDB query now emits structured events — including connection failures, auth failures, and throttling. No custom code needed.
 
 ### Option 2: Custom Events via YAML Schema
 
@@ -174,7 +171,7 @@ otel-events-dotnet/
 │   ├── OtelEvents.Grpc/                # gRPC integration pack
 │   ├── OtelEvents.Azure.CosmosDb/      # Azure CosmosDB integration pack
 │   ├── OtelEvents.Azure.Storage/       # Azure Storage integration pack
-│   └── OtelEvents.HealthChecks/        # Health checks integration pack
+│   └── OtelEvents.Cli/                # CLI tool entry-point
 ├── tools/
 │   └── OtelEvents.Cli/                 # CLI tool (validate, generate, diff, docs)
 ├── docs/
@@ -211,7 +208,7 @@ See the [otel-events User Guide](https://github.com/vbomfim/otel-events-dotnet/b
 
 - [Getting Started](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/04-getting-started.md) — 10-minute tutorial
 - [Schema Reference](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/05-schema-reference.md) — Complete YAML grammar
-- [Integration Packs](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/06-integration-packs.md) — ASP.NET Core, gRPC, CosmosDB, Azure Storage, HealthChecks
+- [Integration Packs](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/06-integration-packs.md) — ASP.NET Core, gRPC, CosmosDB, Azure Storage
 - [Configuration](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/07-configuration.md) — All configuration options
 - [Migration Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/12-migration-and-faq.md) — Migrate from plain `ILogger` to otel-events
 - [FAQ](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/12-migration-and-faq.md) — Common questions
