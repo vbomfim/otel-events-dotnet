@@ -1,0 +1,27 @@
+schema:
+  name: SampleHealth
+  version: "1.0.0"
+  namespace: OtelEvents.Sample.Health
+  prefix: HEALTH
+
+components:
+  orders-db:
+    window: 300s
+    healthyAbove: 0.95
+    degradedAbove: 0.7
+    minimumSignals: 10
+    signals:
+      - event: "http.request.completed"
+        match: { httpRoute: "/orders/*" }
+      - event: "http.request.failed"
+        match: { httpRoute: "/orders/*" }
+
+  payment-api:
+    window: 600s
+    healthyAbove: 0.8
+    degradedAbove: 0.5
+    signals:
+      - event: "http.outbound.completed"
+        match: { httpClientName: "PaymentApi" }
+      - event: "http.outbound.failed"
+        match: { httpClientName: "PaymentApi" }

@@ -21,6 +21,7 @@ An extension to the OpenTelemetry .NET SDK for schema-driven events, AI-optimize
 | 11 | [Advanced Topics](11-advanced-topics.md) | Rate limiting, sampling, schema versioning, sharing, signing, analyzers |
 | 12 | [Migration Guide](12-migration-guide.md) | Step-by-step migration from plain `ILogger` to otel-events |
 | 13 | [FAQ](13-faq.md) | Common questions about otel-events adoption, debugging, and performance |
+| 14 | [OtelEvents.Health](14-health.md) | Event-driven health intelligence — state machine, YAML components, K8s probes |
 
 ---
 
@@ -41,4 +42,5 @@ An extension to the OpenTelemetry .NET SDK for schema-driven events, AI-optimize
 | **Tech Lead / Architect** — evaluating otel-events for the team | [Chapter 1 — Introduction](01-introduction.md) → [Chapter 2 — otel-events vs Plain OTEL](02-otel-events-vs-plain-otel.md) |
 | **Platform / SRE Engineer** — cares about JSON output and deployment | [Chapter 3 — Core Concepts](03-core-concepts.md) → [Chapter 7 — Configuration](07-configuration.md) |
 | **Migrating from plain ILogger** — already logging, want schema enforcement | [Chapter 12 — Migration Guide](12-migration-guide.md) |
+| **Health/SRE** — wants event-driven health probes from real traffic | [Chapter 14 — OtelEvents.Health](14-health.md) |
 | **Newcomer to OTEL** — hasn't used OpenTelemetry before | [Chapter 1 — Introduction](01-introduction.md) (start from the beginning) |

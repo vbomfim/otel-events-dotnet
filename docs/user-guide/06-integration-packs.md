@@ -15,6 +15,9 @@ Integration packs are pre-built packages that automatically emit structured even
 | `OtelEvents.Grpc` | gRPC (server + client) | `grpc.call.started`, `grpc.call.completed`, `grpc.call.failed` | `AddOtelEventsGrpc()` |
 | `OtelEvents.Azure.CosmosDb` | Azure Cosmos DB | `cosmosdb.query.executed`, `cosmosdb.query.failed`, `cosmosdb.point.read`, `cosmosdb.point.write` | `AddOtelEventsCosmosDb()` |
 | `OtelEvents.Azure.Storage` | Azure Blob + Queue Storage | `storage.blob.uploaded`, `storage.blob.downloaded`, `storage.blob.deleted`, `storage.blob.failed`, `storage.queue.sent`, `storage.queue.received`, `storage.queue.failed` | `AddOtelEventsAzureStorage()` |
+| `OtelEvents.Health` | Health intelligence | State machine events (degraded, circuit open, recovery) | `AddOtelEventsHealth()` |
+| `OtelEvents.Health.AspNetCore` | K8s health probes | Liveness, readiness, startup endpoints | `MapHealthEndpoints()` |
+| `OtelEvents.Health.Grpc` | gRPC subchannel quorum | Subchannel health → quorum evaluation | `GrpcSubchannelHealthAdapter` |
 ### Event ID Ranges
 
 Integration packs use event IDs starting at 10000 to avoid collisions with your application events (1–9999):
@@ -486,6 +489,39 @@ builder.Services.AddHttpClient("MyApi")
 | `EmitStartedEvent` | `bool` | `true` | Emit start-of-request event |
 | `UrlRedactor` | `Func<Uri, string>?` | `null` | Redact URLs before emitting |
 | `IsFailure` | `Func<HttpResponseMessage, bool>?` | `null` | Custom failure classification (default: status ≥ 500) |
+
+---
+
+## OtelEvents.Health
+
+Event-driven health intelligence that turns your existing integration pack events into a real-time health state machine. Unlike traditional health checks that poll on a timer, OtelEvents.Health derives health from actual traffic.
+
+### Install
+
+```bash
+dotnet add package OtelEvents.Health
+dotnet add package OtelEvents.Health.AspNetCore   # K8s probe endpoints
+dotnet add package OtelEvents.Health.Grpc         # gRPC subchannel quorum (optional)
+```
+
+### Register
+
+```csharp
+// Program.cs — 3-line integration
+builder.Services.AddOtelEventsAspNetCore();                        // HTTP events (signals)
+builder.Services.AddOtelEventsHealth("schemas/health.otel.yaml");  // Health state machine
+app.MapHealthEndpoints();                                          // K8s probes
+```
+
+### How It Works
+
+1. Integration packs emit events (`http.request.completed`, `http.request.failed`, etc.)
+2. The health signal bridge auto-subscribes and routes matching events to components
+3. Each component evaluates signals in a sliding window against success-rate thresholds
+4. A three-state machine (`Healthy → Degraded → CircuitOpen`) tracks dependency health
+5. K8s probe endpoints reflect the aggregate state
+
+> **Full documentation:** See [Chapter 14 — OtelEvents.Health](14-health.md) for YAML reference, state machine rules, and configuration examples.
 
 ---
 

@@ -22,6 +22,10 @@
     <ProjectReference Include="..\..\src\OtelEvents.AspNetCore\OtelEvents.AspNetCore.csproj" />
     <!-- In-process event subscriptions (react to events) -->
     <ProjectReference Include="..\..\src\OtelEvents.Subscriptions\OtelEvents.Subscriptions.csproj" />
+    <!-- Event-driven health intelligence — state machine, signal analysis -->
+    <ProjectReference Include="..\..\src\OtelEvents.Health\OtelEvents.Health.csproj" />
+    <!-- K8s health probe endpoints (/healthz/*) -->
+    <ProjectReference Include="..\..\src\OtelEvents.Health.AspNetCore\OtelEvents.Health.AspNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

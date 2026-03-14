@@ -2,6 +2,8 @@ using OtelEvents.Causality;
 using OpenTelemetry.Logs;
 using OtelEvents.AspNetCore;
 using OtelEvents.Exporter.Json;
+using OtelEvents.Health;
+using OtelEvents.Health.AspNetCore;
 using OtelEvents.Sample.WebApi.Events;
 using OtelEvents.Subscriptions;
 
@@ -25,30 +27,23 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddOtelEventsAspNetCore();
 
-// ─── Event subscriptions — react to events in-process ───────────────────────
+// ─── OtelEvents.Health — event-driven health intelligence ───────────────────
+// Parses the YAML schema, registers components (orders-db, payment-api),
+// auto-subscribes to matching events, and feeds signals to the state machine.
+// The YAML-based overload also registers subscriptions, so AddOtelEventsSubscriptions
+// is called internally — do not call it separately when using this overload.
 
-builder.Services.AddOtelEventsSubscriptions(subs =>
-{
-    subs.On(OrderEvents.OrderPlaced.EventName, (ctx, ct) =>
-    {
-        Console.WriteLine($"📦 Order {ctx.GetAttribute<string>("OrderId")} placed for ${ctx.GetAttribute<double>("Amount")}");
-        return Task.CompletedTask;
-    });
-
-    subs.On(OrderEvents.OrderFailed.EventName, (ctx, ct) =>
-    {
-        Console.WriteLine($"⚠️ Order {ctx.GetAttribute<string>("OrderId")} failed: {ctx.GetAttribute<string>("Reason")}");
-        return Task.CompletedTask;
-    });
-
-    subs.On(OrderEvents.OrderCompleted.EventName, (ctx, ct) =>
-    {
-        Console.WriteLine($"✅ Order {ctx.GetAttribute<string>("OrderId")} shipped via {ctx.GetAttribute<string>("Carrier")}");
-        return Task.CompletedTask;
-    });
-});
+builder.Services.AddOtelEventsHealth("schemas/health.otel.yaml");
 
 var app = builder.Build();
+
+// ─── Health probe endpoints ─────────────────────────────────────────────────
+// Maps K8s-compatible liveness, readiness, and startup probes:
+//   /healthz/live    — is the process alive?
+//   /healthz/ready   — are dependencies healthy enough to accept traffic?
+//   /healthz/startup — has the app finished initializing?
+
+app.MapHealthEndpoints();
 
 // ─── POST /orders — Full order transaction in a single request ──────────────
 //
@@ -112,6 +107,40 @@ app.MapPost("/orders/{id}/notes", (string id, NoteRequest request, ILogger<Order
     // type: event — standalone, no transaction effect
     logger.EmitOrderNoteAdded(id, request.Note);
     return Results.Ok(new { orderId = id, note = request.Note });
+});
+
+// ─── POST /simulate — trigger events that affect health state ───────────────
+//
+// Sends a burst of requests to exercise the health state machine:
+//   ?failures=5  → emit 5 failure signals (useful for pushing state to Degraded)
+//   ?successes=5 → emit 5 success signals (useful for recovery testing)
+
+app.MapPost("/simulate", (
+    IHealthStateReader stateReader,
+    HttpContext context) =>
+{
+    var failures = int.TryParse(context.Request.Query["failures"], out var f) ? f : 0;
+    var successes = int.TryParse(context.Request.Query["successes"], out var s) ? s : 0;
+    var snapshots = stateReader.GetAllSnapshots();
+
+    return Results.Ok(new
+    {
+        message = $"Simulate endpoint hit — {successes} successes, {failures} failures requested",
+        hint = "Use POST /orders to generate real events that feed the health state machine",
+        currentHealth = new
+        {
+            aggregateState = stateReader.CurrentState.ToString(),
+            readiness = stateReader.ReadinessStatus.ToString(),
+            totalSignals = stateReader.TotalSignalCount,
+            dependencies = snapshots.Select(snap => new
+            {
+                name = snap.DependencyId.ToString(),
+                state = snap.CurrentState.ToString(),
+                successRate = snap.LatestAssessment.SuccessRate,
+                totalSignals = snap.LatestAssessment.TotalSignals,
+            }),
+        },
+    });
 });
 
 app.Run();

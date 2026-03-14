@@ -15,6 +15,7 @@ otel-events extends the standard OpenTelemetry pipeline with:
 - **Compile-time enforcement** — Roslyn analyzers catch `Console.Write`, untyped `ILogger` usage, and schema violations
 - **Integration packs** — Zero-code instrumentation for ASP.NET Core, gRPC, Azure CosmosDB, and Azure Storage
 - **Event subscriptions** — In-process event bus for reactive handlers (circuit breakers, token refresh, alerting)
+- **Health intelligence** — Event-driven health state machine with YAML-defined components, K8s probes, and quorum evaluation
 
 ## Installation
 
@@ -37,6 +38,11 @@ dotnet add package OtelEvents.Azure.Storage    # Blob/Queue operation events
 dotnet add package OtelEvents.Analyzers        # Roslyn analyzers for logging hygiene
 dotnet add package OtelEvents.Testing          # In-memory exporter + assertions for tests
 dotnet add package OtelEvents.Subscriptions    # In-process event bus for reactive handlers
+
+# Health intelligence — event-driven health state machine
+dotnet add package OtelEvents.Health               # Core state machine + signal analysis
+dotnet add package OtelEvents.Health.AspNetCore    # K8s health probe endpoints (/healthz/*)
+dotnet add package OtelEvents.Health.Grpc          # gRPC subchannel quorum evaluation
 ```
 
 ## Packages
@@ -69,6 +75,14 @@ These packages auto-emit structured events by hooking into framework pipelines. 
 | **OtelEvents.Testing** | `InMemoryLogExporter`, `OtelEventsTestHost.Create()`, `LogAssertions` — test your events without infrastructure |
 | **OtelEvents.Subscriptions** | In-process event bus — subscribe to events with lambda or DI handlers (e.g., trip circuit breaker on `cosmosdb.throttled`) |
 | **OtelEvents.Cli** | CLI tool (`dotnet otel-events validate/generate/diff/docs`) for schema validation, code generation, version comparison |
+
+### Health Intelligence
+
+| Package | What it does | When to use |
+|---------|-------------|-------------|
+| **OtelEvents.Health** | Event-driven health state machine — sliding-window signal analysis, three-state model (Healthy → Degraded → CircuitOpen), multi-tenant tracking | You want health derived from real traffic, not synthetic probes |
+| **OtelEvents.Health.AspNetCore** | K8s probe endpoints — `/healthz/live`, `/healthz/ready`, `/healthz/startup` | ASP.NET Core apps running in Kubernetes |
+| **OtelEvents.Health.Grpc** | gRPC subchannel health adapter for quorum evaluation | Services with gRPC backend pools that need quorum-based health |
 
 ## Quick Start
 
@@ -145,6 +159,32 @@ scope.TryFail(logger, orderId, reason, exception);
 
 📖 See the full [User Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/README.md) for detailed tutorials.
 
+### Option 3: Health Intelligence (3 lines)
+
+```csharp
+// Program.cs — event-driven health from real traffic
+builder.Services.AddOtelEventsAspNetCore();                        // HTTP events
+builder.Services.AddOtelEventsHealth("schemas/health.otel.yaml");  // Health state machine
+app.MapHealthEndpoints();                                          // K8s probes
+```
+
+Define your dependencies in YAML — the health system subscribes to matching events automatically:
+
+```yaml
+components:
+  orders-db:
+    window: 300s
+    healthyAbove: 0.95
+    degradedAbove: 0.7
+    signals:
+      - event: "http.request.completed"
+        match: { httpRoute: "/orders/*" }
+      - event: "http.request.failed"
+        match: { httpRoute: "/orders/*" }
+```
+
+📖 See [Chapter 14 — OtelEvents.Health](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/14-health.md) for the full guide.
+
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download) (builds both net8.0 and net10.0 targets)
@@ -174,11 +214,14 @@ otel-events-dotnet/
 │   ├── OtelEvents.Grpc/                # gRPC integration pack
 │   ├── OtelEvents.Azure.CosmosDb/      # Azure CosmosDB integration pack
 │   ├── OtelEvents.Azure.Storage/       # Azure Storage integration pack
+│   ├── OtelEvents.Health/              # Event-driven health state machine
+│   ├── OtelEvents.Health.AspNetCore/   # K8s health probe endpoints
+│   ├── OtelEvents.Health.Grpc/         # gRPC subchannel quorum adapter
 │   └── OtelEvents.Cli/                # CLI tool entry-point
 ├── tools/
 │   └── OtelEvents.Cli/                 # CLI tool (validate, generate, diff, docs)
 ├── docs/
-│   ├── user-guide/                     # 12-chapter user guide
+│   ├── user-guide/                     # 14-chapter user guide
 │   ├── security/                       # Threat model, PII classification, OWASP mapping
 │   ├── observability/                  # SLI/SLO recommendations, alerting guides
 │   └── deployment/                     # K8s manifests, OTEL Collector config, Dockerfile
@@ -213,6 +256,7 @@ See the [otel-events User Guide](https://github.com/vbomfim/otel-events-dotnet/b
 - [Schema Reference](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/05-schema-reference.md) — Complete YAML grammar
 - [Integration Packs](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/06-integration-packs.md) — ASP.NET Core, gRPC, CosmosDB, Azure Storage
 - [Configuration](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/07-configuration.md) — All configuration options
+- [OtelEvents.Health](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/14-health.md) — Event-driven health intelligence, YAML components, K8s probes
 - [Migration Guide](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/12-migration-and-faq.md) — Migrate from plain `ILogger` to otel-events
 - [FAQ](https://github.com/vbomfim/otel-events-dotnet/blob/main/docs/user-guide/12-migration-and-faq.md) — Common questions
 
