@@ -16,6 +16,7 @@ public sealed class ComponentBuilder
     private double _healthyAbove = 0.9;
     private double _degradedAbove = 0.5;
     private int _minimumSignals = 5;
+    private TimeSpan _cooldown = TimeSpan.FromSeconds(30);
     private ResponseTimePolicy? _responseTimePolicy;
 
     /// <summary>
@@ -69,6 +70,19 @@ public sealed class ComponentBuilder
     }
 
     /// <summary>
+    /// Sets the cooldown period before a state transition is committed.
+    /// The component must remain in the candidate state for this duration before transitioning.
+    /// Default: 30 seconds.
+    /// </summary>
+    /// <param name="cooldown">The cooldown duration.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ComponentBuilder Cooldown(TimeSpan cooldown)
+    {
+        _cooldown = cooldown;
+        return this;
+    }
+
+    /// <summary>
     /// Configures an optional response-time (latency) policy for this component.
     /// When configured, the worst-of-both-dimensions determines the final health state.
     /// </summary>
@@ -94,7 +108,7 @@ public sealed class ComponentBuilder
         DegradedThreshold: _healthyAbove,
         CircuitOpenThreshold: _degradedAbove,
         MinSignalsForEvaluation: _minimumSignals,
-        CooldownBeforeTransition: TimeSpan.FromSeconds(30),
+        CooldownBeforeTransition: _cooldown,
         RecoveryProbeInterval: TimeSpan.FromSeconds(10),
         Jitter: new JitterConfig(TimeSpan.Zero, TimeSpan.Zero),
         ResponseTime: _responseTimePolicy);

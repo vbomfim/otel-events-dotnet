@@ -613,7 +613,7 @@ public sealed class SchemaParser
 
     /// <summary>
     /// Parses a duration string like "300s" or "30s" into seconds.
-    /// Returns 0 if the input is null or unparseable.
+    /// Returns 0 if the input is null, or -1 if the value is present but unparseable.
     /// </summary>
     private static double ParseDurationToSeconds(string? value)
     {
@@ -622,22 +622,22 @@ public sealed class SchemaParser
         if (value.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
         {
             return double.TryParse(value.AsSpan(0, value.Length - 2), NumberStyles.Float, CultureInfo.InvariantCulture, out var ms)
-                ? ms / 1000.0 : 0;
+                ? ms / 1000.0 : -1;
         }
 
         if (value.EndsWith('s'))
         {
             return double.TryParse(value.AsSpan(0, value.Length - 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var s)
-                ? s : 0;
+                ? s : -1;
         }
 
-        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw) ? raw : 0;
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw) ? raw : -1;
     }
 
     /// <summary>
     /// Parses a duration string like "200ms" or "2000ms" into milliseconds.
     /// Also supports "2s" → 2000ms.
-    /// Returns 0 if the input is null or unparseable.
+    /// Returns 0 if the input is null, or -1 if the value is present but unparseable.
     /// </summary>
     private static double ParseDurationToMs(string? value)
     {
@@ -646,28 +646,28 @@ public sealed class SchemaParser
         if (value.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
         {
             return double.TryParse(value.AsSpan(0, value.Length - 2), NumberStyles.Float, CultureInfo.InvariantCulture, out var ms)
-                ? ms : 0;
+                ? ms : -1;
         }
 
         if (value.EndsWith('s'))
         {
             return double.TryParse(value.AsSpan(0, value.Length - 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var s)
-                ? s * 1000.0 : 0;
+                ? s * 1000.0 : -1;
         }
 
-        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw) ? raw : 0;
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw) ? raw : -1;
     }
 
     private static double ParseOptionalDouble(string? value)
     {
         if (value is null) return 0;
-        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : 0;
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : -1;
     }
 
     private static int ParseOptionalInt(string? value)
     {
         if (value is null) return 0;
-        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result) ? result : 0;
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result) ? result : -1;
     }
 
     // ── YAML helpers ────────────────────────────────────────────────────

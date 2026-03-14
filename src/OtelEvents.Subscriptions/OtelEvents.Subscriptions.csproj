@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="OtelEvents.Subscriptions.Tests" />
+    <InternalsVisibleTo Include="OtelEvents.Health" />
+    <InternalsVisibleTo Include="OtelEvents.Health.Tests" />
   </ItemGroup>
 
   <ItemGroup>

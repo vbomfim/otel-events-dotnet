@@ -465,4 +465,57 @@ public sealed class TimerBudgetValidatorTests
             "CooldownBelowProbeInterval",
             "JitterDominatesCooldown");
     }
+
+    // ──────────────────────────────────────────────
+    // Finding 5: Config paths use OtelEvents.Health: prefix
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void Validate_all_ConfigPaths_use_OtelEventsHealth_prefix()
+    {
+        var policy = TestFixtures.DefaultPolicy with
+        {
+            CooldownBeforeTransition = TimeSpan.FromSeconds(4),
+            RecoveryProbeInterval = TimeSpan.FromSeconds(10),
+            Jitter = new JitterConfig(TimeSpan.Zero, TimeSpan.FromSeconds(3)),
+        };
+
+        var options = new TimerBudgetOptions(
+            TerminationGracePeriod: TimeSpan.FromSeconds(30),
+            LivenessFailureWindow: TimeSpan.FromSeconds(60),
+            DrainTimeout: TimeSpan.FromSeconds(20),
+            RecoveryRetryCount: 5,
+            ForceShutdownTimeout: TimeSpan.FromSeconds(15));
+
+        var warnings = _validator.Validate(SinglePolicy(policy), options);
+
+        warnings.Should().HaveCountGreaterOrEqualTo(1);
+        warnings.Should().OnlyContain(w =>
+            w.ConfigPath.StartsWith("OtelEvents.Health:", StringComparison.Ordinal),
+            "all config paths must use the OtelEvents.Health: prefix, not HealthBoss:");
+    }
+
+    [Fact]
+    public void Validate_no_ConfigPaths_reference_HealthBoss()
+    {
+        var policy = TestFixtures.DefaultPolicy with
+        {
+            CooldownBeforeTransition = TimeSpan.FromSeconds(4),
+            RecoveryProbeInterval = TimeSpan.FromSeconds(10),
+            Jitter = new JitterConfig(TimeSpan.Zero, TimeSpan.FromSeconds(3)),
+        };
+
+        var options = new TimerBudgetOptions(
+            TerminationGracePeriod: TimeSpan.FromSeconds(30),
+            LivenessFailureWindow: TimeSpan.FromSeconds(60),
+            DrainTimeout: TimeSpan.FromSeconds(20),
+            RecoveryRetryCount: 5,
+            ForceShutdownTimeout: TimeSpan.FromSeconds(15));
+
+        var warnings = _validator.Validate(SinglePolicy(policy), options);
+
+        warnings.Should().NotContain(w =>
+            w.ConfigPath.Contains("HealthBoss", StringComparison.OrdinalIgnoreCase),
+            "stale HealthBoss: references should be replaced with OtelEvents.Health:");
+    }
 }

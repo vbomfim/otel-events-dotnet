@@ -4,7 +4,11 @@
 
 using OtelEvents.Health.Components;
 using OtelEvents.Health.Contracts;
+using OtelEvents.Schema.Models;
+using OtelEvents.Schema.Parsing;
+using OtelEvents.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -168,5 +172,145 @@ public static class OtelEventsHealthExtensions
             sp.GetRequiredService<EventSinkDispatcher>());
 
         return services;
+    }
+
+    /// <summary>
+    /// Adds the HealthBoss health intelligence layer with YAML-based auto-subscription bridge.
+    /// Parses the schema file, registers health components, and sets up otel-events
+    /// subscriptions that automatically feed health signals to the state machine.
+    /// </summary>
+    /// <param name="services">The service collection to register into.</param>
+    /// <param name="schemaPath">Path to the YAML schema file containing component definitions.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the schema file cannot be parsed.</exception>
+    public static IServiceCollection AddOtelEventsHealth(
+        this IServiceCollection services,
+        string schemaPath)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrEmpty(schemaPath);
+
+        var parser = new SchemaParser();
+        var result = parser.ParseFile(schemaPath);
+
+        if (!result.IsSuccess)
+        {
+            var errors = string.Join("; ", result.Errors.Select(e => e.Message));
+            throw new InvalidOperationException(
+                $"Failed to parse health schema '{schemaPath}': {errors}");
+        }
+
+        return services.AddOtelEventsHealth(result.Document!.Components);
+    }
+
+    /// <summary>
+    /// Adds the HealthBoss health intelligence layer with auto-subscription bridge
+    /// using pre-parsed component definitions.
+    /// Registers health components from the definitions and sets up otel-events
+    /// subscriptions that automatically feed health signals to the state machine.
+    /// <para>
+    /// This overload internally calls <see cref="AddOtelEventsHealth(IServiceCollection, Action{HealthBossOptions})"/>
+    /// and <see cref="OtelEventsSubscriptionExtensions.AddOtelEventsSubscriptions"/> — do not call them separately.
+    /// </para>
+    /// </summary>
+    /// <param name="services">The service collection to register into.</param>
+    /// <param name="components">Component definitions parsed from YAML.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddOtelEventsHealth(
+        this IServiceCollection services,
+        IReadOnlyList<ComponentDefinition> components)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(components);
+
+        // 1. Register core health system with component configurations from YAML
+        services.AddOtelEventsHealth(opts =>
+        {
+            foreach (var comp in components)
+            {
+                opts.AddComponent(comp.Name, builder =>
+                {
+                    if (comp.WindowSeconds > 0)
+                    {
+                        builder.Window(TimeSpan.FromSeconds(comp.WindowSeconds));
+                    }
+
+                    if (comp.HealthyAbove > 0)
+                    {
+                        builder.HealthyAbove(comp.HealthyAbove);
+                    }
+
+                    if (comp.DegradedAbove > 0)
+                    {
+                        builder.DegradedAbove(comp.DegradedAbove);
+                    }
+
+                    if (comp.MinimumSignals > 0)
+                    {
+                        builder.MinimumSignals(comp.MinimumSignals);
+                    }
+
+                    if (comp.CooldownSeconds > 0)
+                    {
+                        builder.Cooldown(TimeSpan.FromSeconds(comp.CooldownSeconds));
+                    }
+
+                    if (comp.ResponseTime is not null)
+                    {
+                        builder.WithResponseTime(rt =>
+                        {
+                            rt.Percentile(comp.ResponseTime.Percentile);
+                            rt.DegradedAfter(TimeSpan.FromMilliseconds(comp.ResponseTime.DegradedAfterMs));
+
+                            if (comp.ResponseTime.UnhealthyAfterMs > 0)
+                            {
+                                rt.UnhealthyAfter(TimeSpan.FromMilliseconds(comp.ResponseTime.UnhealthyAfterMs));
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        // 2. Create bridge and register subscriptions for components with signals.
+        // The bridge is created at config time; it receives IServiceProvider later
+        // via Initialize() (called from a hosted service), then lazily resolves
+        // ISignalRecorder on the first HandleSignal call.
+        var signalComponents = components.Where(c => c.Signals.Count > 0).ToList();
+        if (signalComponents.Count > 0)
+        {
+            var bridge = new HealthSignalBridge(signalComponents);
+            services.AddSingleton(bridge);
+
+            services.AddOtelEventsSubscriptions(subs =>
+            {
+                bridge.RegisterSubscriptions(subs);
+            });
+
+            // Inject IServiceProvider into the bridge when the host resolves
+            // hosted services at startup. This runs before the subscription
+            // dispatcher begins dispatching events, guaranteeing the bridge
+            // can lazily resolve ISignalRecorder on first HandleSignal.
+            services.AddSingleton<IHostedService>(sp =>
+            {
+                bridge.Initialize(sp);
+                return NullHostedService.Instance;
+            });
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// No-op <see cref="IHostedService"/> used as a sentinel return value for
+    /// DI factory registrations that perform side effects during singleton resolution.
+    /// </summary>
+    private sealed class NullHostedService : IHostedService
+    {
+        public static readonly NullHostedService Instance = new();
+
+        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

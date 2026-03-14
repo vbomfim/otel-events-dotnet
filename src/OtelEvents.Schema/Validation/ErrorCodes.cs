@@ -121,4 +121,7 @@ public static class ErrorCodes
 
     /// <summary>Signal match filter keys must be non-empty strings.</summary>
     public const string InvalidSignalMatchKey = "OTEL_SCHEMA_039";
+
+    /// <summary>A numeric or duration field contains a malformed (unparseable) value.</summary>
+    public const string MalformedValue = "OTEL_SCHEMA_040";
 }
