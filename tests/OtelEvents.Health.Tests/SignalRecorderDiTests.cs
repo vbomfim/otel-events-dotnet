@@ -1,0 +1,103 @@
+// <copyright file="SignalIngressDiTests.cs" company="OtelEvents">
+// Copyright (c) OtelEvents. All rights reserved.
+// </copyright>
+
+using FluentAssertions;
+using OtelEvents.Health.Contracts;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace OtelEvents.Health.Tests;
+
+/// <summary>
+/// Tests for <see cref="ISignalRecorder"/> DI registration and behavior.
+/// Verifies that the orchestrator-level signal recording interface is
+/// properly wired as a singleton forwarding to <see cref="IHealthOrchestrator"/>.
+/// </summary>
+public sealed class SignalIngressDiTests
+{
+    [Fact]
+    public void AddOtelEventsHealth_registers_ISignalRecorder_as_singleton()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts => opts.AddComponent("redis"));
+
+        using var provider = services.BuildServiceProvider();
+
+        var recorder1 = provider.GetRequiredService<ISignalRecorder>();
+        var recorder2 = provider.GetRequiredService<ISignalRecorder>();
+
+        recorder1.Should().NotBeNull();
+        recorder1.Should().BeSameAs(recorder2);
+    }
+
+    [Fact]
+    public void ISignalRecorder_resolves_to_same_instance_as_IHealthOrchestrator()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts => opts.AddComponent("redis"));
+
+        using var provider = services.BuildServiceProvider();
+
+        var recorder = provider.GetRequiredService<ISignalRecorder>();
+        var orchestrator = provider.GetRequiredService<IHealthOrchestrator>();
+
+        recorder.Should().BeSameAs(orchestrator);
+    }
+
+    [Fact]
+    public void IHealthOrchestrator_implements_ISignalRecorder()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts => opts.AddComponent("redis"));
+
+        using var provider = services.BuildServiceProvider();
+
+        var orchestrator = provider.GetRequiredService<IHealthOrchestrator>();
+
+        orchestrator.Should().BeAssignableTo<ISignalRecorder>();
+    }
+
+    [Fact]
+    public void RecordSignal_via_ISignalRecorder_flows_to_orchestrator()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts => opts.AddComponent("redis"));
+
+        using var provider = services.BuildServiceProvider();
+
+        var recorder = provider.GetRequiredService<ISignalRecorder>();
+        var orchestrator = provider.GetRequiredService<IHealthOrchestrator>();
+
+        var depId = new DependencyId("redis");
+        for (int i = 0; i < 10; i++)
+        {
+            recorder.RecordSignal(depId, new HealthSignal(
+                DateTimeOffset.UtcNow.AddSeconds(i),
+                depId,
+                SignalOutcome.Success));
+        }
+
+        var report = orchestrator.GetHealthReport();
+        report.Status.Should().Be(HealthStatus.Healthy);
+        report.Dependencies.Should().ContainSingle()
+            .Which.LatestAssessment.TotalSignals.Should().Be(10);
+    }
+
+    [Fact]
+    public void RecordSignal_via_ISignalRecorder_for_unknown_dep_does_not_throw()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts => opts.AddComponent("redis"));
+
+        using var provider = services.BuildServiceProvider();
+
+        var recorder = provider.GetRequiredService<ISignalRecorder>();
+        var unknownDep = new DependencyId("unknown");
+
+        // Should not throw — signal is dropped with warning
+        var act = () => recorder.RecordSignal(unknownDep, new HealthSignal(
+            DateTimeOffset.UtcNow, unknownDep, SignalOutcome.Success));
+
+        act.Should().NotThrow();
+    }
+}
