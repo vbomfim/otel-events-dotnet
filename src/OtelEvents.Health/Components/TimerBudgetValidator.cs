@@ -79,7 +79,7 @@ internal sealed class TimerBudgetValidator : ITimerBudgetValidator
                          $"{options.DrainTimeout.TotalSeconds:F0}s drain) exceeds liveness failure window " +
                          $"({options.LivenessFailureWindow.TotalSeconds:F0}s). " +
                          "Kubernetes may kill the pod before drain completes.",
-                ConfigPath: $"HealthBoss:Components:{depName}:RecoveryProbeInterval",
+                ConfigPath: $"OtelEvents.Health:Components:{depName}:RecoveryProbeInterval",
                 IsCritical: false));
         }
     }
@@ -111,7 +111,7 @@ internal sealed class TimerBudgetValidator : ITimerBudgetValidator
                          $"{options.ForceShutdownTimeout.TotalSeconds:F0}s force) exceeds " +
                          $"terminationGracePeriod ({options.TerminationGracePeriod.TotalSeconds:F0}s). " +
                          "SIGKILL will arrive before graceful shutdown completes.",
-                ConfigPath: $"HealthBoss:Components:{depName}:DrainTimeout",
+                ConfigPath: $"OtelEvents.Health:Components:{depName}:DrainTimeout",
                 IsCritical: false));
         }
     }
@@ -137,7 +137,7 @@ internal sealed class TimerBudgetValidator : ITimerBudgetValidator
                 Message: $"CooldownBeforeTransition ({policy.CooldownBeforeTransition.TotalSeconds:F0}s) " +
                          $"is less than RecoveryProbeInterval ({policy.RecoveryProbeInterval.TotalSeconds:F0}s). " +
                          "Transition may fire before the next recovery probe completes.",
-                ConfigPath: $"HealthBoss:Components:{depName}:CooldownBeforeTransition",
+                ConfigPath: $"OtelEvents.Health:Components:{depName}:CooldownBeforeTransition",
                 IsCritical: false));
         }
     }
@@ -166,7 +166,7 @@ internal sealed class TimerBudgetValidator : ITimerBudgetValidator
                          $"of CooldownBeforeTransition ({policy.CooldownBeforeTransition.TotalSeconds:F0}s / 2 = " +
                          $"{halfCooldown.TotalSeconds:F1}s). " +
                          "Jitter may dominate the cooldown window.",
-                ConfigPath: $"HealthBoss:Components:{depName}:Jitter",
+                ConfigPath: $"OtelEvents.Health:Components:{depName}:Jitter",
                 IsCritical: false));
         }
     }

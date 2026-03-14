@@ -504,6 +504,21 @@ public sealed partial class SchemaValidator
 
     private static void ValidateComponent(ComponentDefinition component, List<SchemaError> errors)
     {
+        // OTEL_SCHEMA_040: Detect malformed (unparseable) numeric values.
+        // The parser returns -1 as a sentinel for values that are present but not parseable.
+        ValidateMalformedValue(component.Name, "healthyAbove", component.HealthyAbove, errors);
+        ValidateMalformedValue(component.Name, "degradedAbove", component.DegradedAbove, errors);
+        ValidateMalformedValue(component.Name, "minimumSignals", component.MinimumSignals, errors);
+        ValidateMalformedValue(component.Name, "window", component.WindowSeconds, errors);
+        ValidateMalformedValue(component.Name, "cooldown", component.CooldownSeconds, errors);
+
+        if (component.ResponseTime is not null)
+        {
+            ValidateMalformedValue(component.Name, "responseTime.percentile", component.ResponseTime.Percentile, errors);
+            ValidateMalformedValue(component.Name, "responseTime.degradedAfter", component.ResponseTime.DegradedAfterMs, errors);
+            ValidateMalformedValue(component.Name, "responseTime.unhealthyAfter", component.ResponseTime.UnhealthyAfterMs, errors);
+        }
+
         // OTEL_SCHEMA_033: Component name format
         if (!ComponentNameRegex().IsMatch(component.Name))
         {
@@ -544,8 +559,8 @@ public sealed partial class SchemaValidator
             });
         }
 
-        // OTEL_SCHEMA_036: minimumSignals >= 1
-        if (component.MinimumSignals > 0 && component.MinimumSignals < 1)
+        // OTEL_SCHEMA_036: minimumSignals >= 1 (reject negative values from malformed YAML)
+        if (component.MinimumSignals < 0)
         {
             errors.Add(new SchemaError
             {
@@ -587,6 +602,38 @@ public sealed partial class SchemaValidator
                     });
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Reports a validation error if a parsed numeric value is -1 (sentinel for malformed YAML).
+    /// </summary>
+    private static void ValidateMalformedValue(string componentName, string fieldName, double value, List<SchemaError> errors)
+    {
+        // The parser uses -1 as a sentinel for present-but-unparseable values.
+        // A value of 0 means the field was absent (null in YAML), which is valid (uses default).
+        if (value < 0)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.MalformedValue,
+                Message = $"Component '{componentName}' has a malformed value for '{fieldName}'. Expected a valid number or duration."
+            });
+        }
+    }
+
+    /// <summary>
+    /// Reports a validation error if a parsed integer value is -1 (sentinel for malformed YAML).
+    /// </summary>
+    private static void ValidateMalformedValue(string componentName, string fieldName, int value, List<SchemaError> errors)
+    {
+        if (value < 0)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.MalformedValue,
+                Message = $"Component '{componentName}' has a malformed value for '{fieldName}'. Expected a valid integer."
+            });
         }
     }
 }

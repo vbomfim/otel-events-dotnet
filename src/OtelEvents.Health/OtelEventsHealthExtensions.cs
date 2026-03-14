@@ -8,6 +8,7 @@ using OtelEvents.Schema.Models;
 using OtelEvents.Schema.Parsing;
 using OtelEvents.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -249,6 +250,11 @@ public static class OtelEventsHealthExtensions
                         builder.MinimumSignals(comp.MinimumSignals);
                     }
 
+                    if (comp.CooldownSeconds > 0)
+                    {
+                        builder.Cooldown(TimeSpan.FromSeconds(comp.CooldownSeconds));
+                    }
+
                     if (comp.ResponseTime is not null)
                     {
                         builder.WithResponseTime(rt =>
@@ -266,7 +272,10 @@ public static class OtelEventsHealthExtensions
             }
         });
 
-        // 2. Create bridge and register subscriptions for components with signals
+        // 2. Create bridge and register subscriptions for components with signals.
+        // The bridge is created at config time; it receives IServiceProvider later
+        // via Initialize() (called from a hosted service), then lazily resolves
+        // ISignalRecorder on the first HandleSignal call.
         var signalComponents = components.Where(c => c.Signals.Count > 0).ToList();
         if (signalComponents.Count > 0)
         {
@@ -278,17 +287,30 @@ public static class OtelEventsHealthExtensions
                 bridge.RegisterSubscriptions(subs);
             });
 
-            // 3. Override ISignalRecorder registration to also bind the bridge.
-            // DI uses the last registration for GetRequiredService<T>(),
-            // so this effectively decorates the original with bridge binding.
-            services.AddSingleton<ISignalRecorder>(sp =>
+            // Inject IServiceProvider into the bridge when the host resolves
+            // hosted services at startup. This runs before the subscription
+            // dispatcher begins dispatching events, guaranteeing the bridge
+            // can lazily resolve ISignalRecorder on first HandleSignal.
+            services.AddSingleton<IHostedService>(sp =>
             {
-                var recorder = (ISignalRecorder)sp.GetRequiredService<IHealthOrchestrator>();
-                bridge.Bind(recorder);
-                return recorder;
+                bridge.Initialize(sp);
+                return NullHostedService.Instance;
             });
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// No-op <see cref="IHostedService"/> used as a sentinel return value for
+    /// DI factory registrations that perform side effects during singleton resolution.
+    /// </summary>
+    private sealed class NullHostedService : IHostedService
+    {
+        public static readonly NullHostedService Instance = new();
+
+        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

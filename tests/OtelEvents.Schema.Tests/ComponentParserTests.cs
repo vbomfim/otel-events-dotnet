@@ -762,4 +762,179 @@ public class ComponentParserTests
             ]
         };
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Finding 2: Malformed YAML values — parse sentinel & validation
+    // ═══════════════════════════════════════════════════════════════
+
+    [Theory]
+    [InlineData("minimumSignals: abc")]
+    [InlineData("minimumSignals: true")]
+    [InlineData("minimumSignals: 1.5")]
+    public void Parse_MalformedMinimumSignals_ReturnsSentinel(string malformedField)
+    {
+        var yaml = $$"""
+            {{MinimalSchemaPrefix}}
+            components:
+              orders-db:
+                {{malformedField}}
+                signals:
+                  - event: "http.request.completed"
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+        Assert.True(result.IsSuccess);
+
+        var component = result.Document!.Components[0];
+        Assert.Equal(-1, component.MinimumSignals);
+    }
+
+    [Theory]
+    [InlineData("healthyAbove: abc")]
+    [InlineData("degradedAbove: not_a_number")]
+    public void Parse_MalformedThreshold_ReturnsSentinel(string malformedField)
+    {
+        ArgumentNullException.ThrowIfNull(malformedField);
+
+        var yaml = $$"""
+            {{MinimalSchemaPrefix}}
+            components:
+              orders-db:
+                {{malformedField}}
+                signals:
+                  - event: "http.request.completed"
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+        Assert.True(result.IsSuccess);
+
+        var component = result.Document!.Components[0];
+        if (malformedField.StartsWith("healthyAbove", StringComparison.Ordinal))
+            Assert.Equal(-1, component.HealthyAbove);
+        else
+            Assert.Equal(-1, component.DegradedAbove);
+    }
+
+    [Theory]
+    [InlineData("window: abc")]
+    [InlineData("window: nots")]
+    [InlineData("cooldown: xyz")]
+    public void Parse_MalformedDuration_ReturnsSentinel(string malformedField)
+    {
+        ArgumentNullException.ThrowIfNull(malformedField);
+
+        var yaml = $$"""
+            {{MinimalSchemaPrefix}}
+            components:
+              orders-db:
+                {{malformedField}}
+                signals:
+                  - event: "http.request.completed"
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+        Assert.True(result.IsSuccess);
+
+        var component = result.Document!.Components[0];
+        if (malformedField.StartsWith("window", StringComparison.Ordinal))
+            Assert.True(component.WindowSeconds < 0, "Malformed window should return -1 sentinel");
+        else
+            Assert.True(component.CooldownSeconds < 0, "Malformed cooldown should return -1 sentinel");
+    }
+
+    [Fact]
+    public void Validate_MalformedMinimumSignals_ReportsMalformedValueError()
+    {
+        var yaml = $$"""
+            {{MinimalSchemaPrefix}}
+            components:
+              orders-db:
+                minimumSignals: abc
+                signals:
+                  - event: "http.request.completed"
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+        Assert.True(result.IsSuccess);
+
+        var validation = _validator.Validate(result.Document!);
+        Assert.False(validation.IsValid);
+        Assert.Contains(validation.Errors,
+            e => e.Code == ErrorCodes.MalformedValue && e.Message.Contains("minimumSignals"));
+    }
+
+    [Fact]
+    public void Validate_MalformedHealthyAbove_ReportsMalformedValueError()
+    {
+        var yaml = $$"""
+            {{MinimalSchemaPrefix}}
+            components:
+              orders-db:
+                healthyAbove: xyz
+                signals:
+                  - event: "http.request.completed"
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+        Assert.True(result.IsSuccess);
+
+        var validation = _validator.Validate(result.Document!);
+        Assert.False(validation.IsValid);
+        Assert.Contains(validation.Errors,
+            e => e.Code == ErrorCodes.MalformedValue && e.Message.Contains("healthyAbove"));
+    }
+
+    [Fact]
+    public void Validate_MalformedWindow_ReportsMalformedValueError()
+    {
+        var yaml = $$"""
+            {{MinimalSchemaPrefix}}
+            components:
+              orders-db:
+                window: notaduration
+                signals:
+                  - event: "http.request.completed"
+            """;
+
+        var result = _parser.Parse(yaml, yaml.Length);
+        Assert.True(result.IsSuccess);
+
+        var validation = _validator.Validate(result.Document!);
+        Assert.False(validation.IsValid);
+        Assert.Contains(validation.Errors,
+            e => e.Code == ErrorCodes.MalformedValue && e.Message.Contains("window"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Finding 3: Negative minimumSignals validation (was dead code)
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Validate_NegativeMinimumSignals_ReportsError()
+    {
+        // Simulate a component with negative minimumSignals (sentinel from malformed parse)
+        var doc = CreateDocWithComponent(new ComponentDefinition
+        {
+            Name = "test-component",
+            MinimumSignals = -1,
+            Signals = [new SignalMapping { Event = "http.request.completed" }]
+        });
+
+        var validation = _validator.Validate(doc);
+        Assert.False(validation.IsValid);
+        Assert.Contains(validation.Errors,
+            e => e.Code == ErrorCodes.InvalidMinimumSignals ||
+                 e.Code == ErrorCodes.MalformedValue);
+    }
+
+    private static SchemaDocument CreateDocWithComponent(ComponentDefinition component) => new()
+    {
+        Schema = new SchemaHeader
+        {
+            Name = "Test",
+            Version = "1.0.0",
+            Namespace = "Test.Ns"
+        },
+        Components = [component]
+    };
 }

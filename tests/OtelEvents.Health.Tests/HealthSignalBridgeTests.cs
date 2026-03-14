@@ -3,6 +3,7 @@
 // </copyright>
 
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OtelEvents.Health.Contracts;
 using OtelEvents.Schema.Models;
@@ -652,29 +653,40 @@ public sealed class HealthSignalBridgeTests
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // 8. Bind — late binding for DI
+    // 8. Initialize — lazy DI resolution via IServiceProvider
     // ═══════════════════════════════════════════════════════════════
 
     [Fact]
-    public void Bind_SetsRecorder_AllowsHandleSignal()
+    public void Initialize_SetsServiceProvider_AllowsLazyRecorderResolution()
     {
         var recorder = new RecordingSignalRecorder();
         var component = CreateComponent("orders-db",
             CreateSignal("http.request.completed"));
         var bridge = new HealthSignalBridge([component]);
 
-        // Before bind: signal is silently dropped
+        // Before Initialize: signal is silently dropped (no SP, no recorder)
         var depId = new DependencyId("orders-db");
         var ctx1 = CreateContext("http.request.completed");
         bridge.HandleSignal(depId, component.Signals[0], ctx1);
         recorder.Recorded.Should().BeEmpty();
 
-        // Bind recorder
-        bridge.Bind(recorder);
+        // Initialize with a service provider that returns the recorder
+        var services = new ServiceCollection();
+        services.AddSingleton<ISignalRecorder>(recorder);
+        using var sp = services.BuildServiceProvider();
+        bridge.Initialize(sp);
 
-        // After bind: signal is recorded
+        // After Initialize: HandleSignal lazily resolves recorder from SP
         var ctx2 = CreateContext("http.request.completed");
         bridge.HandleSignal(depId, component.Signals[0], ctx2);
         recorder.Recorded.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Initialize_NullServiceProvider_ThrowsArgumentNullException()
+    {
+        var bridge = new HealthSignalBridge([]);
+        var act = () => bridge.Initialize(null!);
+        act.Should().Throw<ArgumentNullException>();
     }
 }

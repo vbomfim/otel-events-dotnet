@@ -1,6 +1,7 @@
 using FluentAssertions;
 using OtelEvents.Health;
 using OtelEvents.Health.Contracts;
+using OtelEvents.Schema.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -721,5 +722,68 @@ public sealed class HealthBossBuilderTests
         });
 
         act.Should().Throw<ArgumentException>();
+    }
+
+    // ──────────────────────────────────────────────
+    // Finding 4: Cooldown builder method
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void ComponentBuilder_Cooldown_sets_CooldownBeforeTransition()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts =>
+        {
+            opts.AddComponent("redis", c => c.Cooldown(TimeSpan.FromSeconds(60)));
+        });
+
+        using var provider = services.BuildServiceProvider();
+        var opts = provider.GetRequiredService<IOptions<HealthBossOptions>>().Value;
+
+        opts.Components.Should().ContainKey("redis");
+        opts.Components["redis"].Policy.CooldownBeforeTransition
+            .Should().Be(TimeSpan.FromSeconds(60));
+    }
+
+    [Fact]
+    public void ComponentBuilder_Cooldown_default_is_30_seconds()
+    {
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(opts =>
+        {
+            opts.AddComponent("redis"); // no cooldown specified
+        });
+
+        using var provider = services.BuildServiceProvider();
+        var opts = provider.GetRequiredService<IOptions<HealthBossOptions>>().Value;
+
+        opts.Components["redis"].Policy.CooldownBeforeTransition
+            .Should().Be(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public void AddOtelEventsHealth_from_ComponentDefinition_wires_CooldownSeconds()
+    {
+        var components = new List<ComponentDefinition>
+        {
+            new()
+            {
+                Name = "orders-db",
+                CooldownSeconds = 45,
+                Signals =
+                [
+                    new SignalMapping { Event = "http.request.completed" }
+                ]
+            }
+        };
+
+        var services = new ServiceCollection();
+        services.AddOtelEventsHealth(components);
+
+        using var provider = services.BuildServiceProvider();
+        var opts = provider.GetRequiredService<IOptions<HealthBossOptions>>().Value;
+
+        opts.Components["orders-db"].Policy.CooldownBeforeTransition
+            .Should().Be(TimeSpan.FromSeconds(45));
     }
 }

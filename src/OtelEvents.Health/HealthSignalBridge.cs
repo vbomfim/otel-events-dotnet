@@ -6,6 +6,7 @@ using System.Globalization;
 using OtelEvents.Health.Contracts;
 using OtelEvents.Schema.Models;
 using OtelEvents.Subscriptions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OtelEvents.Health;
 
@@ -19,19 +20,22 @@ namespace OtelEvents.Health;
 /// </para>
 /// </summary>
 /// <remarks>
-/// The bridge uses late binding for <see cref="ISignalRecorder"/> to support DI timing:
-/// subscription lambdas are registered at configuration time, but <see cref="ISignalRecorder"/>
-/// is only available after the service provider is built. Call <see cref="Bind"/> to set
-/// the recorder. Events received before binding are silently dropped.
+/// The bridge lazily resolves <see cref="ISignalRecorder"/> from the DI container
+/// on the first <see cref="HandleSignal"/> call. This avoids timing issues where
+/// subscriptions are registered at configuration time but the recorder is only
+/// available after the service provider is built. Call <see cref="Initialize"/>
+/// to provide the <see cref="IServiceProvider"/> after the container is built.
 /// </remarks>
 internal sealed class HealthSignalBridge
 {
     private readonly IReadOnlyList<ComponentDefinition> _components;
+    private IServiceProvider? _serviceProvider;
     private volatile ISignalRecorder? _recorder;
 
     /// <summary>
-    /// Initializes a new instance for late binding via <see cref="Bind"/>.
-    /// Used in production DI where <see cref="ISignalRecorder"/> is not yet available.
+    /// Initializes a new instance for deferred initialization via <see cref="Initialize"/>.
+    /// Used in production DI where <see cref="IServiceProvider"/> is not yet available
+    /// at subscription registration time.
     /// </summary>
     /// <param name="components">Component definitions from parsed YAML.</param>
     internal HealthSignalBridge(IReadOnlyList<ComponentDefinition> components)
@@ -46,21 +50,22 @@ internal sealed class HealthSignalBridge
     /// <param name="components">Component definitions from parsed YAML.</param>
     /// <param name="recorder">The signal recorder to use immediately.</param>
     internal HealthSignalBridge(IReadOnlyList<ComponentDefinition> components, ISignalRecorder recorder)
-        : this(components)
     {
+        ArgumentNullException.ThrowIfNull(components);
         ArgumentNullException.ThrowIfNull(recorder);
+        _components = components;
         _recorder = recorder;
     }
 
     /// <summary>
-    /// Binds the <see cref="ISignalRecorder"/> for signal recording.
-    /// Called after the DI container is built.
+    /// Injects the <see cref="IServiceProvider"/> for lazy <see cref="ISignalRecorder"/>
+    /// resolution. Called after the DI container is built (typically from a hosted service).
     /// </summary>
-    /// <param name="recorder">The signal recorder resolved from DI.</param>
-    internal void Bind(ISignalRecorder recorder)
+    /// <param name="serviceProvider">The root service provider.</param>
+    internal void Initialize(IServiceProvider serviceProvider)
     {
-        ArgumentNullException.ThrowIfNull(recorder);
-        _recorder = recorder;
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        _serviceProvider = serviceProvider;
     }
 
     /// <summary>
@@ -99,10 +104,10 @@ internal sealed class HealthSignalBridge
     /// <param name="ctx">The event context snapshot.</param>
     internal void HandleSignal(DependencyId depId, SignalMapping mapping, OtelEventContext ctx)
     {
-        var recorder = _recorder;
+        var recorder = _recorder ??= _serviceProvider?.GetRequiredService<ISignalRecorder>();
         if (recorder is null)
         {
-            return; // Not yet bound — silently drop
+            return; // No recorder and no service provider — silently drop
         }
 
         if (!MatchesFilters(mapping.Match, ctx))
