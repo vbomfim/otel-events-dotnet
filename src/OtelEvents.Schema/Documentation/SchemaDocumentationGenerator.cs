@@ -37,6 +37,7 @@ public sealed class SchemaDocumentationGenerator
         AppendEventsSection(sb, doc.Events);
         AppendEnumDefinitions(sb, doc.Enums);
         AppendSharedFields(sb, doc.Fields);
+        AppendComponentsSection(sb, doc.Components);
         AppendFooter(sb);
 
         return sb.ToString();
@@ -67,7 +68,7 @@ public sealed class SchemaDocumentationGenerator
 
     private static void AppendTableOfContents(StringBuilder sb, SchemaDocument doc)
     {
-        if (doc.Events.Count == 0 && doc.Enums.Count == 0 && doc.Fields.Count == 0)
+        if (doc.Events.Count == 0 && doc.Enums.Count == 0 && doc.Fields.Count == 0 && doc.Components.Count == 0)
         {
             return;
         }
@@ -102,6 +103,18 @@ public sealed class SchemaDocumentationGenerator
         if (doc.Fields.Count > 0)
         {
             sb.AppendLine("- [Shared Fields](#shared-fields)");
+            sb.AppendLine();
+        }
+
+        if (doc.Components.Count > 0)
+        {
+            sb.AppendLine("- [Components](#components)");
+
+            foreach (var component in doc.Components)
+            {
+                var anchor = ToAnchor(component.Name);
+                sb.AppendLine($"  - [{component.Name}](#{anchor})");
+            }
             sb.AppendLine();
         }
 
@@ -340,6 +353,84 @@ public sealed class SchemaDocumentationGenerator
         }
 
         sb.AppendLine();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // COMPONENTS SECTION
+    // ═══════════════════════════════════════════════════════════════
+
+    private static void AppendComponentsSection(StringBuilder sb, List<ComponentDefinition> components)
+    {
+        if (components.Count == 0)
+        {
+            return;
+        }
+
+        sb.AppendLine("---");
+        sb.AppendLine();
+        sb.AppendLine("## Components");
+        sb.AppendLine();
+
+        foreach (var component in components)
+        {
+            AppendComponent(sb, component);
+        }
+    }
+
+    private static void AppendComponent(StringBuilder sb, ComponentDefinition component)
+    {
+        sb.AppendLine($"### {component.Name}");
+        sb.AppendLine();
+
+        sb.AppendLine("| Property | Value |");
+        sb.AppendLine("| --- | --- |");
+
+        if (component.WindowSeconds > 0)
+            sb.AppendLine($"| **Window** | {component.WindowSeconds}s |");
+
+        if (component.HealthyAbove > 0)
+            sb.AppendLine($"| **Healthy Above** | {component.HealthyAbove} |");
+
+        if (component.DegradedAbove > 0)
+            sb.AppendLine($"| **Degraded Above** | {component.DegradedAbove} |");
+
+        if (component.MinimumSignals > 0)
+            sb.AppendLine($"| **Minimum Signals** | {component.MinimumSignals} |");
+
+        if (component.CooldownSeconds > 0)
+            sb.AppendLine($"| **Cooldown** | {component.CooldownSeconds}s |");
+
+        sb.AppendLine();
+
+        if (component.ResponseTime is not null)
+        {
+            sb.AppendLine("#### Response Time");
+            sb.AppendLine();
+            sb.AppendLine("| Property | Value |");
+            sb.AppendLine("| --- | --- |");
+            sb.AppendLine($"| **Percentile** | {component.ResponseTime.Percentile} |");
+            sb.AppendLine($"| **Degraded After** | {component.ResponseTime.DegradedAfterMs}ms |");
+            sb.AppendLine($"| **Unhealthy After** | {component.ResponseTime.UnhealthyAfterMs}ms |");
+            sb.AppendLine();
+        }
+
+        if (component.Signals.Count > 0)
+        {
+            sb.AppendLine("#### Signals");
+            sb.AppendLine();
+            sb.AppendLine("| Event | Match |");
+            sb.AppendLine("| --- | --- |");
+
+            foreach (var signal in component.Signals)
+            {
+                var matchStr = signal.Match.Count > 0
+                    ? string.Join(", ", signal.Match.Select(kv => $"`{kv.Key}`: `{kv.Value}`"))
+                    : "—";
+                sb.AppendLine($"| {signal.Event} | {matchStr} |");
+            }
+
+            sb.AppendLine();
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

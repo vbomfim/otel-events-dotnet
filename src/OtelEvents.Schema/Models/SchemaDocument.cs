@@ -20,4 +20,7 @@ public sealed class SchemaDocument
 
     /// <summary>Event definitions (top-level "events:" block).</summary>
     public List<EventDefinition> Events { get; init; } = [];
+
+    /// <summary>Component health policy definitions (top-level "components:" block).</summary>
+    public List<ComponentDefinition> Components { get; init; } = [];
 }

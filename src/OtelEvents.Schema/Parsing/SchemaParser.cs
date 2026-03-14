@@ -70,6 +70,7 @@ public sealed class SchemaParser
             var fields = ParseSharedFields(root);
             var enums = ParseEnums(root);
             var events = ParseEvents(root);
+            var components = ParseComponents(root);
 
             var document = new SchemaDocument
             {
@@ -77,7 +78,8 @@ public sealed class SchemaParser
                 Imports = imports,
                 Fields = fields,
                 Enums = enums,
-                Events = events
+                Events = events,
+                Components = components
             };
 
             return ParseResult.Success(document);
@@ -515,6 +517,157 @@ public sealed class SchemaParser
             _ => throw new SchemaParseException(ErrorCodes.InvalidMeterLifecycle,
                 $"Invalid meterLifecycle '{value}' — must be 'static' or 'di'.")
         };
+    }
+
+    // ── Component parsing ────────────────────────────────────────────
+
+    private static List<ComponentDefinition> ParseComponents(YamlMappingNode root)
+    {
+        var componentsNode = GetOptionalMapping(root, "components");
+        if (componentsNode is null) return [];
+
+        var components = new List<ComponentDefinition>();
+        foreach (var entry in componentsNode.Children)
+        {
+            var name = ((YamlScalarNode)entry.Key).Value!;
+            var componentMapping = entry.Value as YamlMappingNode
+                ?? throw new SchemaParseException(ErrorCodes.InvalidComponentNameFormat,
+                    $"Component '{name}' must be a mapping.");
+
+            var windowSeconds = ParseDurationToSeconds(GetOptionalScalar(componentMapping, "window"));
+            var healthyAbove = ParseOptionalDouble(GetOptionalScalar(componentMapping, "healthyAbove"));
+            var degradedAbove = ParseOptionalDouble(GetOptionalScalar(componentMapping, "degradedAbove"));
+            var minimumSignals = ParseOptionalInt(GetOptionalScalar(componentMapping, "minimumSignals"));
+            var cooldownSeconds = ParseDurationToSeconds(GetOptionalScalar(componentMapping, "cooldown"));
+            var responseTime = ParseResponseTimeConfig(componentMapping);
+            var signals = ParseSignals(componentMapping, name);
+
+            components.Add(new ComponentDefinition
+            {
+                Name = name,
+                WindowSeconds = windowSeconds,
+                HealthyAbove = healthyAbove,
+                DegradedAbove = degradedAbove,
+                MinimumSignals = minimumSignals,
+                CooldownSeconds = cooldownSeconds,
+                ResponseTime = responseTime,
+                Signals = signals
+            });
+        }
+        return components;
+    }
+
+    private static List<SignalMapping> ParseSignals(YamlMappingNode componentMapping, string componentName)
+    {
+        var signalsNode = GetOptionalSequence(componentMapping, "signals");
+        if (signalsNode is null) return [];
+
+        var signals = new List<SignalMapping>();
+        foreach (var item in signalsNode.Children)
+        {
+            if (item is not YamlMappingNode signalMapping)
+            {
+                throw new SchemaParseException(ErrorCodes.InvalidSignalEventName,
+                    $"Signal in component '{componentName}' must be a mapping.");
+            }
+
+            var eventName = GetOptionalScalar(signalMapping, "event") ?? "";
+            var matchFilters = new Dictionary<string, string>();
+
+            var matchNode = GetOptionalMapping(signalMapping, "match");
+            if (matchNode is not null)
+            {
+                foreach (var matchEntry in matchNode.Children)
+                {
+                    var key = ((YamlScalarNode)matchEntry.Key).Value!;
+                    var value = ((YamlScalarNode)matchEntry.Value).Value!;
+                    matchFilters[key] = value;
+                }
+            }
+
+            signals.Add(new SignalMapping
+            {
+                Event = eventName,
+                Match = matchFilters
+            });
+        }
+        return signals;
+    }
+
+    private static ResponseTimeConfig? ParseResponseTimeConfig(YamlMappingNode componentMapping)
+    {
+        var rtNode = GetOptionalMapping(componentMapping, "responseTime");
+        if (rtNode is null) return null;
+
+        var percentile = ParseOptionalDouble(GetOptionalScalar(rtNode, "percentile"));
+        var degradedAfterMs = ParseDurationToMs(GetOptionalScalar(rtNode, "degradedAfter"));
+        var unhealthyAfterMs = ParseDurationToMs(GetOptionalScalar(rtNode, "unhealthyAfter"));
+
+        return new ResponseTimeConfig
+        {
+            Percentile = percentile,
+            DegradedAfterMs = degradedAfterMs,
+            UnhealthyAfterMs = unhealthyAfterMs
+        };
+    }
+
+    /// <summary>
+    /// Parses a duration string like "300s" or "30s" into seconds.
+    /// Returns 0 if the input is null or unparseable.
+    /// </summary>
+    private static double ParseDurationToSeconds(string? value)
+    {
+        if (value is null) return 0;
+
+        if (value.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
+        {
+            return double.TryParse(value.AsSpan(0, value.Length - 2), NumberStyles.Float, CultureInfo.InvariantCulture, out var ms)
+                ? ms / 1000.0 : 0;
+        }
+
+        if (value.EndsWith('s'))
+        {
+            return double.TryParse(value.AsSpan(0, value.Length - 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var s)
+                ? s : 0;
+        }
+
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw) ? raw : 0;
+    }
+
+    /// <summary>
+    /// Parses a duration string like "200ms" or "2000ms" into milliseconds.
+    /// Also supports "2s" → 2000ms.
+    /// Returns 0 if the input is null or unparseable.
+    /// </summary>
+    private static double ParseDurationToMs(string? value)
+    {
+        if (value is null) return 0;
+
+        if (value.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
+        {
+            return double.TryParse(value.AsSpan(0, value.Length - 2), NumberStyles.Float, CultureInfo.InvariantCulture, out var ms)
+                ? ms : 0;
+        }
+
+        if (value.EndsWith('s'))
+        {
+            return double.TryParse(value.AsSpan(0, value.Length - 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var s)
+                ? s * 1000.0 : 0;
+        }
+
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw) ? raw : 0;
+    }
+
+    private static double ParseOptionalDouble(string? value)
+    {
+        if (value is null) return 0;
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : 0;
+    }
+
+    private static int ParseOptionalInt(string? value)
+    {
+        if (value is null) return 0;
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result) ? result : 0;
     }
 
     // ── YAML helpers ────────────────────────────────────────────────────
