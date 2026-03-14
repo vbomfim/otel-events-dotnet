@@ -6,7 +6,7 @@ A minimal ASP.NET Core Web API that demonstrates all otel-events features workin
 - **JSONL exporter** — AI-optimized structured output to stdout
 - **Causal linking** — automatic `eventId` / `parentEventId` via UUID v7
 - **ASP.NET Core integration** — zero-code HTTP request lifecycle events
-- **Subscriptions** — in-process event reactions via lambda handlers
+- **OtelEvents.Health** — event-driven health intelligence with K8s probe endpoints
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ curl -s -X POST http://localhost:5000/orders \
   "orderId": "a1b2c3d4",
   "customerId": "cust-42",
   "amount": 99.95,
-  "status": "Placed"
+  "status": "Shipped"
 }
 ```
 
@@ -53,6 +53,28 @@ curl -s -X POST http://localhost:5000/orders/a1b2c3d4/complete | jq .
 ```bash
 curl -s -X POST http://localhost:5000/orders/a1b2c3d4/fail | jq .
 ```
+
+### Check health status
+
+```bash
+# Liveness probe — is the process alive?
+curl -s http://localhost:5000/healthz/live
+
+# Readiness probe — are dependencies healthy?
+curl -s http://localhost:5000/healthz/ready
+
+# Startup probe — has the app finished initializing?
+curl -s http://localhost:5000/healthz/startup
+```
+
+### Simulate and inspect health state transitions
+
+```bash
+# View current health state of all components
+curl -s -X POST http://localhost:5000/simulate | jq .
+```
+
+Place several orders to generate `http.request.completed` events, which feed the `orders-db` component's health signals. The health state machine evaluates these signals against the thresholds defined in `schemas/health.otel.yaml`.
 
 ## What to look for in the output
 
@@ -90,15 +112,14 @@ http.request.received  → HTTP POST /orders received
 http.request.completed → HTTP POST /orders completed with 201 in 12.5ms
 ```
 
-### Subscription console output
+### Health state machine
 
-You'll also see subscription handler output in the console:
+The health system automatically subscribes to `http.request.completed` and `http.request.failed` events matching the configured routes. Each event feeds a signal to the `orders-db` or `payment-api` component:
 
-```
-📦 Subscription: Order a1b2c3d4 placed for $99.95
-📊 Subscription: Event 'order.placed' observed at 10:30:00.123
-⚠️ Subscription: Order a1b2c3d4 failed — Payment processing failed
-```
+- Events matching `httpRoute: "/orders/*"` → `orders-db` component
+- Events matching `httpClientName: "PaymentApi"` → `payment-api` component
+
+The `/simulate` endpoint shows the current health state of all components.
 
 ### Metrics
 
@@ -110,30 +131,55 @@ The sample registers metrics that can be collected by an OTEL Collector:
 | `sample.order.placed.amount` | Histogram | Order amount distribution |
 | `sample.order.failed.count` | Counter | Total order failures |
 
+## OtelEvents.Health configuration
+
+The health system is configured via `schemas/health.otel.yaml`:
+
+```yaml
+components:
+  orders-db:
+    window: 300s            # 5-minute sliding window
+    healthyAbove: 0.95      # Healthy when ≥95% success rate
+    degradedAbove: 0.7      # Degraded when 70–95%, CircuitOpen below 70%
+    minimumSignals: 10      # Don't evaluate until 10 signals recorded
+    signals:
+      - event: "http.request.completed"
+        match: { httpRoute: "/orders/*" }
+      - event: "http.request.failed"
+        match: { httpRoute: "/orders/*" }
+
+  payment-api:
+    window: 600s            # 10-minute sliding window
+    healthyAbove: 0.8       # More lenient — external dependency
+    degradedAbove: 0.5
+    signals:
+      - event: "http.outbound.completed"
+        match: { httpClientName: "PaymentApi" }
+      - event: "http.outbound.failed"
+        match: { httpClientName: "PaymentApi" }
+```
+
+The three-line integration in `Program.cs`:
+
+```csharp
+builder.Services.AddOtelEventsAspNetCore();                        // HTTP events
+builder.Services.AddOtelEventsHealth("schemas/health.otel.yaml");  // Health state machine
+app.MapHealthEndpoints();                                          // K8s probes
+```
+
 ## Project structure
 
 ```
 samples/OtelEvents.Sample.WebApi/
-├── Program.cs                      # DI setup + API endpoints
+├── Program.cs                      # DI setup + API endpoints + health registration
 ├── OtelEvents.Sample.WebApi.csproj # Project references (not NuGet)
 ├── Events/
 │   ├── OrderEventSource.cs         # Logger category marker
 │   └── OrderEvents.g.cs            # Pre-generated event code
 └── schemas/
-    └── orders.otel.yaml            # Event schema definition
+    ├── orders.otel.yaml            # Event schema definition
+    └── health.otel.yaml            # Health component configuration
 ```
-
-## Modify the schema and regenerate code
-
-1. Edit `schemas/orders.otel.yaml` — add fields, events, or metrics
-2. Regenerate the C# code:
-   ```bash
-   dotnet run --project tools/OtelEvents.Cli -- generate \
-     samples/OtelEvents.Sample.WebApi/schemas/orders.otel.yaml \
-     --output samples/OtelEvents.Sample.WebApi/Events/
-   ```
-3. The generated `OrderEvents.g.cs` will be updated with your changes
-4. Build and run to see the new events in action
 
 ## Architecture overview
 
@@ -159,9 +205,23 @@ HTTP Request
 │  ┌───────────────────────┐  │
 │  │ CausalityProcessor    │──┼── Adds eventId + parentEventId (UUID v7)
 │  ├───────────────────────┤  │
-│  │ SubscriptionProcessor │──┼── Dispatches to lambda handlers
+│  │ SubscriptionProcessor │──┼── Dispatches to health signal bridge
 │  ├───────────────────────┤  │
 │  │ JsonExporter          │──┼── Writes JSONL to stdout
+│  └───────────────────────┘  │
+└────────────┬────────────────┘
+             │
+             ▼
+┌─────────────────────────────┐
+│  OtelEvents.Health          │
+│  ┌───────────────────────┐  │
+│  │ HealthSignalBridge    │──┼── Routes events → health signals
+│  ├───────────────────────┤  │
+│  │ SignalBuffer          │──┼── Sliding-window signal storage
+│  ├───────────────────────┤  │
+│  │ PolicyEvaluator       │──┼── Success rate → HealthState
+│  ├───────────────────────┤  │
+│  │ HealthOrchestrator    │──┼── Aggregate state + K8s probes
 │  └───────────────────────┘  │
 └─────────────────────────────┘
 ```
