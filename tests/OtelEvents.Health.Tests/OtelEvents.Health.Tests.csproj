@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OtelEvents.Health\OtelEvents.Health.csproj" />
+    <ProjectReference Include="..\..\src\OtelEvents.Schema\OtelEvents.Schema.csproj" />
+    <ProjectReference Include="..\..\src\OtelEvents.Subscriptions\OtelEvents.Subscriptions.csproj" />
   </ItemGroup>
 
 </Project>

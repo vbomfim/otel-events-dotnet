@@ -113,7 +113,7 @@ public sealed class HealthBossBuilderTests
     {
         var services = new ServiceCollection();
 
-        var act = () => services.AddOtelEventsHealth(null!);
+        var act = () => services.AddOtelEventsHealth((Action<HealthBossOptions>)null!);
 
         act.Should().Throw<ArgumentNullException>()
             .And.ParamName.Should().Be("configure");

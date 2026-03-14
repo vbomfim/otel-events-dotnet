@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OtelEvents.Schema\OtelEvents.Schema.csproj" />
+    <ProjectReference Include="..\OtelEvents.Subscriptions\OtelEvents.Subscriptions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="OtelEvents.Health.Tests" />
   </ItemGroup>
 
