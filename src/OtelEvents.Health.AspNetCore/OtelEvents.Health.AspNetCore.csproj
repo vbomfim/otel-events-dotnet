@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OtelEvents.Health.AspNetCore</RootNamespace>
+    <AssemblyName>OtelEvents.Health.AspNetCore</AssemblyName>
+    <Description>OtelEvents Health ASP.NET Core — K8s health probe endpoints</Description>
+    <NoWarn>CA1031</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OtelEvents.Health\OtelEvents.Health.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OtelEvents.Health.AspNetCore.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
