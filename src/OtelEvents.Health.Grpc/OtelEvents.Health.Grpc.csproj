@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OtelEvents.Health.Grpc</RootNamespace>
+    <AssemblyName>OtelEvents.Health.Grpc</AssemblyName>
+    <Description>OtelEvents Health Grpc — gRPC subchannel health adapter for quorum evaluation</Description>
+    <!-- Override NoWarn to enforce XML docs in this package -->
+    <NoWarn />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Net.Client" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OtelEvents.Health\OtelEvents.Health.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OtelEvents.Health.Grpc.Tests" />
+  </ItemGroup>
+
+</Project>
