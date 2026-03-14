@@ -23,6 +23,10 @@ public sealed partial class SchemaValidator
     [GeneratedRegex(@"^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex PascalCaseEventNameRegex();
 
+    // Regex: component name — lowercase alphanumeric + hyphens
+    [GeneratedRegex(@"^[a-z0-9]+(-[a-z0-9]+)*$")]
+    private static partial Regex ComponentNameRegex();
+
     // Regex: semver (simplified — major.minor.patch with optional pre-release)
     [GeneratedRegex(@"^\d+\.\d+\.\d+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?(\+[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$")]
     private static partial Regex SemverRegex();
@@ -62,6 +66,7 @@ public sealed partial class SchemaValidator
         var allEnums = new Dictionary<string, EnumDefinition>(StringComparer.OrdinalIgnoreCase);
         var allEventNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var allEventIds = new HashSet<int>();
+        var allComponentNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var totalEvents = 0;
 
         foreach (var doc in documents)
@@ -175,6 +180,22 @@ public sealed partial class SchemaValidator
 
                 // OTEL_SCHEMA_028: Event type validity
                 ValidateEventType(evt, errors);
+            }
+
+            // Validate each component
+            foreach (var component in doc.Components)
+            {
+                // OTEL_SCHEMA_032: Unique component names
+                if (!allComponentNames.Add(component.Name))
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.DuplicateComponentName,
+                        Message = $"Duplicate component name '{component.Name}'."
+                    });
+                }
+
+                ValidateComponent(component, errors);
             }
         }
 
@@ -473,6 +494,96 @@ public sealed partial class SchemaValidator
                     {
                         Code = ErrorCodes.InvalidParentEvent,
                         Message = $"Event '{evt.Name}' references parent '{evt.ParentEvent}' which is not a valid start event."
+                    });
+                }
+            }
+        }
+    }
+
+    // ── OTEL_SCHEMA_032–039: Component validation ───────────────────
+
+    private static void ValidateComponent(ComponentDefinition component, List<SchemaError> errors)
+    {
+        // OTEL_SCHEMA_033: Component name format
+        if (!ComponentNameRegex().IsMatch(component.Name))
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidComponentNameFormat,
+                Message = $"Component name '{component.Name}' must be lowercase alphanumeric with hyphens (e.g., 'orders-db')."
+            });
+        }
+
+        // OTEL_SCHEMA_034: Threshold range 0.0–1.0
+        if (component.HealthyAbove is < 0.0 or > 1.0)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidComponentThreshold,
+                Message = $"Component '{component.Name}' healthyAbove ({component.HealthyAbove}) must be between 0.0 and 1.0."
+            });
+        }
+
+        if (component.DegradedAbove is < 0.0 or > 1.0)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidComponentThreshold,
+                Message = $"Component '{component.Name}' degradedAbove ({component.DegradedAbove}) must be between 0.0 and 1.0."
+            });
+        }
+
+        // OTEL_SCHEMA_035: healthyAbove > degradedAbove
+        if (component.HealthyAbove > 0 && component.DegradedAbove > 0 &&
+            component.HealthyAbove <= component.DegradedAbove)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidThresholdOrder,
+                Message = $"Component '{component.Name}' healthyAbove ({component.HealthyAbove}) must be greater than degradedAbove ({component.DegradedAbove})."
+            });
+        }
+
+        // OTEL_SCHEMA_036: minimumSignals >= 1
+        if (component.MinimumSignals > 0 && component.MinimumSignals < 1)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidMinimumSignals,
+                Message = $"Component '{component.Name}' minimumSignals ({component.MinimumSignals}) must be at least 1."
+            });
+        }
+
+        // OTEL_SCHEMA_037: window > 0
+        if (component.WindowSeconds < 0)
+        {
+            errors.Add(new SchemaError
+            {
+                Code = ErrorCodes.InvalidComponentWindow,
+                Message = $"Component '{component.Name}' window ({component.WindowSeconds}s) must be greater than 0."
+            });
+        }
+
+        // OTEL_SCHEMA_038/039: Signal validation
+        foreach (var signal in component.Signals)
+        {
+            if (string.IsNullOrWhiteSpace(signal.Event))
+            {
+                errors.Add(new SchemaError
+                {
+                    Code = ErrorCodes.InvalidSignalEventName,
+                    Message = $"Signal in component '{component.Name}' has an empty event name."
+                });
+            }
+
+            foreach (var key in signal.Match.Keys)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    errors.Add(new SchemaError
+                    {
+                        Code = ErrorCodes.InvalidSignalMatchKey,
+                        Message = $"Signal in component '{component.Name}' has an empty match filter key."
                     });
                 }
             }

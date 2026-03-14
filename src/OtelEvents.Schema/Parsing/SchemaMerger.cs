@@ -61,6 +61,7 @@ public sealed class SchemaMerger
         var mergedEnums = new List<EnumDefinition>();
         var mergedEvents = new List<EventDefinition>();
         var mergedImports = new List<string>();
+        var mergedComponents = new List<ComponentDefinition>();
 
         foreach (var doc in documents)
         {
@@ -68,6 +69,7 @@ public sealed class SchemaMerger
             mergedEnums.AddRange(doc.Enums);
             mergedEvents.AddRange(doc.Events);
             mergedImports.AddRange(doc.Imports);
+            mergedComponents.AddRange(doc.Components);
         }
 
         var mergedDoc = new SchemaDocument
@@ -76,7 +78,8 @@ public sealed class SchemaMerger
             Imports = mergedImports,
             Fields = mergedFields,
             Enums = mergedEnums,
-            Events = mergedEvents
+            Events = mergedEvents,
+            Components = mergedComponents
         };
 
         var validationResult = _validator.Validate(documents);

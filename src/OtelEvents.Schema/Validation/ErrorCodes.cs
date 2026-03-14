@@ -97,4 +97,28 @@ public static class ErrorCodes
 
     /// <summary>Start events must not have a parent field.</summary>
     public const string StartEventWithParent = "OTEL_SCHEMA_031";
+
+    /// <summary>Duplicate component name across merged schemas.</summary>
+    public const string DuplicateComponentName = "OTEL_SCHEMA_032";
+
+    /// <summary>Component name must be alphanumeric with hyphens only.</summary>
+    public const string InvalidComponentNameFormat = "OTEL_SCHEMA_033";
+
+    /// <summary>Component threshold must be between 0.0 and 1.0.</summary>
+    public const string InvalidComponentThreshold = "OTEL_SCHEMA_034";
+
+    /// <summary>Component healthyAbove must be greater than degradedAbove.</summary>
+    public const string InvalidThresholdOrder = "OTEL_SCHEMA_035";
+
+    /// <summary>Component minimumSignals must be at least 1.</summary>
+    public const string InvalidMinimumSignals = "OTEL_SCHEMA_036";
+
+    /// <summary>Component window must be greater than 0.</summary>
+    public const string InvalidComponentWindow = "OTEL_SCHEMA_037";
+
+    /// <summary>Signal event name must be a non-empty string.</summary>
+    public const string InvalidSignalEventName = "OTEL_SCHEMA_038";
+
+    /// <summary>Signal match filter keys must be non-empty strings.</summary>
+    public const string InvalidSignalMatchKey = "OTEL_SCHEMA_039";
 }
