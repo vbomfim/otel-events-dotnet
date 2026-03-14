@@ -1,0 +1,35 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  OtelEvents.HttpClient -> /private/tmp/otel-events-dotnet/src/OtelEvents.HttpClient/bin/Debug/net8.0/OtelEvents.HttpClient.dll
+  OtelEvents.Analyzers -> /private/tmp/otel-events-dotnet/src/OtelEvents.Analyzers/bin/Debug/netstandard2.0/OtelEvents.Analyzers.dll
+  OtelEvents.Causality -> /private/tmp/otel-events-dotnet/src/OtelEvents.Causality/bin/Debug/net8.0/OtelEvents.Causality.dll
+  OtelEvents.Subscriptions -> /private/tmp/otel-events-dotnet/src/OtelEvents.Subscriptions/bin/Debug/net8.0/OtelEvents.Subscriptions.dll
+  OtelEvents.Exporter.Json -> /private/tmp/otel-events-dotnet/src/OtelEvents.Exporter.Json/bin/Debug/net8.0/OtelEvents.Exporter.Json.dll
+  OtelEvents.Schema -> /private/tmp/otel-events-dotnet/src/OtelEvents.Schema/bin/Debug/net8.0/OtelEvents.Schema.dll
+  OtelEvents.Testing -> /private/tmp/otel-events-dotnet/src/OtelEvents.Testing/bin/Debug/net8.0/OtelEvents.Testing.dll
+  OtelEvents.Azure.CosmosDb -> /private/tmp/otel-events-dotnet/src/OtelEvents.Azure.CosmosDb/bin/Debug/net8.0/OtelEvents.Azure.CosmosDb.dll
+  OtelEvents.Grpc -> /private/tmp/otel-events-dotnet/src/OtelEvents.Grpc/bin/Debug/net8.0/OtelEvents.Grpc.dll
+  OtelEvents.AspNetCore -> /private/tmp/otel-events-dotnet/src/OtelEvents.AspNetCore/bin/Debug/net8.0/OtelEvents.AspNetCore.dll
+  OtelEvents.Cli -> /private/tmp/otel-events-dotnet/tools/OtelEvents.Cli/bin/Debug/net8.0/OtelEvents.Cli.dll
+  OtelEvents.Azure.Storage -> /private/tmp/otel-events-dotnet/src/OtelEvents.Azure.Storage/bin/Debug/net8.0/OtelEvents.Azure.Storage.dll
+  OtelEvents.Exporter.Json.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Exporter.Json.Tests/bin/Debug/net8.0/OtelEvents.Exporter.Json.Tests.dll
+  OtelEvents.Testing.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Testing.Tests/bin/Debug/net8.0/OtelEvents.Testing.Tests.dll
+  OtelEvents.Cli -> /private/tmp/otel-events-dotnet/src/OtelEvents.Cli/bin/Debug/net8.0/OtelEvents.Cli.dll
+  OtelEvents.HttpClient.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.HttpClient.Tests/bin/Debug/net8.0/OtelEvents.HttpClient.Tests.dll
+  OtelEvents.Grpc.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Grpc.Tests/bin/Debug/net8.0/OtelEvents.Grpc.Tests.dll
+  OtelEvents.Integration.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Integration.Tests/bin/Debug/net8.0/OtelEvents.Integration.Tests.dll
+  OtelEvents.Schema.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Schema.Tests/bin/Debug/net8.0/OtelEvents.Schema.Tests.dll
+  OtelEvents.Causality.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Causality.Tests/bin/Debug/net8.0/OtelEvents.Causality.Tests.dll
+  OtelEvents.Analyzers.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Analyzers.Tests/bin/Debug/net8.0/OtelEvents.Analyzers.Tests.dll
+  OtelEvents.AspNetCore.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.AspNetCore.Tests/bin/Debug/net8.0/OtelEvents.AspNetCore.Tests.dll
+  OtelEvents.Subscriptions.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Subscriptions.Tests/bin/Debug/net8.0/OtelEvents.Subscriptions.Tests.dll
+  OtelEvents.Cli.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Cli.Tests/bin/Debug/net8.0/OtelEvents.Cli.Tests.dll
+  OtelEvents.Azure.CosmosDb.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Azure.CosmosDb.Tests/bin/Debug/net8.0/OtelEvents.Azure.CosmosDb.Tests.dll
+  OtelEvents.Sample.WebApi -> /private/tmp/otel-events-dotnet/samples/OtelEvents.Sample.WebApi/bin/Debug/net8.0/OtelEvents.Sample.WebApi.dll
+  OtelEvents.Azure.Storage.Tests -> /private/tmp/otel-events-dotnet/tests/OtelEvents.Azure.Storage.Tests/bin/Debug/net8.0/OtelEvents.Azure.Storage.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:10.73
